@@ -57,7 +57,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     label: Text('Low Stock', style: TextStyle(fontSize: isSmall ? 11 : 13)),
                     selected: _lowStockOnly,
                     onSelected: (v) { _lowStockOnly = v; _load(); },
-                    selectedColor: AppTheme.warning.withOpacity(0.1),
+                    selectedColor: AppTheme.warning.withValues(alpha: 0.1),
                     padding: EdgeInsets.symmetric(horizontal: isSmall ? 6 : 10),
                   ),
                   SizedBox(width: 4),
@@ -116,7 +116,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       Container(
                                         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
-                                          color: p.isLowStock ? AppTheme.danger.withOpacity(0.1) : Colors.green.shade50,
+                                          color: p.isLowStock ? AppTheme.danger.withValues(alpha: 0.1) : Colors.green.shade50,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text('${p.currentStock}',

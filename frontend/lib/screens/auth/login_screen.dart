@@ -58,9 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primary.withOpacity(0.08),
+              AppTheme.primary.withValues(alpha: 0.08),
               Colors.white,
-              AppTheme.primary.withOpacity(0.04),
+              AppTheme.primary.withValues(alpha: 0.04),
             ],
           ),
         ),
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: EdgeInsets.all(isSmall ? 16 : 24),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withOpacity(0.1),
+                          color: AppTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: Icon(
@@ -119,9 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: AppTheme.danger.withOpacity(0.08),
+                            color: AppTheme.danger.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.danger.withOpacity(0.2)),
+                            border: Border.all(color: AppTheme.danger.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             children: [
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: AppTheme.primary.withOpacity(0.5),
+                            disabledBackgroundColor: AppTheme.primary.withValues(alpha: 0.5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

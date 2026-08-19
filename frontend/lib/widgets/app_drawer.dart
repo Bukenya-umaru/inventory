@@ -33,7 +33,7 @@ class AppDrawer extends StatelessWidget {
               width: double.infinity,
               padding: EdgeInsets.all(isSmall ? 14 : 20),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.05),
+                color: AppTheme.primary.withValues(alpha: 0.05),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +69,7 @@ class AppDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: isSmall ? 16 : 18,
-                    backgroundColor: _roleColor(user?.role).withOpacity(0.1),
+                    backgroundColor: _roleColor(user?.role).withValues(alpha: 0.1),
                     child: Text(
                       (user?.name ?? '?')[0].toUpperCase(),
                       style: TextStyle(
@@ -95,7 +95,7 @@ class AppDrawer extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _roleColor(user?.role).withOpacity(0.1),
+                            color: _roleColor(user?.role).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -139,7 +139,7 @@ class AppDrawer extends StatelessWidget {
                       ),
                     ),
                     selected: isActive,
-                    selectedTileColor: AppTheme.primary.withOpacity(0.08),
+                    selectedTileColor: AppTheme.primary.withValues(alpha: 0.08),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     contentPadding: EdgeInsets.symmetric(horizontal: isSmall ? 12 : 16),
                     onTap: () {

@@ -23,9 +23,15 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getTenants(status: _statusFilter.isNotEmpty ? _statusFilter : null);
-      final list = (res['tenants'] as List).map((t) => Tenant.fromJson(t)).toList();
-      setState(() { _tenants = list; _loading = false; });
+      final res = await ApiService.getTenants(
+        status: _statusFilter.isNotEmpty ? _statusFilter : null,
+      );
+      final list =
+          (res['tenants'] as List).map((t) => Tenant.fromJson(t)).toList();
+      setState(() {
+        _tenants = list;
+        _loading = false;
+      });
     } catch (e) {
       setState(() => _loading = false);
     }
@@ -35,25 +41,54 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Filters
+        // Header with filters and create button
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Expanded(child: Text('Businesses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: '', label: Text('All')),
-                  ButtonSegment(value: 'active', label: Text('Active')),
-                  ButtonSegment(value: 'suspended', label: Text('Suspended')),
-                  ButtonSegment(value: 'deleted', label: Text('Deleted')),
-                ],
-                selected: {_statusFilter},
-                onSelectionChanged: (v) { _statusFilter = v.first; _load(); },
+              const Expanded(
+                child: Text('Businesses',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _showCreateBusiness(),
+                icon: const Icon(Icons.add_business, size: 18),
+                label: const Text('Create Business'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary),
               ),
             ],
           ),
         ),
+        // Filters
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: '', label: Text('All')),
+                      ButtonSegment(value: 'active', label: Text('Active')),
+                      ButtonSegment(
+                          value: 'suspended', label: Text('Suspended')),
+                      ButtonSegment(value: 'deleted', label: Text('Deleted')),
+                    ],
+                    selected: {_statusFilter},
+                    onSelectionChanged: (v) {
+                      _statusFilter = v.first;
+                      _load();
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         // List
         Expanded(
           child: _loading
@@ -75,8 +110,252 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
       ],
     );
   }
+
+  void _showCreateBusiness() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _CreateBusinessScreen(onCreated: _load)),
+    );
+  }
 }
 
+// ── Create Business Screen ──
+class _CreateBusinessScreen extends StatefulWidget {
+  final VoidCallback onCreated;
+  const _CreateBusinessScreen({required this.onCreated});
+
+  @override
+  State<_CreateBusinessScreen> createState() => _CreateBusinessScreenState();
+}
+
+class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _businessNameCtrl = TextEditingController();
+  final _ownerNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final _taxIdCtrl = TextEditingController();
+  String _businessType = 'Retail';
+  bool _saving = false;
+
+  final _types = ['Retail', 'Wholesale', 'Manufacturing', 'Service', 'Other'];
+
+  // Default categories (pre-selected)
+  final _categories = [
+    'Electronics',
+    'Clothing',
+    'Food & Beverage',
+    'Furniture',
+    'Books',
+    'Health & Beauty',
+  ];
+  List<String> _selectedCategories = [
+    'Electronics',
+    'Clothing',
+    'Food & Beverage',
+    'Furniture',
+    'Books',
+    'Health & Beauty',
+  ];
+
+  @override
+  void dispose() {
+    _businessNameCtrl.dispose();
+    _ownerNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    _taxIdCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+    try {
+      await ApiService.createTenant({
+        'businessName': _businessNameCtrl.text.trim(),
+        'businessType': _businessType,
+        'ownerName': _ownerNameCtrl.text.trim(),
+        'email': _emailCtrl.text.trim(),
+        'password': _passwordCtrl.text,
+        'phoneNumber': _phoneCtrl.text.trim(),
+        'address': _addressCtrl.text.trim(),
+        'taxId': _taxIdCtrl.text.trim(),
+        'defaultCategories': _selectedCategories,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Business created successfully!')),
+        );
+        widget.onCreated();
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Create Business Account')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Section: Business Information
+            _sectionHeader('Business Information'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _businessNameCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Business Name *',
+                  prefixIcon: Icon(Icons.business)),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _businessType,
+              items: _types
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .toList(),
+              onChanged: (v) => setState(() => _businessType = v!),
+              decoration: const InputDecoration(
+                  labelText: 'Business Type', prefixIcon: Icon(Icons.category)),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _phoneCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Phone Number *',
+                  prefixIcon: Icon(Icons.phone)),
+              keyboardType: TextInputType.phone,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _addressCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Address',
+                  prefixIcon: Icon(Icons.location_on_outlined)),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _taxIdCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Tax ID',
+                  prefixIcon: Icon(Icons.receipt_long_outlined)),
+            ),
+            const SizedBox(height: 24),
+
+            // Section: Admin/Owner Information
+            _sectionHeader('Admin / Owner Information'),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _ownerNameCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Owner Name *',
+                  prefixIcon: Icon(Icons.person)),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _emailCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Admin Email *',
+                  prefixIcon: Icon(Icons.email)),
+              keyboardType: TextInputType.emailAddress,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _passwordCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Admin Password *',
+                  prefixIcon: Icon(Icons.lock),
+                  helperText: 'Password will be viewable by Developer'),
+              obscureText: true,
+              validator: (v) => v == null || v.length < 6
+                  ? 'Password must be at least 6 characters'
+                  : null,
+            ),
+            const SizedBox(height: 24),
+
+            // Section: Default Categories
+            _sectionHeader('Default Categories'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _categories.map((cat) {
+                final selected = _selectedCategories.contains(cat);
+                return FilterChip(
+                  label: Text(cat),
+                  selected: selected,
+                  onSelected: (v) {
+                    setState(() {
+                      if (v) {
+                        _selectedCategories.add(cat);
+                      } else {
+                        _selectedCategories.remove(cat);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 32),
+
+            // Submit
+            SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _saving ? null : _create,
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Create Business Account'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primary)),
+        const Divider(),
+      ],
+    );
+  }
+}
+
+// ── Tenant Card (list item) ──
 class _TenantCard extends StatelessWidget {
   final Tenant tenant;
   final VoidCallback onRefresh;
@@ -100,27 +379,40 @@ class _TenantCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: AppTheme.primary.withOpacity(0.1),
-                  child: Text(tenant.businessName[0].toUpperCase(),
-                    style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                  backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    tenant.businessName[0].toUpperCase(),
+                    style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tenant.businessName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(tenant.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                      Text(tenant.businessName,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(tenant.email,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade500)),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(tenant.status, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: statusColor)),
+                  child: Text(tenant.status,
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor)),
                 ),
               ],
             ),
@@ -132,30 +424,47 @@ class _TenantCard extends StatelessWidget {
                 _info('Type', tenant.businessType),
                 const SizedBox(width: 16),
                 _info('Users', '${tenant.userCount}'),
+                const Spacer(),
+                // Branding button
+                IconButton(
+                  icon: const Icon(Icons.branding_watermark, size: 18),
+                  tooltip: 'Manage Branding',
+                  onPressed: () => _showBranding(context),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (tenant.status == 'active')
+                if (tenant.status == 'active') ...[
                   TextButton.icon(
                     onPressed: () => _suspend(context),
                     icon: const Icon(Icons.pause, size: 16, color: AppTheme.warning),
-                    label: const Text('Suspend', style: TextStyle(color: AppTheme.warning)),
+                    label: const Text('Suspend',
+                        style: TextStyle(color: AppTheme.warning)),
                   ),
-                if (tenant.status == 'suspended')
-                  TextButton.icon(
-                    onPressed: () => _reactivate(),
-                    icon: const Icon(Icons.play_arrow, size: 16, color: AppTheme.success),
-                    label: const Text('Reactivate', style: TextStyle(color: AppTheme.success)),
-                  ),
-                if (tenant.status != 'deleted')
                   TextButton.icon(
                     onPressed: () => _delete(context),
                     icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.danger),
-                    label: const Text('Delete', style: TextStyle(color: AppTheme.danger)),
+                    label: const Text('Delete',
+                        style: TextStyle(color: AppTheme.danger)),
                   ),
+                ],
+                if (tenant.status == 'suspended') ...[
+                  TextButton.icon(
+                    onPressed: () => _reactivate(),
+                    icon: const Icon(Icons.play_arrow, size: 16, color: AppTheme.success),
+                    label: const Text('Reactivate',
+                        style: TextStyle(color: AppTheme.success)),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _delete(context),
+                    icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.danger),
+                    label: const Text('Delete',
+                        style: TextStyle(color: AppTheme.danger)),
+                  ),
+                ],
               ],
             ),
           ],
@@ -168,36 +477,53 @@ class _TenantCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
-        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+        Text(value,
+            style:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
       ],
     );
   }
 
   void _suspend(BuildContext context) {
-    final reasons = ['Payment Issue', 'Owner Request', 'Compliance Review', 'Temporary Closure'];
+    final reasons = [
+      'Payment/Subscription Issue',
+      'Business Owner Request',
+      'Compliance Review',
+      'Temporary Closure',
+    ];
     String selected = reasons.first;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Suspend Business'),
+        title: const Text('Suspend Business Account'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Suspend "${tenant.businessName}"?'),
+            Text('Suspending "${tenant.businessName}" will:'),
+            const SizedBox(height: 8),
+            const Text('• Prevent all users from logging in\n'
+                '• Block all sales and inventory activities\n'
+                '• Preserve all data for reactivation\n'
+                '• Notify the business owner'),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: selected,
-              items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+              initialValue: selected,
+              items: reasons
+                  .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                  .toList(),
               onChanged: (v) => selected = v!,
               decoration: const InputDecoration(labelText: 'Reason'),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
             onPressed: () async {
               await ApiService.suspendTenant(tenant.id, selected);
               if (ctx.mounted) Navigator.pop(ctx);
@@ -216,21 +542,99 @@ class _TenantCard extends StatelessWidget {
   }
 
   void _delete(BuildContext context) {
+    final confirmCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Business', style: TextStyle(color: AppTheme.danger)),
-        content: Text('Permanently delete "${tenant.businessName}"? This cannot be undone.'),
+        title: const Text('Delete Business Account',
+            style: TextStyle(color: AppTheme.danger)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('⚠ PERMANENT ACTION - IRREVERSIBLE',
+                style:
+                    TextStyle(color: AppTheme.danger, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Deleting "${tenant.businessName}" will:'),
+            const SizedBox(height: 8),
+            const Text('• Permanently remove ALL user accounts\n'
+                '• Delete ALL products, categories, and inventory data\n'
+                '• Remove ALL transaction and sales history\n'
+                '• Delete ALL financial and profit data\n'
+                '• This action CANNOT BE UNDONE'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Type "DELETE" to confirm'),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () async {
+              if (confirmCtrl.text != 'DELETE') return;
               await ApiService.deleteTenant(tenant.id);
               if (ctx.mounted) Navigator.pop(ctx);
               onRefresh();
             },
-            child: const Text('Delete'),
+            child: const Text('Permanently Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBranding(BuildContext context) {
+    final nameCtrl = TextEditingController(text: tenant.businessName);
+    final phoneCtrl = TextEditingController(text: tenant.phoneNumber);
+    final addressCtrl = TextEditingController(text: tenant.address);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Business Branding'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(tenant.businessName,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Business Name')),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone Number')),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                  maxLines: 2),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await ApiService.updateBranding(tenant.id, {
+                'businessName': nameCtrl.text,
+                'phoneNumber': phoneCtrl.text,
+                'address': addressCtrl.text,
+              });
+              if (ctx.mounted) Navigator.pop(ctx);
+              onRefresh();
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

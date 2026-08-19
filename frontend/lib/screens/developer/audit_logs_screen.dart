@@ -81,7 +81,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(color: sevColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                              decoration: BoxDecoration(color: sevColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                               child: Text(log.severity, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: sevColor)),
                             ),
                             const SizedBox(height: 2),

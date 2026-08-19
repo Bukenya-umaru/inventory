@@ -155,6 +155,15 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  static Future<Map<String, dynamic>> updateBranding(String tenantId, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/tenants/$tenantId/branding'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
   // ── Users ──
   static Future<Map<String, dynamic>> getUsers({String? role, String? search}) async {
     final params = <String, String>{};
@@ -312,6 +321,16 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl/reports/inventory'),
       headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
+  // ── Developer: Create Admin Account ──
+  static Future<Map<String, dynamic>> createAdminAccount(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/admin'),
+      headers: _headers(),
+      body: json.encode(data),
     );
     return _handleResponse(response);
   }

@@ -66,7 +66,7 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.warning.withOpacity(0.08),
+            color: AppTheme.warning.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Row(
@@ -96,7 +96,7 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                             Row(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: (u.isAdmin ? AppTheme.primary : AppTheme.success).withOpacity(0.1),
+                                  backgroundColor: (u.isAdmin ? AppTheme.primary : AppTheme.success).withValues(alpha: 0.1),
                                   child: Text(u.name[0].toUpperCase(),
                                     style: TextStyle(color: u.isAdmin ? AppTheme.primary : AppTheme.success, fontWeight: FontWeight.bold)),
                                 ),

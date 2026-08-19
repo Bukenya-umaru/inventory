@@ -27,7 +27,7 @@ class _DeveloperHomeState extends State<DeveloperHome> {
 
   Widget _buildPage(int index) {
     switch (index) {
-      case 0: return const DeveloperDashboard();
+      case 0: return DeveloperDashboard(onNavigateToTab: (i) => setState(() => _currentIndex = i));
       case 1: return const BusinessesScreen();
       case 2: return const UsersScreen();
       case 3: return const PasswordManagerScreen();
