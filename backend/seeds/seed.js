@@ -21,7 +21,7 @@ const seed = async () => {
     }
 
     // Create developer account
-    const devPassword = 'Admin@123';
+    const devPassword = 'admin123';
     const { encryptedPassword, iv } = encryptPassword(devPassword);
     const passwordHash = await bcrypt.hash(devPassword, 12);
 
@@ -34,10 +34,10 @@ const seed = async () => {
       role: 'developer'
     });
     await developer.save();
-    console.log('✅ Developer account created: developer@system.com / Admin@123');
+    console.log('✅ Developer account created: developer@system.com / admin123');
 
     // Create sample business
-    const adminPassword = 'Admin@123';
+    const adminPassword = 'admin123';
     const { encryptedPassword: adminEnc, iv: adminIv } = encryptPassword(adminPassword);
     const adminHash = await bcrypt.hash(adminPassword, 12);
 
@@ -71,7 +71,7 @@ const seed = async () => {
       ]
     });
     await admin.save();
-    console.log('✅ Admin account created: john@abcretail.com / Admin@123');
+    console.log('✅ Admin account created: john@abcretail.com / admin123');
 
     // Create categories
     const catNames = ['Electronics', 'Clothing', 'Food & Beverage', 'Furniture', 'Books', 'Health & Beauty'];
@@ -105,7 +105,7 @@ const seed = async () => {
     ];
 
     for (const emp of empNames) {
-      const empPassword = 'Employee@123';
+      const empPassword = 'admin123';
       const { encryptedPassword: empEnc, iv: empIv } = encryptPassword(empPassword);
       const empHash = await bcrypt.hash(empPassword, 12);
 
@@ -129,9 +129,9 @@ const seed = async () => {
 
     console.log('\n🎉 Seed completed successfully!');
     console.log('\nLogin credentials:');
-    console.log('  Developer: developer@system.com / Admin@123');
-    console.log('  Admin:     john@abcretail.com / Admin@123');
-    console.log('  Employee:  sarah@abcretail.com / Employee@123');
+    console.log('  Developer: developer@system.com / admin123');
+    console.log('  Admin:     john@abcretail.com / admin123');
+    console.log('  Employee:  sarah@abcretail.com / admin123');
 
     process.exit(0);
   } catch (error) {
