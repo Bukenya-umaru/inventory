@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/api_service.dart';
 import '../../models/tenant.dart';
 import '../../utils/theme.dart';
@@ -139,6 +141,8 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
   final _taxIdCtrl = TextEditingController();
   String _businessType = 'Retail';
   bool _saving = false;
+  XFile? _logoXFile;
+  Uint8List? _logoBytes;
 
   final _types = ['Retail', 'Wholesale', 'Manufacturing', 'Service', 'Other'];
 
@@ -176,7 +180,7 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      await ApiService.createTenant({
+      final data = {
         'businessName': _businessNameCtrl.text.trim(),
         'businessType': _businessType,
         'ownerName': _ownerNameCtrl.text.trim(),
@@ -186,7 +190,8 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
         'address': _addressCtrl.text.trim(),
         'taxId': _taxIdCtrl.text.trim(),
         'defaultCategories': _selectedCategories,
-      });
+      };
+      await ApiService.createTenantWithLogo(data, _logoBytes, _logoXFile?.name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Business created successfully!')),
@@ -204,6 +209,18 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
     }
   }
 
+  Future<void> _pickLogo() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _logoXFile = picked;
+        _logoBytes = bytes;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,6 +233,39 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             // Section: Business Information
             _sectionHeader('Business Information'),
             const SizedBox(height: 12),
+
+            // Logo picker
+            Center(
+              child: GestureDetector(
+                onTap: _pickLogo,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: _logoBytes != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.memory(_logoBytes!, fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
+                            const SizedBox(height: 4),
+                            Text('Business\nLogo',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 11, color: AppTheme.primary)),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             TextFormField(
               controller: _businessNameCtrl,
               decoration: const InputDecoration(
@@ -593,50 +643,110 @@ class _TenantCard extends StatelessWidget {
     final nameCtrl = TextEditingController(text: tenant.businessName);
     final phoneCtrl = TextEditingController(text: tenant.phoneNumber);
     final addressCtrl = TextEditingController(text: tenant.address);
+    XFile? brandingXFile;
+    Uint8List? brandingBytes;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Business Branding'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(tenant.businessName,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Business Name')),
-              const SizedBox(height: 12),
-              TextField(
-                  controller: phoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Phone Number')),
-              const SizedBox(height: 12),
-              TextField(
-                  controller: addressCtrl,
-                  decoration: const InputDecoration(labelText: 'Address'),
-                  maxLines: 2),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Business Branding'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo preview / picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(
+                          source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
+                      if (picked != null) {
+                        final bytes = await picked.readAsBytes();
+                        setDialogState(() {
+                          brandingXFile = picked;
+                          brandingBytes = bytes;
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: brandingBytes != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.memory(brandingBytes!, fit: BoxFit.cover),
+                            )
+                          : (tenant.businessLogo != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    'http://10.0.2.2:5000${tenant.businessLogo}',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
+                                        const SizedBox(height: 4),
+                                        Text('Change\nLogo',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(fontSize: 11, color: AppTheme.primary)),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
+                                    const SizedBox(height: 4),
+                                    Text('Business\nLogo',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 11, color: AppTheme.primary)),
+                                  ],
+                                )),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Business Name')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: phoneCtrl,
+                    decoration: const InputDecoration(labelText: 'Phone Number')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: addressCtrl,
+                    decoration: const InputDecoration(labelText: 'Address'),
+                    maxLines: 2),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await ApiService.updateBrandingWithLogo(tenant.id, {
+                  'businessName': nameCtrl.text,
+                  'phoneNumber': phoneCtrl.text,
+                  'address': addressCtrl.text,
+                }, brandingBytes, brandingXFile?.name);
+                if (ctx.mounted) Navigator.pop(ctx);
+                onRefresh();
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await ApiService.updateBranding(tenant.id, {
-                'businessName': nameCtrl.text,
-                'phoneNumber': phoneCtrl.text,
-                'address': addressCtrl.text,
-              });
-              if (ctx.mounted) Navigator.pop(ctx);
-              onRefresh();
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }

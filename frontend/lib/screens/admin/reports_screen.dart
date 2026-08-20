@@ -39,7 +39,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppTheme.pad(context, 16)),
         children: [
           // Period selector
           Row(
@@ -47,30 +47,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(period[0].toUpperCase() + period.substring(1)),
+                  label: Text(period[0].toUpperCase() + period.substring(1),
+                    style: TextStyle(fontSize: AppTheme.fontSize(context, 13))),
                   selected: _period == period,
                   onSelected: (_) { _period = period; _load(); },
                 ),
               ),
             ).toList(),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppTheme.pad(context, 16)),
           // Profit cards
-          _reportCard('Revenue', '\$${(p['totalRevenue'] ?? 0).toStringAsFixed(2)}', AppTheme.success),
-          _reportCard('Profit', '\$${(p['totalProfit'] ?? 0).toStringAsFixed(2)}', AppTheme.primary),
-          _reportCard('Damage Loss', '-\$${(p['totalDamageLoss'] ?? 0).toStringAsFixed(2)}', AppTheme.danger),
-          _reportCard('Net Profit', '\$${(p['netProfit'] ?? 0).toStringAsFixed(2)}', Colors.purple),
-          const SizedBox(height: 20),
+          _reportCard(context, 'Revenue', '\$${(p['totalRevenue'] ?? 0).toStringAsFixed(2)}', AppTheme.success),
+          _reportCard(context, 'Profit', '\$${(p['totalProfit'] ?? 0).toStringAsFixed(2)}', AppTheme.primary),
+          _reportCard(context, 'Damage Loss', '-\$${(p['totalDamageLoss'] ?? 0).toStringAsFixed(2)}', AppTheme.danger),
+          _reportCard(context, 'Net Profit', '\$${(p['netProfit'] ?? 0).toStringAsFixed(2)}', Colors.purple),
+          SizedBox(height: AppTheme.pad(context, 20)),
           // Inventory
-          const Text('Inventory Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
+          Text('Inventory Overview', style: TextStyle(fontSize: AppTheme.fontSize(context, 18), fontWeight: FontWeight.bold)),
+          SizedBox(height: AppTheme.pad(context, 12)),
           Row(
             children: [
-              Expanded(child: _miniCard('Products', '${inv['totalProducts'] ?? 0}')),
+              Expanded(child: _miniCard(context, 'Products', '${inv['totalProducts'] ?? 0}')),
               const SizedBox(width: 8),
-              Expanded(child: _miniCard('Stock Value', '\$${(inv['totalStockValue'] ?? 0).toStringAsFixed(0)}')),
+              Expanded(child: _miniCard(context, 'Stock Value', '\$${(inv['totalStockValue'] ?? 0).toStringAsFixed(0)}')),
               const SizedBox(width: 8),
-              Expanded(child: _miniCard('Low Stock', '${inv['lowStockCount'] ?? 0}', color: AppTheme.warning)),
+              Expanded(child: _miniCard(context, 'Low Stock', '${inv['lowStockCount'] ?? 0}', color: AppTheme.warning)),
             ],
           ),
         ],
@@ -78,31 +79,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _reportCard(String label, String value, Color color) {
+  Widget _reportCard(BuildContext context, String label, String value, Color color) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppTheme.pad(context, 16)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w500, fontSize: AppTheme.fontSize(context, 15))),
+            Text(value, style: TextStyle(fontSize: AppTheme.fontSize(context, 18), fontWeight: FontWeight.bold, color: color)),
           ],
         ),
       ),
     );
   }
 
-  Widget _miniCard(String label, String value, {Color? color}) {
+  Widget _miniCard(BuildContext context, String label, String value, {Color? color}) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(AppTheme.pad(context, 12)),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+            Text(value, style: TextStyle(fontSize: AppTheme.fontSize(context, 18), fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(label, style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: Colors.grey.shade500)),
           ],
         ),
       ),

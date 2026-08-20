@@ -38,13 +38,11 @@ class _DeveloperHomeState extends State<DeveloperHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Developer Dashboard')),
-      drawer: AppDrawer(
-        selectedIndex: _currentIndex,
-        onItemTap: (i) => setState(() => _currentIndex = i),
-        items: _items,
-      ),
+    return ResponsiveNavWrapper(
+      selectedIndex: _currentIndex,
+      onItemTap: (i) => setState(() => _currentIndex = i),
+      items: _items,
+      title: 'Developer Dashboard',
       body: _buildPage(_currentIndex),
     );
   }

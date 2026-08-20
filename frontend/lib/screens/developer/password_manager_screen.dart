@@ -63,17 +63,18 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
       children: [
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(12),
+          margin: EdgeInsets.all(AppTheme.pad(context, 16)),
+          padding: EdgeInsets.all(AppTheme.pad(context, 12)),
           decoration: BoxDecoration(
             color: AppTheme.warning.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.lock, color: AppTheme.warning, size: 18),
-              SizedBox(width: 8),
-              Expanded(child: Text('All password views are logged for security.', style: TextStyle(fontSize: 13, color: AppTheme.warning))),
+              const Icon(Icons.lock, color: AppTheme.warning, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text('All password views are logged for security.',
+                style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.warning))),
             ],
           ),
         ),
@@ -81,7 +82,7 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
                   itemCount: _users.length,
                   itemBuilder: (ctx, i) {
                     final u = _users[i];
@@ -89,7 +90,7 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(AppTheme.pad(context, 16)),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -105,8 +106,8 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(u.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                      Text(u.email, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                                      Text(u.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
+                                      Text(u.email, style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
                                     ],
                                   ),
                                 ),
@@ -128,18 +129,13 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                                           size: 16, color: isRevealed ? AppTheme.success : Colors.grey),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: Text(
-                                            isRevealed ? _revealedPassword! : '••••••••',
-                                            style: TextStyle(
-                                              fontFamily: 'monospace',
-                                              fontWeight: FontWeight.w600,
-                                              color: isRevealed ? Colors.black87 : Colors.grey,
-                                            ),
-                                          ),
+                                          child: Text(isRevealed ? _revealedPassword! : '••••••••',
+                                            style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
+                                              color: isRevealed ? Colors.black87 : Colors.grey)),
                                         ),
                                         if (isRevealed)
                                           Text('$_countdown s',
-                                            style: const TextStyle(fontSize: 12, color: AppTheme.warning, fontWeight: FontWeight.bold)),
+                                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),

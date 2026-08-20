@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/theme.dart';
 
 class StatCard extends StatelessWidget {
   final IconData icon;
@@ -23,39 +24,51 @@ class StatCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: EdgeInsets.all(isSmall ? 12 : 16),
+        padding: EdgeInsets.all(isSmall ? 12 : AppTheme.pad(context, 14)),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: EdgeInsets.all(isSmall ? 7 : 10),
+              padding: EdgeInsets.all(isSmall ? 7 : AppTheme.pad(context, 10)),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
+                color: iconColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: iconColor, size: isSmall ? 18 : 22),
             ),
-            SizedBox(height: isSmall ? 8 : 12),
+            SizedBox(height: isSmall ? 6 : AppTheme.pad(context, 8)),
             Text(
               value,
-              style: TextStyle(
-                fontSize: isSmall ? 18 : 24,
-                fontWeight: FontWeight.bold,
-              ),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, isSmall ? 17 : 22),
+                fontWeight: FontWeight.bold,
+                color: iconColor,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(fontSize: isSmall ? 11 : 13, color: Colors.grey.shade600),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                color: Colors.grey.shade600,
+              ),
             ),
             if (subtitle != null)
               Text(
                 subtitle!,
-                style: TextStyle(fontSize: isSmall ? 10 : 11, color: Colors.grey.shade400),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
+                  color: Colors.grey.shade400,
+                ),
               ),
           ],
         ),

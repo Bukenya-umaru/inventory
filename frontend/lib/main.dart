@@ -31,11 +31,16 @@ class InventoryApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.theme,
         home: const AuthGate(),
-        // Ensure text scales properly on all devices
+        // Allow system font scaling (accessibility) but cap at 1.5x
         builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          final currentScale = mediaQuery.textScaler.scale(14) / 14; // derive factor
+          final clampedScaler = TextScaler.linear(
+            currentScale.clamp(0.8, 1.5),
+          );
           return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.noScaling,
+            data: mediaQuery.copyWith(
+              textScaler: clampedScaler,
             ),
             child: child!,
           );

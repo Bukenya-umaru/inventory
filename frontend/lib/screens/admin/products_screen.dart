@@ -34,9 +34,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     return Column(
       children: [
-        // Search + filter bar
         Padding(
-          padding: EdgeInsets.all(isSmall ? 10 : 16),
+          padding: EdgeInsets.all(isSmall ? 10 : AppTheme.pad(context, 16)),
           child: Column(
             children: [
               Row(
@@ -48,19 +47,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         prefixIcon: const Icon(Icons.search, size: 20),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: isSmall ? 10 : 14),
                       ),
-                      style: TextStyle(fontSize: isSmall ? 13 : 15),
+                      style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
                       onChanged: (v) { _search = v; _load(); },
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   FilterChip(
-                    label: Text('Low Stock', style: TextStyle(fontSize: isSmall ? 11 : 13)),
+                    label: Text('Low Stock', style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13))),
                     selected: _lowStockOnly,
                     onSelected: (v) { _lowStockOnly = v; _load(); },
                     selectedColor: AppTheme.warning.withValues(alpha: 0.1),
                     padding: EdgeInsets.symmetric(horizontal: isSmall ? 6 : 10),
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   IconButton.filled(
                     onPressed: () => _showForm(),
                     icon: const Icon(Icons.add, size: 20),
@@ -70,7 +69,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           ),
         ),
-        // Product list
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -79,14 +77,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: isSmall ? 10 : 16),
+                        padding: EdgeInsets.symmetric(horizontal: isSmall ? 10 : AppTheme.pad(context, 16)),
                         itemCount: _products.length,
                         itemBuilder: (ctx, i) {
                           final p = _products[i];
                           return Card(
                             margin: EdgeInsets.only(bottom: isSmall ? 6 : 8),
                             child: Padding(
-                              padding: EdgeInsets.all(isSmall ? 10 : 14),
+                              padding: EdgeInsets.all(isSmall ? 10 : AppTheme.pad(context, 14)),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -94,18 +92,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(p.name,
-                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: isSmall ? 13 : 15)),
-                                        SizedBox(height: 2),
+                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15))),
+                                        const SizedBox(height: 2),
                                         Text('${p.categoryName ?? "No category"}',
-                                          style: TextStyle(fontSize: isSmall ? 11 : 12, color: Colors.grey.shade500)),
-                                        SizedBox(height: 4),
+                                          style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), color: Colors.grey.shade500)),
+                                        const SizedBox(height: 4),
                                         Row(
                                           children: [
                                             Text('Cost: \$${p.costPrice.toStringAsFixed(2)}',
-                                              style: TextStyle(fontSize: isSmall ? 11 : 12, color: Colors.grey.shade600)),
+                                              style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), color: Colors.grey.shade600)),
                                             const SizedBox(width: 8),
                                             Text('Price: \$${p.sellingPrice.toStringAsFixed(2)}',
-                                              style: TextStyle(fontSize: isSmall ? 11 : 12, fontWeight: FontWeight.w600)),
+                                              style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), fontWeight: FontWeight.w600)),
                                           ],
                                         ),
                                       ],
@@ -114,18 +112,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   Column(
                                     children: [
                                       Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
                                           color: p.isLowStock ? AppTheme.danger.withValues(alpha: 0.1) : Colors.green.shade50,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text('${p.currentStock}',
                                           style: TextStyle(
-                                            fontWeight: FontWeight.w600, fontSize: isSmall ? 13 : 14,
+                                            fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
                                             color: p.isLowStock ? AppTheme.danger : Colors.black87,
                                           )),
                                       ),
-                                      SizedBox(height: 6),
+                                      const SizedBox(height: 6),
                                       PopupMenuButton(
                                         padding: EdgeInsets.zero,
                                         itemBuilder: (_) => [

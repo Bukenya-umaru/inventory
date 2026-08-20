@@ -41,13 +41,11 @@ class _EmployeeHomeState extends State<EmployeeHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Employee Dashboard')),
-      drawer: AppDrawer(
-        selectedIndex: _currentIndex,
-        onItemTap: (i) => setState(() => _currentIndex = i),
-        items: _items,
-      ),
+    return ResponsiveNavWrapper(
+      selectedIndex: _currentIndex,
+      onItemTap: (i) => setState(() => _currentIndex = i),
+      items: _items,
+      title: 'Employee Dashboard',
       body: _buildPage(_currentIndex),
     );
   }

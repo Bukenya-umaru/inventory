@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../models/damage.dart';
 import '../../models/product.dart';
@@ -38,22 +37,22 @@ class _DamagesScreenState extends State<DamagesScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Damage Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('Total loss: \$${totalLoss.toStringAsFixed(2)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    Text('Damage Reports', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
+                    Text('Total loss: \$${totalLoss.toStringAsFixed(2)}', style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
                   ],
                 ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showReport(),
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Report'),
+                label: Text('Report', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
               ),
             ],
@@ -63,23 +62,29 @@ class _DamagesScreenState extends State<DamagesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
                   itemCount: _damages.length,
                   itemBuilder: (ctx, i) {
                     final d = _damages[i];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
                         leading: const Icon(Icons.warning_amber, color: AppTheme.warning),
-                        title: Text(d.productName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(d.reason, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        title: Text(d.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
+                        subtitle: Text(d.reason, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Qty: ${d.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                            Text('-\$${d.estimatedLoss.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: AppTheme.danger)),
-                            Text(DateFormat('MMM d').format(d.reportDate), style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                            Text('Qty: ${d.quantity}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 13))),
+                            Text('-\$${d.estimatedLoss.toStringAsFixed(2)}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.danger)),
                           ],
                         ),
                       ),

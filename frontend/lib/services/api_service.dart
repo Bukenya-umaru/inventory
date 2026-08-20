@@ -147,6 +147,36 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  /// Create tenant with optional logo bytes (multipart upload, web-compatible)
+  static Future<Map<String, dynamic>> createTenantWithLogo(
+    Map<String, dynamic> data,
+    List<int>? logoBytes,
+    String? logoName,
+  ) async {
+    final uri = Uri.parse('$baseUrl/tenants');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $_token';
+    data.forEach((key, value) {
+      if (value is List) {
+        for (var item in value) {
+          request.fields['$key'] = item.toString();
+        }
+      } else {
+        request.fields[key] = value?.toString() ?? '';
+      }
+    });
+    if (logoBytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'businessLogo',
+        logoBytes,
+        filename: logoName ?? 'logo.png',
+      ));
+    }
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    return _handleResponse(response);
+  }
+
   static Future<Map<String, dynamic>> getTenantDashboard(String id) async {
     final response = await http.get(
       Uri.parse('$baseUrl/tenants/$id/dashboard'),
@@ -161,6 +191,31 @@ class ApiService {
       headers: _headers(),
       body: json.encode(data),
     );
+    return _handleResponse(response);
+  }
+
+  /// Update branding with optional logo bytes (multipart upload, web-compatible)
+  static Future<Map<String, dynamic>> updateBrandingWithLogo(
+    String tenantId,
+    Map<String, dynamic> data,
+    List<int>? logoBytes,
+    String? logoName,
+  ) async {
+    final uri = Uri.parse('$baseUrl/tenants/$tenantId/branding');
+    final request = http.MultipartRequest('PUT', uri);
+    request.headers['Authorization'] = 'Bearer $_token';
+    data.forEach((key, value) {
+      request.fields[key] = value?.toString() ?? '';
+    });
+    if (logoBytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'businessLogo',
+        logoBytes,
+        filename: logoName ?? 'logo.png',
+      ));
+    }
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
   }
 

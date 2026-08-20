@@ -44,13 +44,11 @@ class _AdminHomeState extends State<AdminHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Business Dashboard')),
-      drawer: AppDrawer(
-        selectedIndex: _currentIndex,
-        onItemTap: (i) => setState(() => _currentIndex = i),
-        items: _items,
-      ),
+    return ResponsiveNavWrapper(
+      selectedIndex: _currentIndex,
+      onItemTap: (i) => setState(() => _currentIndex = i),
+      items: _items,
+      title: 'Business Dashboard',
       body: _buildPage(_currentIndex),
     );
   }

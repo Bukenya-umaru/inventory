@@ -10,79 +10,155 @@ class EmployeeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final branding = auth.branding;
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width >= 900;
 
+    return RefreshIndicator(
+      onRefresh: () async {},
+      child: isWide ? _wideLayout(context, auth, branding) : _mobileLayout(context, auth, branding),
+    );
+  }
+
+  Widget _wideLayout(BuildContext context, dynamic auth, dynamic branding) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       children: [
-        // Business branding
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                if (branding?.businessLogo != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
-                      height: 48, errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 48)),
-                  )
-                else
-                  const CircleAvatar(radius: 24, backgroundColor: AppTheme.success,
-                    child: Icon(Icons.person, color: Colors.white)),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(branding?.businessName ?? 'Business',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text('Welcome, ${auth.user?.name}!',
-                        style: TextStyle(color: Colors.grey.shade500)),
-                      if (branding?.phoneNumber != null)
-                        Text(branding!.phoneNumber!, style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        // Permission-based quick actions
-        const Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
+        // Welcome + Quick Actions row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (auth.user?.hasPermission('view_inventory') == true)
-              _actionCard(Icons.inventory, 'Products', Colors.blue),
-            if (auth.user?.hasPermission('record_sales') == true)
-              _actionCard(Icons.shopping_cart, 'Sales', Colors.green),
-            if (auth.user?.hasPermission('record_damages') == true)
-              _actionCard(Icons.warning, 'Damages', Colors.red),
-            if (auth.user?.hasPermission('view_reports') == true)
-              _actionCard(Icons.bar_chart, 'Reports', Colors.purple),
+            Expanded(
+              flex: 3,
+              child: _sectionCard(
+                title: 'Welcome, ${auth.user?.name ?? 'Employee'}!',
+                child: Row(
+                  children: [
+                    if (branding?.businessLogo != null)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
+                          height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 40)),
+                      )
+                    else
+                      CircleAvatar(radius: 20, backgroundColor: AppTheme.success, child: const Icon(Icons.person, color: Colors.white)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(branding?.businessName ?? 'Business',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text('Welcome back, ${auth.user?.name}!',
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 2,
+              child: _sectionCard(
+                title: 'Quick Actions',
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (auth.user?.hasPermission('view_inventory') == true)
+                      _actionCard(context, Icons.inventory, 'Products', Colors.blue),
+                    if (auth.user?.hasPermission('record_sales') == true)
+                      _actionCard(context, Icons.shopping_cart, 'Sales', Colors.green),
+                    if (auth.user?.hasPermission('record_damages') == true)
+                      _actionCard(context, Icons.warning, 'Damages', Colors.red),
+                    if (auth.user?.hasPermission('view_reports') == true)
+                      _actionCard(context, Icons.bar_chart, 'Reports', Colors.purple),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _actionCard(IconData icon, String label, Color color) {
+  Widget _mobileLayout(BuildContext context, dynamic auth, dynamic branding) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionCard(
+          title: 'Welcome, ${auth.user?.name ?? 'Employee'}!',
+          child: Column(
+            children: [
+              if (branding?.businessLogo != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
+                    height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 40)),
+                )
+              else
+                CircleAvatar(radius: 20, backgroundColor: AppTheme.success, child: const Icon(Icons.person, color: Colors.white)),
+              const SizedBox(height: 12),
+              Text(branding?.businessName ?? 'Business',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Welcome back, ${auth.user?.name}!',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _sectionCard(
+          title: 'Quick Actions',
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              if (auth.user?.hasPermission('view_inventory') == true)
+                _actionCard(context, Icons.inventory, 'Products', Colors.blue),
+              if (auth.user?.hasPermission('record_sales') == true)
+                _actionCard(context, Icons.shopping_cart, 'Sales', Colors.green),
+              if (auth.user?.hasPermission('record_damages') == true)
+                _actionCard(context, Icons.warning, 'Damages', Colors.red),
+              if (auth.user?.hasPermission('view_reports') == true)
+                _actionCard(context, Icons.bar_chart, 'Reports', Colors.purple),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionCard({required String title, required Widget child}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionCard(BuildContext context, IconData icon, String label, Color color) {
     return Container(
-      width: 140,
-      padding: const EdgeInsets.all(20),
+      width: 120,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 28, color: color),
+          Icon(icon, size: 24, color: color),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: color)),
         ],
       ),
     );

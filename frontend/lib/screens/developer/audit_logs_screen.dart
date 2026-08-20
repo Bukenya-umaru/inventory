@@ -32,10 +32,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
             children: [
-              const Expanded(child: Text('Audit Logs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+              Expanded(child: Text('Audit Logs', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold))),
               DropdownButton<String>(
                 value: _severityFilter,
                 hint: const Text('All Severity'),
@@ -55,7 +55,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
                   itemCount: _logs.length,
                   itemBuilder: (ctx, i) {
                     final log = _logs[i];
@@ -68,25 +68,28 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
                         leading: Container(
                           width: 4,
                           decoration: BoxDecoration(color: sevColor, borderRadius: BorderRadius.circular(2)),
                         ),
                         title: Text(log.eventType.replaceAll('_', ' ').toUpperCase(),
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                        subtitle: Text(log.action ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 12), fontWeight: FontWeight.w600)),
+                        subtitle: Text(log.action ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: Colors.grey.shade500)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(color: sevColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                               child: Text(log.severity, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: sevColor)),
                             ),
-                            const SizedBox(height: 2),
-                            Text(DateFormat('MMM d, HH:mm').format(log.timestamp),
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                            const SizedBox(width: 4),
+                            Text(DateFormat('MMM d').format(log.timestamp),
+                              style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
                           ],
                         ),
                       ),

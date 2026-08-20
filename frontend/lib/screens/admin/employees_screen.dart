@@ -43,7 +43,6 @@ class EmployeesScreen extends StatefulWidget {
 class _EmployeesScreenState extends State<EmployeesScreen> {
   List<User> _employees = [];
   bool _loading = true;
-  // Password reveal state
   String? _viewingUserId;
   String? _revealedPassword;
   int _countdown = 0;
@@ -65,15 +64,9 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     setState(() => _loading = true);
     try {
       final res = await ApiService.getUsers(role: 'employee');
-      final list =
-          (res['users'] as List).map((u) => User.fromJson(u)).toList();
-      setState(() {
-        _employees = list;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() => _loading = false);
-    }
+      final list = (res['users'] as List).map((u) => User.fromJson(u)).toList();
+      setState(() { _employees = list; _loading = false; });
+    } catch (e) { setState(() => _loading = false); }
   }
 
   Future<void> _viewPassword(String userId) async {
@@ -97,8 +90,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -117,120 +109,77 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(AppTheme.pad(context, 16)),
                     itemCount: _employees.length,
                     itemBuilder: (ctx, i) {
                       final e = _employees[i];
-                      final isRevealed =
-                          _viewingUserId == e.id && _revealedPassword != null;
+                      final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(AppTheme.pad(context, 12)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Employee info row
                               Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor:
-                                        AppTheme.success.withValues(alpha: 0.1),
-                                    child: Text(
-                                      e.name[0].toUpperCase(),
-                                      style: const TextStyle(
-                                          color: AppTheme.success,
-                                          fontWeight: FontWeight.bold),
-                                    ),
+                                    backgroundColor: AppTheme.success.withValues(alpha: 0.1),
+                                    child: Text(e.name[0].toUpperCase(),
+                                      style: const TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(e.name,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600)),
-                                        Text(
-                                            '${e.email} • ${e.permissions.length} permissions',
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    Colors.grey.shade500)),
+                                        Text(e.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
+                                        Text('${e.email} • ${e.permissions.length} permissions',
+                                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
                                       ],
                                     ),
                                   ),
-                                  // Permissions button
                                   IconButton(
                                     icon: const Icon(Icons.vpn_key, size: 18),
                                     tooltip: 'Manage Permissions',
                                     onPressed: () => _showPermissions(e),
                                   ),
-                                  // Delete button
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline,
-                                        size: 18, color: AppTheme.danger),
+                                    icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.danger),
                                     onPressed: () => _deleteEmployee(e),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              // Password visibility row
                               Row(
                                 children: [
                                   Expanded(
                                     child: Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: isRevealed
-                                            ? Colors.green.shade50
-                                            : Colors.grey.shade100,
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        color: isRevealed ? Colors.green.shade50 : Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         children: [
-                                          Icon(
-                                            isRevealed
-                                                ? Icons.visibility
-                                                : Icons.visibility_off,
-                                            size: 16,
-                                            color: isRevealed
-                                                ? AppTheme.success
-                                                : Colors.grey,
-                                          ),
+                                          Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
+                                            size: 16, color: isRevealed ? AppTheme.success : Colors.grey),
                                           const SizedBox(width: 8),
                                           Expanded(
-                                            child: Text(
-                                              isRevealed
-                                                  ? _revealedPassword!
-                                                  : '••••••••',
-                                              style: TextStyle(
-                                                fontFamily: 'monospace',
-                                                fontWeight: FontWeight.w600,
-                                                color: isRevealed
-                                                    ? Colors.black87
-                                                    : Colors.grey,
-                                              ),
-                                            ),
+                                            child: Text(isRevealed ? _revealedPassword! : '••••••••',
+                                              style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
+                                                color: isRevealed ? Colors.black87 : Colors.grey)),
                                           ),
                                           if (isRevealed)
                                             Text('$_countdown s',
-                                                style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: AppTheme.warning,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
+                                              style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton.icon(
-                                    onPressed: isRevealed
-                                        ? null
-                                        : () => _viewPassword(e.id),
+                                    onPressed: isRevealed ? null : () => _viewPassword(e.id),
                                     icon: const Icon(Icons.key, size: 16),
                                     label: const Text('Show'),
                                   ),
@@ -259,44 +208,25 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
               const SizedBox(height: 12),
-              TextField(
-                  controller: emailCtrl,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress),
+              TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email'), keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 12),
-              TextField(
-                  controller: passCtrl,
-                  decoration: const InputDecoration(labelText: 'Password'),
-                  obscureText: true),
+              TextField(controller: passCtrl, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
             ],
           ),
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              if (nameCtrl.text.isEmpty ||
-                  emailCtrl.text.isEmpty ||
-                  passCtrl.text.isEmpty) return;
+              if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passCtrl.text.isEmpty) return;
               try {
-                await ApiService.createUser({
-                  'name': nameCtrl.text,
-                  'email': emailCtrl.text,
-                  'password': passCtrl.text,
-                });
+                await ApiService.createUser({'name': nameCtrl.text, 'email': emailCtrl.text, 'password': passCtrl.text});
                 if (ctx.mounted) Navigator.pop(ctx);
                 _load();
               } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
+                if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: const Text('Create'),
@@ -321,15 +251,10 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               children: _allPermissions
                   .map((p) => CheckboxListTile(
                         value: selected.contains(p),
-                        title: Text(_permLabels[p] ?? p,
-                            style: const TextStyle(fontSize: 13)),
+                        title: Text(_permLabels[p] ?? p, style: TextStyle(fontSize: AppTheme.fontSize(context, 13))),
                         onChanged: (v) {
                           setDialogState(() {
-                            if (v == true) {
-                              selected.add(p);
-                            } else {
-                              selected.remove(p);
-                            }
+                            if (v == true) { selected.add(p); } else { selected.remove(p); }
                           });
                         },
                       ))
@@ -337,9 +262,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             ),
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 await ApiService.updatePermissions(employee.id, selected);
@@ -371,44 +294,29 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Employee: ${employee.name}'),
-            Text('Email: ${employee.email}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+            Text('Email: ${employee.email}', style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: Colors.grey.shade500)),
             const SizedBox(height: 12),
-            const Text('Deleting this employee will:',
-                style: TextStyle(fontWeight: FontWeight.w500)),
-            const Text('• Remove all access to the system\n'
-                '• Preserve transaction history (for audit)\n'
-                '• Notify Admin of deletion'),
+            const Text('Deleting this employee will:', style: TextStyle(fontWeight: FontWeight.w500)),
+            const Text('• Remove all access to the system\n• Preserve transaction history (for audit)\n• Notify Admin of deletion'),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: selectedReason,
               isExpanded: true,
-              items: reasons
-                  .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                  .toList(),
+              items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
               onChanged: (v) => selectedReason = v!,
               decoration: const InputDecoration(labelText: 'Reason'),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Request will be sent to Developer for approval',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.warning,
-                  fontStyle: FontStyle.italic),
-            ),
+            Text('Request will be sent to Developer for approval',
+              style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontStyle: FontStyle.italic)),
           ],
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () async {
-              await ApiService.deleteUser(
-                  employee.id, reason: selectedReason);
+              await ApiService.deleteUser(employee.id, reason: selectedReason);
               if (ctx.mounted) Navigator.pop(ctx);
               _load();
             },

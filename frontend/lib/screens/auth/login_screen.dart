@@ -27,20 +27,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() { _loading = true; _error = null; });
 
     final auth = context.read<AuthProvider>();
     final error = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
 
     if (!mounted) return;
     if (error != null) {
-      setState(() {
-        _loading = false;
-        _error = error;
-      });
+      setState(() { _loading = false; _error = error; });
     }
   }
 
@@ -85,31 +79,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        child: Icon(
-                          Icons.inventory_2_outlined,
-                          size: isSmall ? 36 : 48,
-                          color: AppTheme.primary,
-                        ),
+                        child: Icon(Icons.inventory_2_outlined,
+                          size: AppTheme.fontSize(context, isSmall ? 36 : 48),
+                          color: AppTheme.primary),
                       ),
                       SizedBox(height: isSmall ? 16 : 28),
                       // Title
-                      Text(
-                        'Inventory Management',
+                      Text('Inventory Management',
                         style: TextStyle(
-                          fontSize: isSmall ? 22 : 26,
+                          fontSize: AppTheme.fontSize(context, isSmall ? 22 : 28),
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                          color: Colors.black87),
+                        textAlign: TextAlign.center),
                       SizedBox(height: isSmall ? 4 : 8),
-                      Text(
-                        'Sign in to your account',
+                      Text('Sign in to your account',
                         style: TextStyle(
-                          fontSize: isSmall ? 13 : 15,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
+                          fontSize: AppTheme.fontSize(context, isSmall ? 13 : 16),
+                          color: Colors.grey.shade500)),
                       SizedBox(height: isSmall ? 24 : 40),
 
                       // Error
@@ -128,10 +114,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               const Icon(Icons.error_outline, color: AppTheme.danger, size: 18),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: Text(
-                                  _error!,
-                                  style: const TextStyle(color: AppTheme.danger, fontSize: 13),
-                                ),
+                                child: Text(_error!,
+                                  style: TextStyle(color: AppTheme.danger, fontSize: AppTheme.fontSize(context, 13))),
                               ),
                             ],
                           ),
@@ -142,15 +126,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        style: TextStyle(fontSize: isSmall ? 14 : 15),
+                        style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 14 : 16)),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           hintText: 'Enter your email',
                           prefixIcon: const Icon(Icons.email_outlined),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: isSmall ? 12 : 16,
-                          ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: isSmall ? 12 : 16),
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Email is required';
@@ -165,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _passCtrl,
                         obscureText: _obscure,
                         textInputAction: TextInputAction.done,
-                        style: TextStyle(fontSize: isSmall ? 14 : 15),
+                        style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 14 : 16)),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           hintText: 'Enter your password',
@@ -174,10 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
                             onPressed: () => setState(() => _obscure = !_obscure),
                           ),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: isSmall ? 12 : 16,
-                          ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: isSmall ? 12 : 16),
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) return 'Password is required';
@@ -197,38 +175,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             disabledBackgroundColor: AppTheme.primary.withValues(alpha: 0.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 2,
                           ),
                           child: _loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                )
-                              : Text(
-                                  'Sign In',
+                              ? const SizedBox(width: 22, height: 22,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                              : Text('Sign In',
                                   style: TextStyle(
-                                    fontSize: isSmall ? 15 : 17,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                    fontSize: AppTheme.fontSize(context, isSmall ? 15 : 18),
+                                    fontWeight: FontWeight.w600)),
                         ),
                       ),
                       SizedBox(height: isSmall ? 16 : 24),
 
-                      Text(
-                        'Contact your administrator for access',
+                      Text('Contact your administrator for access',
                         style: TextStyle(
-                          fontSize: isSmall ? 11 : 12,
-                          color: Colors.grey.shade400,
-                        ),
-                      ),
+                          fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                          color: Colors.grey.shade400)),
                     ],
                   ),
                 ),

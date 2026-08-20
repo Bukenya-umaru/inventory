@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_provider.dart';
-import '../../widgets/stat_card.dart';
 import '../../utils/theme.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -30,111 +29,370 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final branding = auth.branding;
     final size = MediaQuery.of(context).size;
-    final isSmall = size.height < 600 || size.width < 400;
+    final isWide = size.width >= 900;
 
     if (_loading) return const Center(child: CircularProgressIndicator());
     final d = _data ?? {};
 
+    final todayRevenue = (d['today']?['revenue'] ?? 0).toStringAsFixed(0);
+    final todayProfit = (d['today']?['profit'] ?? 0).toStringAsFixed(0);
+    final productCount = '${d['productCount'] ?? 0}';
+    final employeeCount = '${d['employeeCount'] ?? 0}';
+    final monthlyRevenue = (d['monthly']?['revenue'] ?? 0).toStringAsFixed(2);
+    final monthlyProfit = (d['monthly']?['profit'] ?? 0).toStringAsFixed(2);
+    final salesCount = '${d['monthly']?['salesCount'] ?? 0}';
+    final lowStock = '${d['lowStockCount'] ?? 0}';
+    final totalStock = '${d['totalStockValue'] ?? 0}';
+
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView(
-        padding: EdgeInsets.all(isSmall ? 12 : 16),
-        children: [
-          // Business branding
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(isSmall ? 14 : 20),
-              child: Row(
-                children: [
-                  if (branding?.businessLogo != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
-                        height: isSmall ? 36 : 48,
-                        errorBuilder: (_, __, ___) => Icon(Icons.business, size: isSmall ? 36 : 48)),
-                    )
-                  else
-                    CircleAvatar(
-                      radius: isSmall ? 18 : 24,
-                      backgroundColor: AppTheme.primary,
-                      child: Icon(Icons.business, color: Colors.white, size: isSmall ? 20 : 24),
-                    ),
-                  SizedBox(width: isSmall ? 10 : 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(branding?.businessName ?? 'Business',
-                          style: TextStyle(fontSize: isSmall ? 16 : 20, fontWeight: FontWeight.bold)),
-                        Text('Welcome back, ${auth.user?.name}!',
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: isSmall ? 12 : 14)),
-                        if (branding?.phoneNumber != null)
-                          Text(branding!.phoneNumber!, style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
-                      ],
-                    ),
-                  ),
-                ],
+      child: isWide
+          ? _wideLayout(d, todayRevenue, todayProfit, productCount, employeeCount, monthlyRevenue, monthlyProfit, salesCount, lowStock, totalStock)
+          : _mobileLayout(d, todayRevenue, todayProfit, productCount, employeeCount, monthlyRevenue, monthlyProfit, salesCount, lowStock, totalStock),
+    );
+  }
+
+  // ── Wide / Laptop Layout ──
+  Widget _wideLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
+    final productCount = products;
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Row 1: Sales Activity + Inventory Summary
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Sales Activity (left)
+            Expanded(
+              flex: 3,
+              child: _sectionCard(
+                title: 'Sales Activity',
+                child: Row(
+                  children: [
+                    _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.attach_money),
+                    _activityStat(profit, 'Profit', AppTheme.success, Icons.trending_up),
+                    _activityStat(products, 'Products', Colors.purple, Icons.inventory_2),
+                    _activityStat(employees, 'Employees', Colors.orange, Icons.people),
+                  ],
+                ),
               ),
             ),
-          ),
-          SizedBox(height: isSmall ? 10 : 16),
-          // Stats grid - responsive columns
-          GridView.count(
-            crossAxisCount: size.width > 900 ? 4 : size.width > 600 ? 2 : 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: isSmall ? 8 : 12,
-            crossAxisSpacing: isSmall ? 8 : 12,
-            childAspectRatio: isSmall ? 1.8 : 1.6,
+            const SizedBox(width: 16),
+            // Inventory Summary (right)
+            Expanded(
+              flex: 2,
+              child: _sectionCard(
+                title: 'Inventory Summary',
+                child: Column(
+                  children: [
+                    _summaryRow('Quantity in Hand', productCount, Icons.inventory),
+                    const Divider(height: 1),
+                    _summaryRow('Quantity to Receive', lowStock, Icons.receipt_long),
+                    const Divider(height: 1),
+                    _summaryRow('Total Stock Value', '\$$totalStock', Icons.attach_money),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Row 2: Product Details + Top Selling Items
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Details (left)
+            Expanded(
+              flex: 3,
+              child: _sectionCard(
+                title: 'Product Details',
+                child: Column(
+                  children: [
+                    _detailRow('Low Stock Items', lowStock, isWarning: true),
+                    _detailRow('All Item Groups', '${d['categoryCount'] ?? 0}', isWarning: false),
+                    _detailRow('All Items', productCount, isWarning: false),
+                    _detailRow('Total Stock Value', '\$$totalStock', isWarning: false),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Top Selling (right)
+            Expanded(
+              flex: 2,
+              child: _sectionCard(
+                title: 'Top Selling Items',
+                child: Column(
+                  children: [
+                    _sellingItem('Today\'s Sales', '\$$revenue', AppTheme.primary, Icons.trending_up),
+                    _sellingItem('This Month', '\$$mRevenue', AppTheme.success, Icons.calendar_month),
+                    _sellingItem('Profit', '\$$mProfit', Colors.purple, Icons.attach_money),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Row 3: Purchase Order + Sales Order
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Purchase Order
+            Expanded(
+              flex: 2,
+              child: _sectionCard(
+                title: 'Purchase Order',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('\$$totalStock', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                    const SizedBox(height: 4),
+                    Text('Stock Value', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+                    const SizedBox(height: 16),
+                    _miniStat('Quantity Ordered', products, Icons.shopping_cart),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Sales Order
+            Expanded(
+              flex: 3,
+              child: _sectionCard(
+                title: 'Sales Order',
+                child: Column(
+                  children: [
+                    _orderRow(['Channel', 'Revenue', 'Profit', 'Sales'], isHeader: true),
+                    _orderRow(['Today', '\$$revenue', '\$$profit', sales]),
+                    _orderRow(['Monthly', '\$$mRevenue', '\$$mProfit', sales]),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Mobile / Narrow Layout ──
+  Widget _mobileLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
+    final productCount = products;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Sales Activity
+        _sectionCard(
+          title: 'Sales Activity',
+          child: Column(
             children: [
-              StatCard(icon: Icons.attach_money, iconColor: AppTheme.success,
-                value: '\$${(d['today']?['revenue'] ?? 0).toStringAsFixed(2)}', label: "Today's Revenue"),
-              StatCard(icon: Icons.trending_up, iconColor: AppTheme.primary,
-                value: '\$${(d['today']?['profit'] ?? 0).toStringAsFixed(2)}', label: "Today's Profit"),
-              StatCard(icon: Icons.inventory, iconColor: Colors.purple,
-                value: '${d['productCount'] ?? 0}', label: 'Products'),
-              StatCard(icon: Icons.people_outline, iconColor: Colors.orange,
-                value: '${d['employeeCount'] ?? 0}', label: 'Employees'),
+              Row(
+                children: [
+                  Expanded(child: _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.attach_money)),
+                  Expanded(child: _activityStat(profit, 'Profit', AppTheme.success, Icons.trending_up)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _activityStat(products, 'Products', Colors.purple, Icons.inventory_2)),
+                  Expanded(child: _activityStat(employees, 'Employees', Colors.orange, Icons.people)),
+                ],
+              ),
             ],
           ),
-          SizedBox(height: isSmall ? 10 : 16),
-          // Monthly
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(isSmall ? 12 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Monthly Overview',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: isSmall ? 14 : 16)),
-                  SizedBox(height: isSmall ? 8 : 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _metric('\$${(d['monthly']?['revenue'] ?? 0).toStringAsFixed(2)}', 'Revenue', isSmall),
-                      _metric('\$${(d['monthly']?['profit'] ?? 0).toStringAsFixed(2)}', 'Profit', isSmall, color: AppTheme.success),
-                      _metric('${d['monthly']?['salesCount'] ?? 0}', 'Sales', isSmall),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+        ),
+        const SizedBox(height: 12),
+
+        // Inventory Summary
+        _sectionCard(
+          title: 'Inventory Summary',
+          child: Column(
+            children: [
+              _summaryRow('Quantity in Hand', productCount, Icons.inventory),
+              const Divider(height: 1),
+              _summaryRow('Quantity to Receive', lowStock, Icons.receipt_long),
+              const Divider(height: 1),
+              _summaryRow('Total Stock Value', '\$$totalStock', Icons.attach_money),
+            ],
           ),
+        ),
+        const SizedBox(height: 12),
+
+        // Product Details
+        _sectionCard(
+          title: 'Product Details',
+          child: Column(
+            children: [
+              _detailRow('Low Stock Items', lowStock, isWarning: true),
+              _detailRow('All Item Groups', '${d['categoryCount'] ?? 0}', isWarning: false),
+              _detailRow('All Items', products, isWarning: false),
+              _detailRow('Total Stock Value', '\$$totalStock', isWarning: false),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Top Selling
+        _sectionCard(
+          title: 'Top Selling Items',
+          child: Column(
+            children: [
+              _sellingItem('Today\'s Sales', '\$$revenue', AppTheme.primary, Icons.trending_up),
+              _sellingItem('This Month', '\$$mRevenue', AppTheme.success, Icons.calendar_month),
+              _sellingItem('Profit', '\$$mProfit', Colors.purple, Icons.attach_money),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Purchase Order
+        _sectionCard(
+          title: 'Purchase Order',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text('\$$totalStock', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+              const SizedBox(height: 4),
+              Text('Stock Value', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+              const SizedBox(height: 12),
+              _miniStat('Quantity Ordered', products, Icons.shopping_cart),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Sales Order
+        _sectionCard(
+          title: 'Sales Order',
+          child: Column(
+            children: [
+              _orderRow(['Channel', 'Revenue', 'Profit', 'Sales'], isHeader: true),
+              _orderRow(['Today', '\$$revenue', '\$$profit', sales]),
+              _orderRow(['Monthly', '\$$mRevenue', '\$$mProfit', sales]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared Widgets ──
+
+  Widget _sectionCard({required String title, required Widget child}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _activityStat(String value, String label, Color color, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
         ],
       ),
     );
   }
 
-  Widget _metric(String value, String label, bool isSmall, {Color? color}) {
-    return Column(
+  Widget _summaryRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppTheme.primary),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600))),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, {required bool isWarning}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: isWarning ? AppTheme.warning : Colors.grey.shade600))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isWarning ? AppTheme.warning : Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  Widget _sellingItem(String label, String value, Color color, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, IconData icon) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(value, style: TextStyle(fontSize: isSmall ? 14 : 18, fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: isSmall ? 10 : 12, color: Colors.grey.shade500)),
+        Icon(icon, size: 16, color: Colors.grey.shade500),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+        const SizedBox(width: 8),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
       ],
+    );
+  }
+
+  Widget _orderRow(List<String> cells, {bool isHeader = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: isHeader
+          ? BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(4))
+          : null,
+      child: Row(
+        children: cells.map((c) => Expanded(
+          child: Text(c,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isHeader ? FontWeight.w600 : FontWeight.w400,
+              color: isHeader ? Colors.grey.shade700 : Colors.black87,
+            ),
+          ),
+        )).toList(),
+      ),
     );
   }
 }

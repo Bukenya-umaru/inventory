@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../models/sale.dart';
 import '../../models/product.dart';
@@ -40,23 +39,23 @@ class _SalesScreenState extends State<SalesScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Sales', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('Sales', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
                     Text('Revenue: \$${totalRev.toStringAsFixed(2)} • Profit: \$${totalProfit.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                      style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
                   ],
                 ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showRecordSale(),
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Record Sale'),
+                label: Text('Record Sale', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
               ),
             ],
@@ -66,23 +65,29 @@ class _SalesScreenState extends State<SalesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
                   itemCount: _sales.length,
                   itemBuilder: (ctx, i) {
                     final s = _sales[i];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
-                        title: Text(s.productName ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text('Qty: ${s.quantity} • \$${s.unitPrice.toStringAsFixed(2)} each'),
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
+                        title: Text(s.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
+                        subtitle: Text('Qty: ${s.quantity} • \$${s.unitPrice.toStringAsFixed(2)} each',
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('\$${s.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            Text('+\$${s.profit.toStringAsFixed(2)} profit',
-                              style: const TextStyle(fontSize: 11, color: AppTheme.success)),
-                            Text(DateFormat('MMM d').format(s.saleDate), style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                            Text('\$${s.totalAmount.toStringAsFixed(2)}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppTheme.fontSize(context, 13))),
+                            Text('+\$${s.profit.toStringAsFixed(2)} profit', maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: AppTheme.success)),
                           ],
                         ),
                       ),
