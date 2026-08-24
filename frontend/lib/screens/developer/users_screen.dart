@@ -108,7 +108,7 @@ class _UsersScreenState extends State<UsersScreen> {
                                 child: Text(u.name[0].toUpperCase(), style: TextStyle(color: roleColor, fontWeight: FontWeight.bold)),
                               ),
                               title: Text(u.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
-                              subtitle: Text(u.email, style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
+                              subtitle: Text(u.email, style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -308,7 +308,7 @@ class _UsersScreenState extends State<UsersScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('User: ${user.name}'),
-              Text('Email: ${user.email}', style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: Colors.grey.shade500)),
+              Text('Email: ${user.email}', style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.secondaryText(context))),
               const SizedBox(height: 12),
               const Text('Deleting this user will:', style: TextStyle(fontWeight: FontWeight.w500)),
               const Text('• Remove all access to the system\n• Preserve transaction history (for audit)\n• Notify Admin of deletion'),

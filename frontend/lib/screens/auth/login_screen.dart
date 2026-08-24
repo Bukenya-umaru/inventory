@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.primary.withValues(alpha: 0.08),
-              Colors.white,
+              AppTheme.surfaceColor(context),
               AppTheme.primary.withValues(alpha: 0.04),
             ],
           ),
@@ -89,13 +89,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, isSmall ? 22 : 28),
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87),
+                          color: AppTheme.textColor(context)),
                         textAlign: TextAlign.center),
                       SizedBox(height: isSmall ? 4 : 8),
                       Text('Sign in to your account',
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, isSmall ? 13 : 16),
-                          color: Colors.grey.shade500)),
+                          color: AppTheme.secondaryText(context)),
+                      ),
                       SizedBox(height: isSmall ? 24 : 40),
 
                       // Error
@@ -192,7 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text('Contact your administrator for access',
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
-                          color: Colors.grey.shade400)),
+                          color: AppTheme.secondaryText(context)),
+                      ),
                     ],
                   ),
                 ),

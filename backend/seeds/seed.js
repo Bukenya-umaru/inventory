@@ -121,7 +121,7 @@ const seed = async () => {
         createdByRole: 'admin',
         creationReason: 'primary',
         employeeId: `EMP-${Date.now().toString(36).toUpperCase()}`,
-        permissions: ['record_sales', 'record_purchases', 'record_damages', 'view_inventory', 'view_transactions', 'view_reports']
+        permissions: ['manage_categories', 'record_sales', 'record_purchases', 'record_damages', 'view_inventory', 'view_transactions', 'view_reports']
       });
       await employee.save();
     }

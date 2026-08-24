@@ -48,7 +48,7 @@ class _SalesScreenState extends State<SalesScreen> {
                   children: [
                     Text('Sales', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
                     Text('Revenue: \$${totalRev.toStringAsFixed(2)} • Profit: \$${totalProfit.toStringAsFixed(2)}',
-                      style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
+                      style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
                   ],
                 ),
               ),
@@ -72,11 +72,9 @@ class _SalesScreenState extends State<SalesScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
                         title: Text(s.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
-                        subtitle: Text('Qty: ${s.quantity} • \$${s.unitPrice.toStringAsFixed(2)} each',
+                        subtitle: Text('Qty: ${s.quantity} ${s.saleUnit == 'box' ? 'box' : 'pc'} • \$${s.unitPrice.toStringAsFixed(2)} each',
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
                         trailing: Column(
@@ -101,6 +99,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
   void _showRecordSale() {
     Product? selectedProduct;
+    String saleUnit = 'piece';
     final qtyCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     final customerCtrl = TextEditingController();
@@ -116,18 +115,78 @@ class _SalesScreenState extends State<SalesScreen> {
               children: [
                 DropdownButtonFormField<Product>(
                   decoration: const InputDecoration(labelText: 'Product'),
-                  items: _products.map((p) => DropdownMenuItem(value: p,
-                    child: Text('${p.name} (Stock: ${p.currentStock})'))).toList(),
+                  items: _products.map((p) {
+                    String stockInfo = p.sellsAsBox
+                        ? '${p.stockBoxes} bx, ${p.currentStock} pc'
+                        : '${p.currentStock} pc';
+                    return DropdownMenuItem(value: p,
+                      child: Text('${p.name} ($stockInfo)'));
+                  }).toList(),
                   onChanged: (v) {
                     setDialogState(() {
                       selectedProduct = v;
-                      priceCtrl.text = v?.sellingPrice.toString() ?? '';
+                      if (v != null) {
+                        saleUnit = 'piece';
+                        priceCtrl.text = v.sellingPrice.toString();
+                      }
                     });
                   },
                 ),
+                if (selectedProduct == null || selectedProduct!.sellsAsBox) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Sell As'),
+                    value: (selectedProduct != null && !selectedProduct!.sellsAsBox) ? 'piece' : saleUnit,
+                    items: const [
+                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
+                      DropdownMenuItem(value: 'box', child: Text('Full Box')),
+                    ],
+                    onChanged: (v) {
+                      setDialogState(() {
+                        saleUnit = v ?? 'piece';
+                        if (selectedProduct != null) {
+                          if (saleUnit == 'box') {
+                            priceCtrl.text = selectedProduct!.boxSellingPrice?.toString() ?? (selectedProduct!.sellingPrice * selectedProduct!.unitsPerBox).toString();
+                          } else {
+                            priceCtrl.text = selectedProduct!.sellingPrice.toString();
+                          }
+                        }
+                      });
+                    },
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setDialogState(() {})),
+                // Box opening warning
+                if (saleUnit == 'piece' && selectedProduct != null &&
+                    selectedProduct!.sellsAsBox &&
+                    !selectedProduct!.hasLoosePieces &&
+                    selectedProduct!.hasFullBoxes &&
+                    (int.tryParse(qtyCtrl.text) ?? 0) > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber, size: 16, color: AppTheme.warning),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No loose pieces available. A box will be opened (${selectedProduct!.unitsPerBox} pc/box).',
+                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Unit Price'),
                   keyboardType: TextInputType.number),
@@ -146,6 +205,7 @@ class _SalesScreenState extends State<SalesScreen> {
                   'productId': selectedProduct!.id,
                   'quantity': int.tryParse(qtyCtrl.text) ?? 0,
                   'unitPrice': double.tryParse(priceCtrl.text) ?? selectedProduct!.sellingPrice,
+                  'saleUnit': saleUnit,
                   'customerName': customerCtrl.text.isNotEmpty ? customerCtrl.text : null,
                 });
                 if (ctx.mounted) Navigator.pop(ctx);

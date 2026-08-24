@@ -57,7 +57,7 @@ class StatCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
-                color: Colors.grey.shade600,
+                color: AppTheme.secondaryText(context),
               ),
             ),
             if (subtitle != null)
@@ -67,7 +67,7 @@ class StatCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
-                  color: Colors.grey.shade400,
+                  color: AppTheme.secondaryText(context),
                 ),
               ),
           ],

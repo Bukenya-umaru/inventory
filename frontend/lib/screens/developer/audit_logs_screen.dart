@@ -78,7 +78,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: AppTheme.fontSize(context, 12), fontWeight: FontWeight.w600)),
                         subtitle: Text(log.action ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: Colors.grey.shade500)),
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: AppTheme.secondaryText(context))),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -89,7 +89,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(DateFormat('MMM d').format(log.timestamp),
-                              style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                              style: TextStyle(fontSize: 10, color: AppTheme.secondaryText(context))),
                           ],
                         ),
                       ),

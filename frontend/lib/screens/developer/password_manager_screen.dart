@@ -107,7 +107,7 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(u.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
-                                      Text(u.email, style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
+                                      Text(u.email, style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
                                     ],
                                   ),
                                 ),
@@ -120,18 +120,18 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: isRevealed ? Colors.green.shade50 : Colors.grey.shade100,
+                                      color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(
                                       children: [
                                         Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
-                                          size: 16, color: isRevealed ? AppTheme.success : Colors.grey),
+                                          size: 16, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(isRevealed ? _revealedPassword! : '••••••••',
                                             style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
-                                              color: isRevealed ? Colors.black87 : Colors.grey)),
+                                              color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
                                         ),
                                         if (isRevealed)
                                           Text('$_countdown s',

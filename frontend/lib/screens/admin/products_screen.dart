@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/product.dart';
+import '../../models/category.dart';
 import '../../utils/theme.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -11,194 +12,691 @@ class ProductsScreen extends StatefulWidget {
 
 class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
+  List<Category> _categories = [];
   bool _loading = true;
   String _search = '';
   bool _lowStockOnly = false;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getProducts(search: _search.isNotEmpty ? _search : null, lowStock: _lowStockOnly);
-      final list = (res['products'] as List).map((p) => Product.fromJson(p)).toList();
-      setState(() { _products = list; _loading = false; });
-    } catch (e) { setState(() => _loading = false); }
+      final res = await ApiService.getProducts(
+        search: _search.isNotEmpty ? _search : null,
+        lowStock: _lowStockOnly,
+      );
+      final list =
+          (res['products'] as List).map((p) => Product.fromJson(p)).toList();
+      final catRes = await ApiService.getCategories();
+      final cats =
+          (catRes['categories'] as List).map((c) => Category.fromJson(c)).toList();
+      setState(() {
+        _products = list;
+        _categories = cats;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
+
+  // Computed stats
+  int get _totalProducts => _products.length;
+  int get _inStock =>
+      _products.where((p) => p.totalStockPieces > 0).length;
+  int get _lowStock =>
+      _products.where((p) => p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock).length;
+  int get _outOfStock =>
+      _products.where((p) => p.totalStockPieces == 0).length;
+  double get _totalValue => _products.fold(
+      0.0, (s, p) => s + (p.costPrice * p.totalStockPieces));
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isSmall = size.height < 600 || size.width < 400;
+    final isWide = size.width >= 900;
 
     return Column(
       children: [
+        // ── Header ──
         Padding(
-          padding: EdgeInsets.all(isSmall ? 10 : AppTheme.pad(context, 16)),
-          child: Column(
+          padding: EdgeInsets.fromLTRB(
+              isSmall ? 12 : AppTheme.pad(context, 16),
+              isSmall ? 12 : AppTheme.pad(context, 16),
+              isSmall ? 12 : AppTheme.pad(context, 16),
+              isSmall ? 8 : AppTheme.pad(context, 8)),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search products...',
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: isSmall ? 10 : 14),
-                      ),
-                      style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
-                      onChanged: (v) { _search = v; _load(); },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilterChip(
-                    label: Text('Low Stock', style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13))),
-                    selected: _lowStockOnly,
-                    onSelected: (v) { _lowStockOnly = v; _load(); },
-                    selectedColor: AppTheme.warning.withValues(alpha: 0.1),
-                    padding: EdgeInsets.symmetric(horizontal: isSmall ? 6 : 10),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton.filled(
-                    onPressed: () => _showForm(),
-                    icon: const Icon(Icons.add, size: 20),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Products',
+                        style: TextStyle(
+                            fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
+                            fontWeight: FontWeight.bold)),
+                    Text('$_totalProducts items in inventory',
+                        style: TextStyle(
+                            fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                            color: AppTheme.secondaryText(context))),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('\$${_totalValue.toStringAsFixed(0)}',
+                    style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryBright(context)),
+                ),
               ),
             ],
           ),
         ),
+        // ── Stat Chips ──
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+              isSmall ? 12 : AppTheme.pad(context, 16), 0,
+              isSmall ? 12 : AppTheme.pad(context, 16),
+              isSmall ? 8 : AppTheme.pad(context, 8)),
+          child: Row(
+            children: [
+              _statChip('$_inStock', 'In Stock', AppTheme.successBright(context)),
+              const SizedBox(width: 8),
+              _statChip('$_lowStock', 'Low', AppTheme.warningBright(context)),
+              const SizedBox(width: 8),
+              _statChip('$_outOfStock', 'Out', AppTheme.dangerBright(context)),
+            ],
+          ),
+        ),
+
+        // ── Search + Filter Bar ──
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+              isSmall ? 10 : AppTheme.pad(context, 16),
+              isSmall ? 10 : AppTheme.pad(context, 12),
+              isSmall ? 10 : AppTheme.pad(context, 16),
+              0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12, vertical: isSmall ? 10 : 14),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                      fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
+                  onChanged: (v) {
+                    _search = v;
+                    _load();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: _lowStockOnly
+                      ? AppTheme.warning
+                      : Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    _lowStockOnly = !_lowStockOnly;
+                    _load();
+                  },
+                  icon: Icon(
+                    Icons.warning_amber_rounded,
+                    size: 20,
+                    color: _lowStockOnly ? Colors.white : AppTheme.warning,
+                  ),
+                  tooltip: 'Low Stock',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  onPressed: () => _showForm(),
+                  icon: const Icon(Icons.add, size: 20, color: Colors.white),
+                  tooltip: 'Add Product',
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Product List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _products.isEmpty
-                  ? const Center(child: Text('No products found'))
+                  ? _emptyState()
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: isSmall ? 10 : AppTheme.pad(context, 16)),
-                        itemCount: _products.length,
-                        itemBuilder: (ctx, i) {
-                          final p = _products[i];
-                          return Card(
-                            margin: EdgeInsets.only(bottom: isSmall ? 6 : 8),
-                            child: Padding(
-                              padding: EdgeInsets.all(isSmall ? 10 : AppTheme.pad(context, 14)),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(p.name,
-                                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15))),
-                                        const SizedBox(height: 2),
-                                        Text('${p.categoryName ?? "No category"}',
-                                          style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), color: Colors.grey.shade500)),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Text('Cost: \$${p.costPrice.toStringAsFixed(2)}',
-                                              style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), color: Colors.grey.shade600)),
-                                            const SizedBox(width: 8),
-                                            Text('Price: \$${p.sellingPrice.toStringAsFixed(2)}',
-                                              style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13), fontWeight: FontWeight.w600)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: p.isLowStock ? AppTheme.danger.withValues(alpha: 0.1) : Colors.green.shade50,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text('${p.currentStock}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
-                                            color: p.isLowStock ? AppTheme.danger : Colors.black87,
-                                          )),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      PopupMenuButton(
-                                        padding: EdgeInsets.zero,
-                                        itemBuilder: (_) => [
-                                          const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                          const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppTheme.danger))),
-                                        ],
-                                        onSelected: (v) {
-                                          if (v == 'edit') _showForm(product: p);
-                                          if (v == 'delete') _delete(p);
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      child: isWide
+                          ? _wideGrid(isSmall)
+                          : _listView(isSmall),
                     ),
         ),
       ],
     );
   }
 
+  // ── Stat Chip ──
+  Widget _statChip(String value, String label, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.1);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(value,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  // ── Empty State ──
+  Widget _emptyState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.inventory_2_outlined,
+                size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
+          ),
+          const SizedBox(height: 16),
+          Text('No products found',
+              style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 18),
+                  fontWeight: FontWeight.w600,                  color: AppTheme.secondaryText(context))),
+                  const SizedBox(height: 6),
+                  Text('Add your first product to get started',
+              style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 13),
+                  color: AppTheme.secondaryText(context))),
+        ],
+      ),
+    );
+  }
+
+  // ── Wide Grid (laptop) ──
+  Widget _wideGrid(bool isSmall) {
+    return GridView.builder(
+      padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 2.4,
+      ),
+      itemCount: _products.length,
+      itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
+    );
+  }
+
+  // ── List View (mobile) ──
+  Widget _listView(bool isSmall) {
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(
+          isSmall ? 10 : AppTheme.pad(context, 16),
+          isSmall ? 8 : AppTheme.pad(context, 12),
+          isSmall ? 10 : AppTheme.pad(context, 16),
+          80),
+      itemCount: _products.length,
+      itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
+    );
+  }
+
+  // ── Product Card ──
+  Widget _productCard(Product p, bool isSmall) {
+    final inStock = p.totalStockPieces > 0;
+    final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
+    final out = p.totalStockPieces == 0;
+    final margin = isSmall ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(bottom: 10);
+
+    return Container(
+      margin: margin,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _showForm(product: p),
+          child: Padding(
+            padding: EdgeInsets.all(isSmall ? 10 : 14),
+            child: Row(
+              children: [
+                // ── Left: colored icon ──
+                Container(
+                  width: isSmall ? 44 : 52,
+                  height: isSmall ? 44 : 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: out
+                          ? [Colors.red.shade400, Colors.red.shade600]
+                          : isLow
+                              ? [Colors.orange.shade300, Colors.orange.shade500]
+                              : [AppTheme.success, Color(0xFF0D9E42)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      _categoryIcon(p.categoryName),
+                      color: Colors.white,
+                      size: isSmall ? 22 : 26,
+                    ),
+                  ),
+                ),
+                SizedBox(width: isSmall ? 10 : 14),
+
+                // ── Middle: info ──
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(p.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15))),
+                      const SizedBox(height: 3),
+                      if (p.categoryName != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(p.categoryName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: AppTheme.fontSize(context, isSmall ? 9 : 10),
+                                  color: AppTheme.primaryBright(context),
+                                  fontWeight: FontWeight.w500)),
+                        ),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          _priceTag('\$${p.sellingPrice.toStringAsFixed(2)}/pc',
+                              AppTheme.primaryBright(context), isSmall),
+                          if (p.sellsAsBox && p.boxSellingPrice != null)
+                            _priceTag(
+                                '\$${p.boxSellingPrice!.toStringAsFixed(2)}/box',
+                                AppTheme.blueBright(context),
+                                isSmall),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ── Right: stock + actions ──
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Stock badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: out
+                            ? AppTheme.danger.withValues(alpha: 0.1)
+                            : isLow
+                                ? AppTheme.warning.withValues(alpha: 0.1)
+                                : AppTheme.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: out
+                                  ? AppTheme.dangerBright(context)
+                                  : isLow
+                                      ? AppTheme.warningBright(context)
+                                      : AppTheme.successBright(context),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            out
+                                ? 'Out'
+                                : '${p.totalStockPieces} pc',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
+                                color: out
+                                    ? AppTheme.dangerBright(context)
+                                    : isLow
+                                        ? AppTheme.warningBright(context)
+                                        : AppTheme.successBright(context)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Action buttons
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
+                        const SizedBox(width: 4),
+                        _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Price Tag ──
+  Widget _priceTag(String text, Color color, bool isSmall) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
+              fontWeight: FontWeight.w600,
+              color: color)),
+    );
+  }
+
+  // ── Action Button ──
+  Widget _actionBtn(IconData icon, VoidCallback onTap, Color color, bool isSmall) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: EdgeInsets.all(isSmall ? 5 : 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: isSmall ? 16 : 17, color: color),
+      ),
+    );
+  }
+
+  IconData _categoryIcon(String? category) {
+    if (category == null) return Icons.inventory_2;
+    final lower = category.toLowerCase();
+    if (lower.contains('electronic')) return Icons.devices;
+    if (lower.contains('cloth') || lower.contains('fashion')) return Icons.checkroom;
+    if (lower.contains('food') || lower.contains('beverage')) return Icons.restaurant;
+    if (lower.contains('furniture')) return Icons.chair;
+    if (lower.contains('book')) return Icons.menu_book;
+    if (lower.contains('health') || lower.contains('beauty')) return Icons.spa;
+    if (lower.contains('sport')) return Icons.sports_basketball;
+    if (lower.contains('toy')) return Icons.toys;
+    if (lower.contains('auto') || lower.contains('car')) return Icons.directions_car;
+    return Icons.inventory_2;
+  }
+
+  // ── Show Form (unchanged logic, just cleaned up) ──
   void _showForm({Product? product}) {
     final nameCtrl = TextEditingController(text: product?.name ?? '');
-    final costCtrl = TextEditingController(text: product?.costPrice.toString() ?? '');
-    final priceCtrl = TextEditingController(text: product?.sellingPrice.toString() ?? '');
-    final stockCtrl = TextEditingController(text: product?.currentStock.toString() ?? '0');
-    final minCtrl = TextEditingController(text: product?.minimumStock.toString() ?? '5');
+    final costCtrl =
+        TextEditingController(text: product?.costPrice.toString() ?? '');
+    final priceCtrl =
+        TextEditingController(text: product?.sellingPrice.toString() ?? '');
+    final stockCtrl =
+        TextEditingController(text: product?.currentStock.toString() ?? '0');
+    final minCtrl =
+        TextEditingController(text: product?.minimumStock.toString() ?? '5');
+    final unitsPerBoxCtrl =
+        TextEditingController(text: product?.unitsPerBox.toString() ?? '1');
+    final stockBoxesCtrl =
+        TextEditingController(text: product?.stockBoxes.toString() ?? '0');
+    final boxCostCtrl =
+        TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
+    final boxPriceCtrl =
+        TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
+    String sellingUnit = product?.sellingUnit ?? 'piece';
+    String? selectedCategoryId = product?.categoryId;
+
+    void recalcPieces() {
+      final boxes = int.tryParse(stockBoxesCtrl.text) ?? 0;
+      final upb = int.tryParse(unitsPerBoxCtrl.text) ?? 1;
+      stockCtrl.text = (boxes * upb).toString();
+    }
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(product != null ? 'Edit Product' : 'Add Product'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
-              const SizedBox(height: 12),
-              TextField(controller: costCtrl, decoration: const InputDecoration(labelText: 'Cost Price'), keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Selling Price'), keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              TextField(controller: stockCtrl, decoration: const InputDecoration(labelText: 'Stock'), keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              TextField(controller: minCtrl, decoration: const InputDecoration(labelText: 'Min Stock'), keyboardType: TextInputType.number),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                    product != null ? Icons.edit : Icons.add,
+                    color: AppTheme.primary,
+                    size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(product != null ? 'Edit Product' : 'Add Product',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final data = {
-                'name': nameCtrl.text,
-                'categoryId': product?.categoryId ?? '',
-                'costPrice': double.tryParse(costCtrl.text) ?? 0,
-                'sellingPrice': double.tryParse(priceCtrl.text) ?? 0,
-                'currentStock': int.tryParse(stockCtrl.text) ?? 0,
-                'minimumStock': int.tryParse(minCtrl.text) ?? 5,
-              };
-              if (product != null) {
-                await ApiService.updateProduct(product.id, data);
-              } else {
-                await ApiService.createProduct(data);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-              _load();
-            },
-            child: Text(product != null ? 'Update' : 'Create'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _field(nameCtrl, 'Product Name *'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  value: selectedCategoryId,
+                  items: _categories
+                      .map((c) =>
+                          DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .toList(),
+                  onChanged: (v) =>
+                      setDialogState(() => selectedCategoryId = v),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Selling Unit'),
+                  value: sellingUnit,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'piece', child: Text('Piece')),
+                    DropdownMenuItem(value: 'box', child: Text('Box')),
+                  ],
+                  onChanged: (v) {
+                    setDialogState(() {
+                      sellingUnit = v ?? 'piece';
+                      if (sellingUnit == 'box') recalcPieces();
+                    });
+                  },
+                ),
+                if (sellingUnit != 'piece') ...[
+                  const SizedBox(height: 12),
+                  _field(unitsPerBoxCtrl, 'Units Per Box',
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) {
+                    setDialogState(() {});
+                    recalcPieces();
+                  }),
+                ],
+                const SizedBox(height: 12),
+                _field(costCtrl, 'Cost Price (per piece)',
+                    keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                _field(priceCtrl, 'Selling Price (per piece)',
+                    keyboardType: TextInputType.number),
+                if (sellingUnit != 'piece') ...[
+                  const SizedBox(height: 12),
+                  _field(boxCostCtrl, 'Box Cost Price',
+                      keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _field(boxPriceCtrl, 'Box Selling Price',
+                      keyboardType: TextInputType.number),
+                  const SizedBox(height: 12),
+                  _field(stockBoxesCtrl, 'Stock (Boxes)',
+                      keyboardType: TextInputType.number, onChanged: (_) {
+                    setDialogState(() {});
+                    recalcPieces();
+                  }),
+                ],
+                const SizedBox(height: 12),
+                _field(stockCtrl,
+                    sellingUnit == 'box'
+                        ? 'Stock (Auto: Boxes × Units/Box)'
+                        : 'Stock (Pieces)',
+                    keyboardType: TextInputType.number,
+                    readOnly: sellingUnit == 'box'),
+                const SizedBox(height: 12),
+                _field(minCtrl, 'Min Stock', keyboardType: TextInputType.number),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Product name is required.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                if (selectedCategoryId == null ||
+                    selectedCategoryId!.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Please select a category.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                if (double.tryParse(costCtrl.text) == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Valid cost price is required.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                if (double.tryParse(priceCtrl.text) == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Valid selling price is required.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                final data = {
+                  'name': nameCtrl.text.trim(),
+                  'categoryId': selectedCategoryId!,
+                  'costPrice': double.tryParse(costCtrl.text) ?? 0,
+                  'sellingPrice': double.tryParse(priceCtrl.text) ?? 0,
+                  'minimumStock': int.tryParse(minCtrl.text) ?? 5,
+                  'sellingUnit': sellingUnit,
+                  'unitsPerBox': int.tryParse(unitsPerBoxCtrl.text) ?? 1,
+                  'stockBoxes': int.tryParse(stockBoxesCtrl.text) ?? 0,
+                  'currentStock': sellingUnit == 'box'
+                      ? 0
+                      : (int.tryParse(stockCtrl.text) ?? 0),
+                  'boxCostPrice': double.tryParse(boxCostCtrl.text) ?? 0,
+                  'boxSellingPrice': double.tryParse(boxPriceCtrl.text) ?? 0,
+                };
+                try {
+                  if (product != null) {
+                    await ApiService.updateProduct(product.id, data);
+                  } else {
+                    await ApiService.createProduct(data);
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  _load();
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: AppTheme.danger));
+                  }
+                }
+              },
+              child: Text(product != null ? 'Update' : 'Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _field(TextEditingController ctrl, String label,
+      {TextInputType? keyboardType, bool readOnly = false, Function(String)? onChanged}) {
+    return TextField(
+      controller: ctrl,
+      readOnly: readOnly,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Theme.of(context).scaffoldBackgroundColor,
       ),
     );
   }
@@ -210,12 +708,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
         title: const Text('Delete Product'),
         content: Text('Delete "${p.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
-            onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete')),
         ],
       ),
     );
-    if (confirm == true) { await ApiService.deleteProduct(p.id); _load(); }
+    if (confirm == true) {
+      await ApiService.deleteProduct(p.id);
+      _load();
+    }
   }
 }

@@ -87,10 +87,18 @@ router.get('/inventory', authenticate, requireActiveTenant, async (req, res) => 
 
     const products = await Product.find({ tenantId, isActive: true }).populate('categoryId', 'name');
     const totalProducts = products.length;
-    const totalStockValue = products.reduce((sum, p) => sum + (p.costPrice * p.currentStock), 0);
-    const totalRetailValue = products.reduce((sum, p) => sum + (p.sellingPrice * p.currentStock), 0);
+    const totalStockValue = products.reduce((sum, p) => {
+      const pieceValue = p.costPrice * p.currentStock;
+      const boxValue = (p.boxCostPrice || p.costPrice * (p.unitsPerBox || 1)) * (p.stockBoxes || 0);
+      return sum + pieceValue + boxValue;
+    }, 0);
+    const totalRetailValue = products.reduce((sum, p) => {
+      const pieceValue = p.sellingPrice * p.currentStock;
+      const boxValue = (p.boxSellingPrice || p.sellingPrice * (p.unitsPerBox || 1)) * (p.stockBoxes || 0);
+      return sum + pieceValue + boxValue;
+    }, 0);
     const lowStockProducts = products.filter(p => p.currentStock <= p.minimumStock);
-    const outOfStock = products.filter(p => p.currentStock === 0);
+    const outOfStock = products.filter(p => p.currentStock === 0 && (!p.stockBoxes || p.stockBoxes === 0));
 
     res.json({
       success: true,

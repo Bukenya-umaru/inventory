@@ -16,6 +16,11 @@ const purchaseSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  purchaseUnit: {
+    type: String,
+    enum: ['piece', 'box'],
+    default: 'box'
+  },
   unitCost: {
     type: Number,
     required: true,

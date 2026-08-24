@@ -103,7 +103,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           children: [
             Text(value, style: TextStyle(fontSize: AppTheme.fontSize(context, 18), fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: Colors.grey.shade500)),
+            Text(label, style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.secondaryText(context))),
           ],
         ),
       ),

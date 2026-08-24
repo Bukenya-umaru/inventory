@@ -48,6 +48,29 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'piece'
   },
+  sellingUnit: {
+    type: String,
+    enum: ['piece', 'box'],
+    default: 'piece'
+  },
+  unitsPerBox: {
+    type: Number,
+    default: 1,
+    min: 1
+  },
+  stockBoxes: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  boxSellingPrice: {
+    type: Number,
+    min: 0
+  },
+  boxCostPrice: {
+    type: Number,
+    min: 0
+  },
   isActive: {
     type: Boolean,
     default: true

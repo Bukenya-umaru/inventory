@@ -43,7 +43,7 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 // POST /api/products
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
-    const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit } = req.body;
+    const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit, sellingUnit, unitsPerBox, stockBoxes, boxSellingPrice, boxCostPrice } = req.body;
 
     if (!name || !categoryId || costPrice === undefined || sellingPrice === undefined) {
       return res.status(400).json({ success: false, message: 'Required fields missing.' });
@@ -68,6 +68,11 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       currentStock: currentStock || 0,
       minimumStock: minimumStock || 5,
       unit: unit || 'piece',
+      sellingUnit: sellingUnit || 'piece',
+      unitsPerBox: unitsPerBox || 1,
+      stockBoxes: stockBoxes || 0,
+      boxSellingPrice: boxSellingPrice,
+      boxCostPrice: boxCostPrice,
       createdBy: req.userId
     });
 

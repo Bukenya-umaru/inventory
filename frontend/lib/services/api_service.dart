@@ -363,6 +363,24 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  // ── Purchases (Add Stock) ──
+  static Future<Map<String, dynamic>> getPurchases() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/purchases'),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> createPurchase(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/purchases'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
   // ── Reports ──
   static Future<Map<String, dynamic>> getProfitReport({String period = 'daily'}) async {
     final response = await http.get(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_provider.dart';
+import 'services/theme_provider.dart';
 import 'utils/theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/developer/developer_home.dart';
@@ -24,13 +25,19 @@ class InventoryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider()..init(),
-      child: MaterialApp(
-        title: 'Inventory Management',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.theme,
-        home: const AuthGate(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) => MaterialApp(
+          title: 'Inventory Management',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.theme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: const AuthGate(),
         // Allow system font scaling (accessibility) but cap at 1.5x
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
@@ -45,6 +52,7 @@ class InventoryApp extends StatelessWidget {
             child: child!,
           );
         },
+      ),
       ),
     );
   }

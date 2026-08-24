@@ -34,6 +34,11 @@ const saleSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  saleUnit: {
+    type: String,
+    enum: ['piece', 'box'],
+    default: 'piece'
+  },
   paymentMethod: {
     type: String,
     enum: ['cash', 'card', 'transfer', 'credit'],

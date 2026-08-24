@@ -194,7 +194,7 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textColor(context))),
             const SizedBox(height: 12),
             child,
           ],
@@ -217,7 +217,7 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
           const SizedBox(height: 6),
           Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          Text(label, style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
         ],
       ),
     );
@@ -230,8 +230,8 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
         children: [
           Icon(icon, size: 18, color: AppTheme.primary),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600))),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context)))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
         ],
       ),
     );
@@ -242,8 +242,8 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: isWarning ? AppTheme.warning : isDanger ? AppTheme.danger : Colors.grey.shade600))),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isWarning ? AppTheme.warning : isDanger ? AppTheme.danger : Colors.black87)),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: isWarning ? AppTheme.warning : isDanger ? AppTheme.danger : AppTheme.secondaryText(context)))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isWarning ? AppTheme.warning : isDanger ? AppTheme.danger : AppTheme.textColor(context))),
         ],
       ),
     );

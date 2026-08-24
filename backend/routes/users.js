@@ -110,7 +110,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Default permissions for admin-created employees
     const defaultPermissions = permissions || [
-      'record_sales', 'record_purchases', 'record_damages',
+      'manage_categories', 'record_sales', 'record_purchases', 'record_damages',
       'view_inventory', 'view_transactions', 'view_reports'
     ];
 

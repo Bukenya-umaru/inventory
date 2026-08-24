@@ -6,6 +6,7 @@ class Sale {
   final double costPrice;
   final double totalAmount;
   final double profit;
+  final String saleUnit;
   final String paymentMethod;
   final String? customerName;
   final String? recordedByName;
@@ -19,6 +20,7 @@ class Sale {
     required this.costPrice,
     required this.totalAmount,
     required this.profit,
+    this.saleUnit = 'piece',
     this.paymentMethod = 'cash',
     this.customerName,
     this.recordedByName,
@@ -36,6 +38,7 @@ class Sale {
       costPrice: (json['costPrice'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
       profit: (json['profit'] ?? 0).toDouble(),
+      saleUnit: json['saleUnit'] ?? 'piece',
       paymentMethod: json['paymentMethod'] ?? 'cash',
       customerName: json['customerName'],
       recordedByName: json['recordedBy'] is Map

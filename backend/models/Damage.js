@@ -16,6 +16,11 @@ const damageSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  damageUnit: {
+    type: String,
+    enum: ['piece', 'box'],
+    default: 'piece'
+  },
   reason: {
     type: String,
     required: true

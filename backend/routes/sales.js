@@ -39,7 +39,7 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 // POST /api/sales - Record a sale
 router.post('/', authenticate, requireActiveTenant, requirePermission('record_sales'), async (req, res) => {
   try {
-    const { productId, quantity, unitPrice, paymentMethod, customerName, notes } = req.body;
+    const { productId, quantity, unitPrice, saleUnit: reqSaleUnit, paymentMethod, customerName, notes } = req.body;
 
     if (!productId || !quantity) {
       return res.status(400).json({ success: false, message: 'Product and quantity required.' });
@@ -52,22 +52,38 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    if (product.currentStock < quantity) {
-      return res.status(400).json({ success: false, message: `Insufficient stock. Available: ${product.currentStock}` });
+    // Determine sale unit: default to product's sellingUnit if not specified
+    let saleUnit = reqSaleUnit || product.sellingUnit || 'piece';
+    if (!['piece', 'box'].includes(saleUnit)) saleUnit = 'piece';
+
+    let price, costPrice, availableStock, boxOpened = false;
+    if (saleUnit === 'box') {
+      price = unitPrice || product.boxSellingPrice || (product.sellingPrice * (product.unitsPerBox || 1));
+      costPrice = product.boxCostPrice || (product.costPrice * (product.unitsPerBox || 1));
+      availableStock = product.stockBoxes || 0;
+    } else {
+      price = unitPrice || product.sellingPrice;
+      costPrice = product.costPrice;
+      // Total available pieces = loose pieces + pieces inside full boxes
+      availableStock = (product.currentStock || 0) + ((product.stockBoxes || 0) * (product.unitsPerBox || 1));
     }
 
-    const price = unitPrice || product.sellingPrice;
+    if (availableStock < quantity) {
+      return res.status(400).json({ success: false, message: `Insufficient stock. Available: ${availableStock} ${saleUnit}s` });
+    }
+
     const totalAmount = price * quantity;
-    const profit = (price - product.costPrice) * quantity;
+    const profit = (price - costPrice) * quantity;
 
     const sale = new Sale({
       tenantId,
       productId,
       quantity,
       unitPrice: price,
-      costPrice: product.costPrice,
+      costPrice,
       totalAmount,
       profit,
+      saleUnit,
       paymentMethod: paymentMethod || 'cash',
       customerName,
       notes,
@@ -76,7 +92,32 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
     await sale.save();
 
     // Deduct stock
-    product.currentStock -= quantity;
+    if (saleUnit === 'box') {
+      product.stockBoxes -= quantity;
+    } else {
+      let piecesNeeded = quantity;
+      // First use loose pieces
+      const looseAvailable = product.currentStock || 0;
+      if (looseAvailable >= piecesNeeded) {
+        product.currentStock -= piecesNeeded;
+      } else {
+        // Use all loose pieces first
+        piecesNeeded -= looseAvailable;
+        product.currentStock = 0;
+        // Open full boxes to get more pieces
+        while (piecesNeeded > 0 && (product.stockBoxes || 0) > 0) {
+          product.stockBoxes -= 1;
+          const piecesInBox = product.unitsPerBox || 1;
+          if (piecesInBox >= piecesNeeded) {
+            product.currentStock = piecesInBox - piecesNeeded;
+            piecesNeeded = 0;
+          } else {
+            piecesNeeded -= piecesInBox;
+          }
+          boxOpened = true;
+        }
+      }
+    }
     await product.save();
 
     await createAuditLog({
@@ -84,21 +125,23 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
       eventType: 'sale_recorded',
       userId: req.userId,
       userRole: req.user.role,
-      action: `Recorded sale: ${quantity}x ${product.name}`,
-      details: { productName: product.name, quantity, totalAmount, profit },
+      action: `Recorded sale: ${quantity}x ${product.name} (${saleUnit})`,
+      details: { productName: product.name, quantity, saleUnit, totalAmount, profit },
       ipAddress: req.ip
     });
 
     res.status(201).json({
       success: true,
-      message: 'Sale recorded.',
+      message: boxOpened ? 'Sale recorded. A box was opened to fulfill piece order.' : 'Sale recorded.',
       sale: {
         id: sale._id,
         productName: product.name,
         quantity,
+        saleUnit,
         unitPrice: price,
         totalAmount,
         profit,
+        boxOpened,
         saleDate: sale.saleDate
       }
     });

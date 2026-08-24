@@ -33,7 +33,7 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 // POST /api/damages - Report damaged goods
 router.post('/', authenticate, requireActiveTenant, requirePermission('record_damages'), async (req, res) => {
   try {
-    const { productId, quantity, reason } = req.body;
+    const { productId, quantity, damageUnit: reqDamageUnit, reason } = req.body;
 
     if (!productId || !quantity || !reason) {
       return res.status(400).json({ success: false, message: 'Product, quantity, and reason required.' });
@@ -46,24 +46,60 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    if (product.currentStock < quantity) {
-      return res.status(400).json({ success: false, message: `Insufficient stock. Available: ${product.currentStock}` });
+    // Determine damage unit
+    let damageUnit = reqDamageUnit || product.sellingUnit || 'piece';
+    if (!['piece', 'box'].includes(damageUnit)) damageUnit = 'piece';
+
+    let costPrice, availableStock;
+    if (damageUnit === 'box') {
+      costPrice = product.boxCostPrice || (product.costPrice * (product.unitsPerBox || 1));
+      availableStock = product.stockBoxes || 0;
+    } else {
+      costPrice = product.costPrice;
+      // Total available pieces = loose pieces + pieces inside full boxes
+      availableStock = (product.currentStock || 0) + ((product.stockBoxes || 0) * (product.unitsPerBox || 1));
     }
 
-    const estimatedLoss = product.costPrice * quantity;
+    if (availableStock < quantity) {
+      return res.status(400).json({ success: false, message: `Insufficient stock. Available: ${availableStock} ${damageUnit}s` });
+    }
+
+    const estimatedLoss = costPrice * quantity;
 
     const damage = new Damage({
       tenantId,
       productId,
       quantity,
+      damageUnit,
       reason,
       estimatedLoss,
       reportedBy: req.userId
     });
     await damage.save();
 
-    // Deduct stock
-    product.currentStock -= quantity;
+    // Deduct stock — for pieces, open boxes if loose stock runs out
+    if (damageUnit === 'box') {
+      product.stockBoxes -= quantity;
+    } else {
+      let piecesNeeded = quantity;
+      const looseAvailable = product.currentStock || 0;
+      if (looseAvailable >= piecesNeeded) {
+        product.currentStock -= piecesNeeded;
+      } else {
+        piecesNeeded -= looseAvailable;
+        product.currentStock = 0;
+        while (piecesNeeded > 0 && (product.stockBoxes || 0) > 0) {
+          product.stockBoxes -= 1;
+          const piecesInBox = product.unitsPerBox || 1;
+          if (piecesInBox >= piecesNeeded) {
+            product.currentStock = piecesInBox - piecesNeeded;
+            piecesNeeded = 0;
+          } else {
+            piecesNeeded -= piecesInBox;
+          }
+        }
+      }
+    }
     await product.save();
 
     await createAuditLog({
@@ -72,8 +108,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
       severity: 'warning',
       userId: req.userId,
       userRole: req.user.role,
-      action: `Reported damage: ${quantity}x ${product.name}`,
-      details: { productName: product.name, quantity, reason, estimatedLoss },
+      action: `Reported damage: ${quantity}x ${product.name} (${damageUnit})`,
+      details: { productName: product.name, quantity, damageUnit, reason, estimatedLoss },
       ipAddress: req.ip
     });
 
@@ -84,6 +120,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
         id: damage._id,
         productName: product.name,
         quantity,
+        damageUnit,
         reason,
         estimatedLoss,
         reportDate: damage.reportDate

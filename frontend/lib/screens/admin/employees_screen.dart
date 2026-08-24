@@ -135,7 +135,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                       children: [
                                         Text(e.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
                                         Text('${e.email} • ${e.permissions.length} permissions',
-                                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
+                                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
                                       ],
                                     ),
                                   ),
@@ -157,18 +157,18 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                        color: isRevealed ? Colors.green.shade50 : Colors.grey.shade100,
+                                        color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         children: [
                                           Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
-                                            size: 16, color: isRevealed ? AppTheme.success : Colors.grey),
+                                            size: 16, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(isRevealed ? _revealedPassword! : '••••••••',
                                               style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
-                                                color: isRevealed ? Colors.black87 : Colors.grey)),
+                                                color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
                                           ),
                                           if (isRevealed)
                                             Text('$_countdown s',
@@ -294,7 +294,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Employee: ${employee.name}'),
-            Text('Email: ${employee.email}', style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: Colors.grey.shade500)),
+            Text('Email: ${employee.email}', style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.secondaryText(context))),
             const SizedBox(height: 12),
             const Text('Deleting this employee will:', style: TextStyle(fontWeight: FontWeight.w500)),
             const Text('• Remove all access to the system\n• Preserve transaction history (for audit)\n• Notify Admin of deletion'),

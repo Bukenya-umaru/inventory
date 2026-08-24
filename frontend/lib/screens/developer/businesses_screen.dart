@@ -447,7 +447,7 @@ class _TenantCard extends StatelessWidget {
                               const TextStyle(fontWeight: FontWeight.w600)),
                       Text(tenant.email,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade500)),
+                              fontSize: 12, color: AppTheme.secondaryText(context))),
                     ],
                   ),
                 ),
@@ -469,11 +469,11 @@ class _TenantCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                _info('Owner', tenant.ownerName),
+                _info(context, 'Owner', tenant.ownerName),
                 const SizedBox(width: 16),
-                _info('Type', tenant.businessType),
+                _info(context, 'Type', tenant.businessType),
                 const SizedBox(width: 16),
-                _info('Users', '${tenant.userCount}'),
+                _info(context, 'Users', '${tenant.userCount}'),
                 const Spacer(),
                 // Branding button
                 IconButton(
@@ -523,12 +523,12 @@ class _TenantCard extends StatelessWidget {
     );
   }
 
-  Widget _info(String label, String value) {
+  Widget _info(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+            style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
         Text(value,
             style:
                 const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),

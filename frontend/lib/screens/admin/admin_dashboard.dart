@@ -151,7 +151,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     Text('\$$totalStock', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primary)),
                     const SizedBox(height: 4),
-                    Text('Stock Value', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
+                    Text('Stock Value', style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context))),
                     const SizedBox(height: 16),
                     _miniStat('Quantity Ordered', products, Icons.shopping_cart),
                   ],
@@ -257,10 +257,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text('\$$totalStock', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primary)),
-              const SizedBox(height: 4),
-              Text('Stock Value', style: TextStyle(fontSize: 14, color: Colors.grey.shade500)),
-              const SizedBox(height: 12),
-              _miniStat('Quantity Ordered', products, Icons.shopping_cart),
+              const SizedBox(height: 4),            Text('Stock Value', style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context))),
+                    const SizedBox(height: 12),
+                    _miniStat('Quantity Ordered', products, Icons.shopping_cart),
             ],
           ),
         ),
@@ -290,7 +289,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textColor(context))),
             const SizedBox(height: 12),
             child,
           ],
@@ -313,7 +312,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 6),
           Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          Text(label, style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
         ],
       ),
     );
@@ -326,8 +325,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           Icon(icon, size: 18, color: AppTheme.primary),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600))),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context)))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
         ],
       ),
     );
@@ -338,8 +337,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: isWarning ? AppTheme.warning : Colors.grey.shade600))),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isWarning ? AppTheme.warning : Colors.black87)),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: isWarning ? AppTheme.warning : AppTheme.secondaryText(context)))),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isWarning ? AppTheme.warning : AppTheme.textColor(context))),
         ],
       ),
     );
@@ -356,7 +355,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600))),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context)))),
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         ],
       ),
@@ -367,9 +366,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade500),
+        Icon(icon, size: 16, color: AppTheme.secondaryText(context)),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+        Text(label, style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context))),
         const SizedBox(width: 8),
         Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
       ],
@@ -380,7 +379,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: isHeader
-          ? BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(4))
+          ? BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(4))
           : null,
       child: Row(
         children: cells.map((c) => Expanded(
@@ -388,7 +387,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isHeader ? FontWeight.w600 : FontWeight.w400,
-              color: isHeader ? Colors.grey.shade700 : Colors.black87,
+              color: isHeader ? AppTheme.secondaryText(context) : AppTheme.textColor(context),
             ),
           ),
         )).toList(),

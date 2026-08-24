@@ -29,7 +29,7 @@ class EmployeeDashboard extends StatelessWidget {
           children: [
             Expanded(
               flex: 3,
-              child: _sectionCard(
+              child: _sectionCard(context,
                 title: 'Welcome, ${auth.user?.name ?? 'Employee'}!',
                 child: Row(
                   children: [
@@ -47,9 +47,9 @@ class EmployeeDashboard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(branding?.businessName ?? 'Business',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
                           Text('Welcome back, ${auth.user?.name}!',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+                            style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 14)),
                         ],
                       ),
                     ),
@@ -60,7 +60,7 @@ class EmployeeDashboard extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               flex: 2,
-              child: _sectionCard(
+              child: _sectionCard(context,
                 title: 'Quick Actions',
                 child: Wrap(
                   spacing: 8,
@@ -88,7 +88,7 @@ class EmployeeDashboard extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _sectionCard(
+        _sectionCard(context,
           title: 'Welcome, ${auth.user?.name ?? 'Employee'}!',
           child: Column(
             children: [
@@ -102,14 +102,14 @@ class EmployeeDashboard extends StatelessWidget {
                 CircleAvatar(radius: 20, backgroundColor: AppTheme.success, child: const Icon(Icons.person, color: Colors.white)),
               const SizedBox(height: 12),
               Text(branding?.businessName ?? 'Business',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textColor(context))),
               Text('Welcome back, ${auth.user?.name}!',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+                style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 14)),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        _sectionCard(
+        _sectionCard(context,
           title: 'Quick Actions',
           child: Wrap(
             spacing: 12,
@@ -130,14 +130,14 @@ class EmployeeDashboard extends StatelessWidget {
     );
   }
 
-  Widget _sectionCard({required String title, required Widget child}) {
+  Widget _sectionCard(BuildContext context, {required String title, required Widget child}) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textColor(context))),
             const SizedBox(height: 12),
             child,
           ],

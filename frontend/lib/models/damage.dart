@@ -2,6 +2,7 @@ class Damage {
   final String id;
   final String? productName;
   final int quantity;
+  final String damageUnit;
   final String reason;
   final double estimatedLoss;
   final String? reportedByName;
@@ -11,6 +12,7 @@ class Damage {
     required this.id,
     this.productName,
     required this.quantity,
+    this.damageUnit = 'piece',
     required this.reason,
     required this.estimatedLoss,
     this.reportedByName,
@@ -24,6 +26,7 @@ class Damage {
           ? (json['productId'] as Map)['name']
           : json['productName'],
       quantity: json['quantity'] ?? 0,
+      damageUnit: json['damageUnit'] ?? 'piece',
       reason: json['reason'] ?? '',
       estimatedLoss: (json['estimatedLoss'] ?? 0).toDouble(),
       reportedByName: json['reportedBy'] is Map

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 
 /// Breakpoint width: screens wider than this show the permanent sidebar.
@@ -89,6 +90,7 @@ class _DrawerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final branding = auth.branding;
 
     return SafeArea(
@@ -186,38 +188,6 @@ class _DrawerContent extends StatelessWidget {
               ),
             ),
           ),
-          // Logout
-          Container(
-            color: AppTheme.sidebarBg,
-            padding: EdgeInsets.symmetric(horizontal: isSmall ? 12 : 14),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => auth.logout(),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isSmall ? 12 : 14,
-                    vertical: isSmall ? 10 : 12,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.logout, color: Colors.grey, size: 20),
-                      SizedBox(width: isSmall ? 10 : 12),
-                      Text(
-                        'Logout',
-                        style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontWeight: FontWeight.w500,
-                            fontSize: AppTheme.fontSize(context, 14)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
           SizedBox(height: isSmall ? 8 : 12),
         ],
       ),
@@ -253,7 +223,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
     if (isWide) {
       // Wide screen: permanent sidebar + body
       return Scaffold(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.surfaceColor(context),
         body: Row(
           children: [
             AppSidebar(
@@ -263,9 +233,9 @@ class ResponsiveNavWrapper extends StatelessWidget {
             ),
             Expanded(
               child: Scaffold(
-                backgroundColor: AppTheme.surface,
+                backgroundColor: AppTheme.surfaceColor(context),
                 appBar: appBar ?? AppBar(
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppTheme.appBarColor(context),
                   elevation: 0,
                   surfaceTintColor: Colors.transparent,
                   title: Row(
@@ -274,18 +244,15 @@ class ResponsiveNavWrapper extends StatelessWidget {
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, 18),
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87)),
+                          color: AppTheme.textColor(context))),
                     ],
                   ),
                   actions: [
                     IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.grey),
+                      icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
                       onPressed: () {},
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.settings_outlined, color: Colors.grey),
-                      onPressed: () {},
-                    ),
+                    _SettingsMenu(),
                     const SizedBox(width: 8),
                   ],
                 ),
@@ -306,6 +273,72 @@ class ResponsiveNavWrapper extends StatelessWidget {
         items: items,
       ),
       body: body,
+    );
+  }
+}
+
+/// Settings menu shown as a popup from the AppBar settings icon.
+class _SettingsMenu extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      icon: Icon(Icons.settings_outlined, color: AppTheme.mutedIcon(context)),
+      onSelected: (value) {
+        if (value == 'toggle_theme') {
+          themeProvider.toggle();
+        } else if (value == 'logout') {
+          auth.logout();
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem<String>(
+          value: 'toggle_theme',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                themeProvider.isDark ? Icons.light_mode : Icons.dark_mode,
+                size: 20,
+                color: themeProvider.isDark ? Colors.amber : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                themeProvider.isDark ? 'Light Mode' : 'Dark Mode',
+                style: TextStyle(fontSize: AppTheme.fontSize(context, 14)),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 40,
+                child: Switch(
+                  value: themeProvider.isDark,
+                  onChanged: (_) => themeProvider.toggle(),
+                  activeColor: AppTheme.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(Icons.logout, size: 20, color: AppTheme.danger),
+              const SizedBox(width: 12),
+              Text('Logout',
+                style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 14),
+                  color: AppTheme.danger)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

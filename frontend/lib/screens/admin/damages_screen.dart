@@ -45,7 +45,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Damage Reports', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
-                    Text('Total loss: \$${totalLoss.toStringAsFixed(2)}', style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: Colors.grey.shade500)),
+                    Text('Total loss: \$${totalLoss.toStringAsFixed(2)}', style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
                   ],
                 ),
               ),
@@ -69,12 +69,10 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       child: ListTile(
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
                         leading: const Icon(Icons.warning_amber, color: AppTheme.warning),
                         title: Text(d.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
-                        subtitle: Text(d.reason, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        subtitle: Text('${d.damageUnit == 'box' ? 'Box' : 'Piece'}: ${d.reason}', maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -98,6 +96,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
 
   void _showReport() {
     Product? selectedProduct;
+    String damageUnit = 'piece';
     final qtyCtrl = TextEditingController();
     final reasonCtrl = TextEditingController();
 
@@ -112,13 +111,64 @@ class _DamagesScreenState extends State<DamagesScreen> {
               children: [
                 DropdownButtonFormField<Product>(
                   decoration: const InputDecoration(labelText: 'Product'),
-                  items: _products.map((p) => DropdownMenuItem(value: p,
-                    child: Text('${p.name} (Stock: ${p.currentStock})'))).toList(),
-                  onChanged: (v) => setDialogState(() => selectedProduct = v),
+                  items: _products.map((p) {
+                    String stockInfo = p.sellsAsBox
+                        ? '${p.stockBoxes} bx, ${p.currentStock} pc'
+                        : '${p.currentStock} pc';
+                    return DropdownMenuItem(value: p,
+                      child: Text('${p.name} ($stockInfo)'));
+                  }).toList(),
+                  onChanged: (v) {
+                    setDialogState(() {
+                      selectedProduct = v;
+                      if (v != null) damageUnit = 'piece';
+                    });
+                  },
                 ),
+                if (selectedProduct == null || selectedProduct!.sellsAsBox) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Damage Unit'),
+                    value: (selectedProduct != null && !selectedProduct!.sellsAsBox) ? 'piece' : damageUnit,
+                    items: const [
+                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
+                      DropdownMenuItem(value: 'box', child: Text('Full Box')),
+                    ],
+                    onChanged: (v) => setDialogState(() => damageUnit = v ?? 'piece'),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setDialogState(() {})),
+                // Box opening warning
+                if (damageUnit == 'piece' && selectedProduct != null &&
+                    selectedProduct!.sellsAsBox &&
+                    !selectedProduct!.hasLoosePieces &&
+                    selectedProduct!.hasFullBoxes &&
+                    (int.tryParse(qtyCtrl.text) ?? 0) > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber, size: 16, color: AppTheme.warning),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No loose pieces. A box will be opened (${selectedProduct!.unitsPerBox} pc/box).',
+                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: 'Reason'),
                   maxLines: 3),
@@ -134,6 +184,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
                 await ApiService.createDamage({
                   'productId': selectedProduct!.id,
                   'quantity': int.tryParse(qtyCtrl.text) ?? 0,
+                  'damageUnit': damageUnit,
                   'reason': reasonCtrl.text,
                 });
                 if (ctx.mounted) Navigator.pop(ctx);
