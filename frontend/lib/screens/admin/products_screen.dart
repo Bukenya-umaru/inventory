@@ -3,6 +3,7 @@ import '../../services/api_service.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
+import '../../utils/currency.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -94,7 +95,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text('\$${_totalValue.toStringAsFixed(0)}',
+                child: Text(Currency.formatWhole(_totalValue),
                     style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
                         fontWeight: FontWeight.bold,
@@ -365,11 +366,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
-                          _priceTag('\$${p.sellingPrice.toStringAsFixed(2)}/pc',
+                          _priceTag('${Currency.format(p.sellingPrice)}/pc',
                               AppTheme.primaryBright(context), isSmall),
                           if (p.sellsAsBox && p.boxSellingPrice != null)
                             _priceTag(
-                                '\$${p.boxSellingPrice!.toStringAsFixed(2)}/box',
+                                '${Currency.format(p.boxSellingPrice!)}/box',
                                 AppTheme.blueBright(context),
                                 isSmall),
                         ],

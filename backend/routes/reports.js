@@ -80,6 +80,199 @@ router.get('/profit', authenticate, requireActiveTenant, requirePermission('view
   }
 });
 
+// GET /api/reports/detailed - Detailed report with sales and damages lists
+router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
+  try {
+    const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
+    const { period = 'daily', startDate, endDate } = req.query;
+
+    const today = new Date();
+    let start, end;
+
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+    } else if (period === 'daily') {
+      start = new Date(today);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(today);
+      end.setHours(23, 59, 59, 999);
+    } else if (period === 'weekly') {
+      start = new Date(today);
+      start.setDate(today.getDate() - today.getDay());
+      start.setHours(0, 0, 0, 0);
+      end = new Date(today);
+      end.setHours(23, 59, 59, 999);
+    } else if (period === 'monthly') {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (period === 'yearly') {
+      start = new Date(today.getFullYear(), 0, 1);
+      end = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+    }
+
+    const sales = await Sale.find({ tenantId, saleDate: { $gte: start, $lte: end } })
+      .populate('productId', 'name')
+      .populate('recordedBy', 'name')
+      .sort({ saleDate: -1 });
+
+    const damages = await Damage.find({ tenantId, reportDate: { $gte: start, $lte: end } })
+      .populate('productId', 'name')
+      .populate('reportedBy', 'name')
+      .sort({ reportDate: -1 });
+
+    const products = await Product.find({ tenantId, isActive: true }).populate('categoryId', 'name');
+
+    // Build a map of all products with full details
+    const allProductsMap = {};
+    products.forEach(p => {
+      const name = p.name;
+      allProductsMap[name] = {
+        id: p._id,
+        name: p.name,
+        category: p.categoryId?.name || '',
+        costPrice: p.costPrice,
+        sellingPrice: p.sellingPrice,
+        currentStock: p.currentStock,
+        stockBoxes: p.stockBoxes,
+        unitsPerBox: p.unitsPerBox,
+        sellingUnit: p.sellingUnit,
+        minimumStock: p.minimumStock,
+        totalStockPieces: (p.stockBoxes || 0) * (p.unitsPerBox || 1) + (p.currentStock || 0),
+        // Sales data (will be merged below)
+        revenue: 0,
+        profit: 0,
+        quantitySold: 0,
+        costOfGoodsSold: 0,
+        salesCount: 0,
+        // Damage data (will be merged below)
+        loss: 0,
+        quantityDamaged: 0,
+        damageCount: 0,
+      };
+    });
+
+    // Merge sales data into product map
+    const productMap = {};
+    sales.forEach(s => {
+      const name = s.productId?.name || 'Unknown';
+      if (!productMap[name]) productMap[name] = { revenue: 0, profit: 0, quantity: 0, cost: 0, salesCount: 0 };
+      productMap[name].revenue += s.totalAmount;
+      productMap[name].profit += s.profit;
+      productMap[name].quantity += s.quantity;
+      productMap[name].cost += s.costPrice * s.quantity;
+      productMap[name].salesCount += 1;
+
+      // Also merge into allProductsMap
+      if (allProductsMap[name]) {
+        allProductsMap[name].revenue += s.totalAmount;
+        allProductsMap[name].profit += s.profit;
+        allProductsMap[name].quantitySold += s.quantity;
+        allProductsMap[name].costOfGoodsSold += s.costPrice * s.quantity;
+        allProductsMap[name].salesCount += 1;
+      } else {
+        // Product not in inventory anymore
+        allProductsMap[name] = {
+          id: null,
+          name,
+          category: '',
+          costPrice: 0,
+          sellingPrice: 0,
+          currentStock: 0,
+          stockBoxes: 0,
+          unitsPerBox: 1,
+          sellingUnit: 'piece',
+          minimumStock: 0,
+          totalStockPieces: 0,
+          revenue: s.totalAmount,
+          profit: s.profit,
+          quantitySold: s.quantity,
+          costOfGoodsSold: s.costPrice * s.quantity,
+          salesCount: 1,
+          loss: 0,
+          quantityDamaged: 0,
+          damageCount: 0,
+        };
+      }
+    });
+
+    // Merge damage data
+    const damageMap = {};
+    damages.forEach(d => {
+      const name = d.productId?.name || 'Unknown';
+      if (!damageMap[name]) damageMap[name] = { loss: 0, quantity: 0, damageCount: 0 };
+      damageMap[name].loss += d.estimatedLoss;
+      damageMap[name].quantity += d.quantity;
+      damageMap[name].damageCount += 1;
+
+      if (allProductsMap[name]) {
+        allProductsMap[name].loss += d.estimatedLoss;
+        allProductsMap[name].quantityDamaged += d.quantity;
+        allProductsMap[name].damageCount += 1;
+      } else {
+        if (!allProductsMap[name]) {
+          allProductsMap[name] = {
+            id: null, name, category: '', costPrice: 0, sellingPrice: 0,
+            currentStock: 0, stockBoxes: 0, unitsPerBox: 1, sellingUnit: 'piece',
+            minimumStock: 0, totalStockPieces: 0,
+            revenue: 0, profit: 0, quantitySold: 0, costOfGoodsSold: 0, salesCount: 0,
+            loss: d.estimatedLoss, quantityDamaged: d.quantity, damageCount: 1,
+          };
+        }
+      }
+    });
+
+    // Summary
+    const totalRevenue = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const totalProfit = sales.reduce((sum, s) => sum + s.profit, 0);
+    const totalDamageLoss = damages.reduce((sum, d) => sum + d.estimatedLoss, 0);
+
+    res.json({
+      success: true,
+      report: {
+        period,
+        startDate: start,
+        endDate: end,
+        totalRevenue,
+        totalProfit,
+        totalDamageLoss,
+        netProfit: totalProfit - totalDamageLoss,
+        totalSales: sales.length,
+        totalDamageReports: damages.length,
+        allProducts: allProductsMap,
+        productBreakdown: productMap,
+        damageBreakdown: damageMap,
+        sales: sales.map(s => ({
+          id: s._id,
+          productName: s.productId?.name || 'Unknown',
+          quantity: s.quantity,
+          saleUnit: s.saleUnit,
+          unitPrice: s.unitPrice,
+          totalAmount: s.totalAmount,
+          profit: s.profit,
+          customerName: s.customerName,
+          recordedBy: s.recordedBy?.name,
+          saleDate: s.saleDate
+        })),
+        damages: damages.map(d => ({
+          id: d._id,
+          productName: d.productId?.name || 'Unknown',
+          quantity: d.quantity,
+          damageUnit: d.damageUnit,
+          reason: d.reason,
+          estimatedLoss: d.estimatedLoss,
+          reportedBy: d.reportedBy?.name,
+          reportDate: d.reportDate
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Detailed report error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 // GET /api/reports/inventory - Inventory summary
 router.get('/inventory', authenticate, requireActiveTenant, async (req, res) => {
   try {

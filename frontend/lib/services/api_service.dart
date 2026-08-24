@@ -328,11 +328,12 @@ class ApiService {
   }
 
   // ── Sales ──
-  static Future<Map<String, dynamic>> getSales() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/sales'),
-      headers: _headers(),
-    );
+  static Future<Map<String, dynamic>> getSales({String? startDate, String? endDate}) async {
+    final params = <String, String>{};
+    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/sales').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
@@ -346,11 +347,12 @@ class ApiService {
   }
 
   // ── Damages ──
-  static Future<Map<String, dynamic>> getDamages() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/damages'),
-      headers: _headers(),
-    );
+  static Future<Map<String, dynamic>> getDamages({String? startDate, String? endDate}) async {
+    final params = <String, String>{};
+    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/damages').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
@@ -382,11 +384,21 @@ class ApiService {
   }
 
   // ── Reports ──
-  static Future<Map<String, dynamic>> getProfitReport({String period = 'daily'}) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/reports/profit?period=$period'),
-      headers: _headers(),
-    );
+  static Future<Map<String, dynamic>> getProfitReport({String period = 'daily', String? startDate, String? endDate}) async {
+    final params = <String, String>{'period': period};
+    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/reports/profit').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getDetailedReport({String period = 'daily', String? startDate, String? endDate}) async {
+    final params = <String, String>{'period': period};
+    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/reports/detailed').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 

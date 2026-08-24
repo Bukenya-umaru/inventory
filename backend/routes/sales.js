@@ -15,7 +15,11 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
     if (startDate || endDate) {
       query.saleDate = {};
       if (startDate) query.saleDate.$gte = new Date(startDate);
-      if (endDate) query.saleDate.$lte = new Date(endDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.saleDate.$lte = end;
+      }
     }
 
     const total = await Sale.countDocuments(query);

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_provider.dart';
 import '../../utils/theme.dart';
+import '../../utils/currency.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -35,15 +36,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     if (_loading) return const Center(child: CircularProgressIndicator());
     final d = _data ?? {};
 
-    final todayRevenue = (d['today']?['revenue'] ?? 0).toStringAsFixed(0);
-    final todayProfit = (d['today']?['profit'] ?? 0).toStringAsFixed(0);
+    final todayRevenue = Currency.formatWhole((d['today']?['revenue'] ?? 0));
+    final todayProfit = Currency.formatWhole((d['today']?['profit'] ?? 0));
     final productCount = '${d['productCount'] ?? 0}';
     final employeeCount = '${d['employeeCount'] ?? 0}';
-    final monthlyRevenue = (d['monthly']?['revenue'] ?? 0).toStringAsFixed(2);
-    final monthlyProfit = (d['monthly']?['profit'] ?? 0).toStringAsFixed(2);
+    final monthlyRevenue = Currency.formatWhole((d['monthly']?['revenue'] ?? 0));
+    final monthlyProfit = Currency.formatWhole((d['monthly']?['profit'] ?? 0));
     final salesCount = '${d['monthly']?['salesCount'] ?? 0}';
     final lowStock = '${d['lowStockCount'] ?? 0}';
-    final totalStock = '${d['totalStockValue'] ?? 0}';
+    final totalStock = Currency.formatWhole(d['totalStockValue'] ?? 0);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -70,7 +71,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Sales Activity',
                 child: Row(
                   children: [
-                    _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.attach_money),
+                    _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.monetization_on),
                     _activityStat(profit, 'Profit', AppTheme.success, Icons.trending_up),
                     _activityStat(products, 'Products', Colors.purple, Icons.inventory_2),
                     _activityStat(employees, 'Employees', Colors.orange, Icons.people),
@@ -90,7 +91,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     const Divider(height: 1),
                     _summaryRow('Quantity to Receive', lowStock, Icons.receipt_long),
                     const Divider(height: 1),
-                    _summaryRow('Total Stock Value', '\$$totalStock', Icons.attach_money),
+                    _summaryRow('Total Stock Value', totalStock, Icons.monetization_on),
                   ],
                 ),
               ),
@@ -113,7 +114,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     _detailRow('Low Stock Items', lowStock, isWarning: true),
                     _detailRow('All Item Groups', '${d['categoryCount'] ?? 0}', isWarning: false),
                     _detailRow('All Items', productCount, isWarning: false),
-                    _detailRow('Total Stock Value', '\$$totalStock', isWarning: false),
+                    _detailRow('Total Stock Value', totalStock, isWarning: false),
                   ],
                 ),
               ),
@@ -126,9 +127,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 title: 'Top Selling Items',
                 child: Column(
                   children: [
-                    _sellingItem('Today\'s Sales', '\$$revenue', AppTheme.primary, Icons.trending_up),
-                    _sellingItem('This Month', '\$$mRevenue', AppTheme.success, Icons.calendar_month),
-                    _sellingItem('Profit', '\$$mProfit', Colors.purple, Icons.attach_money),
+                    _sellingItem('Today\'s Sales', revenue, AppTheme.primary, Icons.trending_up),
+                    _sellingItem('This Month', mRevenue, AppTheme.success, Icons.calendar_month),
+                    _sellingItem('Profit', mProfit, Colors.purple, Icons.monetization_on),
                   ],
                 ),
               ),
@@ -149,7 +150,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('\$$totalStock', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                    Text(totalStock, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primary)),
                     const SizedBox(height: 4),
                     Text('Stock Value', style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context))),
                     const SizedBox(height: 16),
@@ -167,8 +168,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Column(
                   children: [
                     _orderRow(['Channel', 'Revenue', 'Profit', 'Sales'], isHeader: true),
-                    _orderRow(['Today', '\$$revenue', '\$$profit', sales]),
-                    _orderRow(['Monthly', '\$$mRevenue', '\$$mProfit', sales]),
+                    _orderRow(['Today', revenue, profit, sales]),
+                    _orderRow(['Monthly', mRevenue, mProfit, sales]),
                   ],
                 ),
               ),
@@ -192,7 +193,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               Row(
                 children: [
-                  Expanded(child: _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.attach_money)),
+                  Expanded(child: _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.monetization_on)),
                   Expanded(child: _activityStat(profit, 'Profit', AppTheme.success, Icons.trending_up)),
                 ],
               ),
@@ -217,7 +218,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const Divider(height: 1),
               _summaryRow('Quantity to Receive', lowStock, Icons.receipt_long),
               const Divider(height: 1),
-              _summaryRow('Total Stock Value', '\$$totalStock', Icons.attach_money),
+              _summaryRow('Total Stock Value', totalStock, Icons.monetization_on),
             ],
           ),
         ),
@@ -231,7 +232,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _detailRow('Low Stock Items', lowStock, isWarning: true),
               _detailRow('All Item Groups', '${d['categoryCount'] ?? 0}', isWarning: false),
               _detailRow('All Items', products, isWarning: false),
-              _detailRow('Total Stock Value', '\$$totalStock', isWarning: false),
+              _detailRow('Total Stock Value', totalStock, isWarning: false),
             ],
           ),
         ),
@@ -242,9 +243,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           title: 'Top Selling Items',
           child: Column(
             children: [
-              _sellingItem('Today\'s Sales', '\$$revenue', AppTheme.primary, Icons.trending_up),
-              _sellingItem('This Month', '\$$mRevenue', AppTheme.success, Icons.calendar_month),
-              _sellingItem('Profit', '\$$mProfit', Colors.purple, Icons.attach_money),
+              _sellingItem('Today\'s Sales', revenue, AppTheme.primary, Icons.trending_up),
+              _sellingItem('This Month', mRevenue, AppTheme.success, Icons.calendar_month),
+              _sellingItem('Profit', mProfit, Colors.purple, Icons.monetization_on),
             ],
           ),
         ),
@@ -256,7 +257,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('\$$totalStock', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+              Text(totalStock, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primary)),
               const SizedBox(height: 4),            Text('Stock Value', style: TextStyle(fontSize: 14, color: AppTheme.secondaryText(context))),
                     const SizedBox(height: 12),
                     _miniStat('Quantity Ordered', products, Icons.shopping_cart),
@@ -271,8 +272,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             children: [
               _orderRow(['Channel', 'Revenue', 'Profit', 'Sales'], isHeader: true),
-              _orderRow(['Today', '\$$revenue', '\$$profit', sales]),
-              _orderRow(['Monthly', '\$$mRevenue', '\$$mProfit', sales]),
+              _orderRow(['Today', revenue, profit, sales]),
+              _orderRow(['Monthly', mRevenue, mProfit, sales]),
             ],
           ),
         ),

@@ -9,9 +9,18 @@ const { authenticate, requireActiveTenant, requirePermission } = require('../mid
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
-    const { page = 1, limit = 50 } = req.query;
+    const { startDate, endDate, page = 1, limit = 50 } = req.query;
 
     const query = { tenantId };
+    if (startDate || endDate) {
+      query.reportDate = {};
+      if (startDate) query.reportDate.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.reportDate.$lte = end;
+      }
+    }
     const total = await Damage.countDocuments(query);
     const damages = await Damage.find(query)
       .populate('productId', 'name sku')
