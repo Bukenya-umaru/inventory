@@ -123,32 +123,35 @@ class _SalesScreenState extends State<SalesScreen> {
       filterLabel = '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
-    return Column(
-      children: [
-        // ── Header ──
-        Padding(
-          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Sales', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
-                    Text('Revenue: ${Currency.formatWhole(totalRev)} • Profit: ${Currency.formatWhole(totalProfit)}',
-                      style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
-                  ],
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+        final content = Column(
+          children: [
+            // ── Header ──
+            Padding(
+              padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Sales', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
+                        Text('Revenue: ${Currency.formatWhole(totalRev)} • Profit: ${Currency.formatWhole(totalProfit)}',
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _showRecordSale(),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text('Record Sale', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+                  ),
+                ],
               ),
-              ElevatedButton.icon(
-                onPressed: () => _showRecordSale(),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text('Record Sale', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
-              ),
-            ],
-          ),
-        ),
+            ),
 
         // ── Filter Bar (scrollable for small screens) ──
         Padding(
@@ -225,6 +228,12 @@ class _SalesScreenState extends State<SalesScreen> {
                     ),
         ),
       ],
+        );
+        if (isWide) {
+          return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content));
+        }
+        return content;
+      },
     );
   }
 

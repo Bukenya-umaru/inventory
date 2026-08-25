@@ -220,26 +220,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Stat Chip ──
+  // ── Stat Chip (compact) ──
   Widget _statChip(String value, String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.1);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(value,
               style: TextStyle(
-                  fontWeight: FontWeight.bold, color: color, fontSize: 13)),
-          const SizedBox(width: 4),
+                  fontWeight: FontWeight.bold, color: color, fontSize: 12)),
+          const SizedBox(width: 3),
           Text(label,
               style: TextStyle(
-                  color: color, fontSize: 11)),
+                  color: color, fontSize: 10)),
         ],
       ),
     );
@@ -278,12 +278,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   // ── Wide Grid (laptop) ──
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
-      padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+      padding: EdgeInsets.all(AppTheme.pad(context, 12)),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 2.4,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 3.0,
       ),
       itemCount: _products.length,
       itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
@@ -294,202 +294,162 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _listView(bool isSmall) {
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
-          isSmall ? 10 : AppTheme.pad(context, 16),
           isSmall ? 8 : AppTheme.pad(context, 12),
-          isSmall ? 10 : AppTheme.pad(context, 16),
+          isSmall ? 4 : AppTheme.pad(context, 8),
+          isSmall ? 8 : AppTheme.pad(context, 12),
           80),
       itemCount: _products.length,
       itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
     );
   }
 
-  // ── Product Card ──
+  // ── Product Card (compact) ──
   Widget _productCard(Product p, bool isSmall) {
-    final inStock = p.totalStockPieces > 0;
     final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
     final out = p.totalStockPieces == 0;
-    final margin = isSmall ? const EdgeInsets.only(bottom: 8) : const EdgeInsets.only(bottom: 10);
 
-    return Container(
-      margin: margin,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => _showForm(product: p),
-          child: Padding(
-            padding: EdgeInsets.all(isSmall ? 10 : 14),
-            child: Row(
-              children: [
-                // ── Left: colored icon ──
-                Container(
-                  width: isSmall ? 44 : 52,
-                  height: isSmall ? 44 : 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: out
-                          ? [Colors.red.shade400, Colors.red.shade600]
-                          : isLow
-                              ? [Colors.orange.shade300, Colors.orange.shade500]
-                              : [AppTheme.success, Color(0xFF0D9E42)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showForm(product: p),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 10, vertical: isSmall ? 6 : 8),
+          child: Row(
+            children: [
+              // ── Left: icon ──
+              Container(
+                width: isSmall ? 32 : 36,
+                height: isSmall ? 32 : 36,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: out
+                        ? [Colors.red.shade400, Colors.red.shade600]
+                        : isLow
+                            ? [Colors.orange.shade300, Colors.orange.shade500]
+                            : [AppTheme.success, Color(0xFF0D9E42)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Center(
-                    child: Icon(
-                      _categoryIcon(p.categoryName),
-                      color: Colors.white,
-                      size: isSmall ? 22 : 26,
-                    ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Icon(
+                    _categoryIcon(p.categoryName),
+                    color: Colors.white,
+                    size: isSmall ? 16 : 18,
                   ),
                 ),
-                SizedBox(width: isSmall ? 10 : 14),
+              ),
+              SizedBox(width: isSmall ? 8 : 10),
 
-                // ── Middle: info ──
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(p.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15))),
-                      const SizedBox(height: 3),
-                      if (p.categoryName != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(p.categoryName!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: AppTheme.fontSize(context, isSmall ? 9 : 10),
-                                  color: AppTheme.primaryBright(context),
-                                  fontWeight: FontWeight.w500)),
-                        ),
-                      const SizedBox(height: 5),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          _priceTag('${Currency.format(p.sellingPrice)}/pc',
-                              AppTheme.primaryBright(context), isSmall),
-                          if (p.sellsAsBox && p.boxSellingPrice != null)
-                            _priceTag(
-                                '${Currency.format(p.boxSellingPrice!)}/box',
-                                AppTheme.blueBright(context),
-                                isSmall),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Right: stock + actions ──
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              // ── Middle: info ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Stock badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: out
-                            ? AppTheme.danger.withValues(alpha: 0.1)
-                            : isLow
-                                ? AppTheme.warning.withValues(alpha: 0.1)
-                                : AppTheme.success.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: out
-                                  ? AppTheme.dangerBright(context)
-                                  : isLow
-                                      ? AppTheme.warningBright(context)
-                                      : AppTheme.successBright(context),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            out
-                                ? 'Out'
-                                : '${p.totalStockPieces} pc',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
-                                color: out
-                                    ? AppTheme.dangerBright(context)
-                                    : isLow
-                                        ? AppTheme.warningBright(context)
-                                        : AppTheme.successBright(context)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Action buttons
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Text(p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppTheme.fontSize(context, isSmall ? 12 : 13))),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _actionBtn(Icons.local_shipping_outlined, () => _showRecordPurchase(p), AppTheme.successBright(context), isSmall),
-                        const SizedBox(width: 4),
-                        _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
-                        const SizedBox(width: 4),
-                        _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
+                        if (p.categoryName != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(p.categoryName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: AppTheme.fontSize(context, 9),
+                                    color: AppTheme.primaryBright(context),
+                                    fontWeight: FontWeight.w500)),
+                          ),
+                        Text('${Currency.format(p.sellingPrice)}/pc',
+                            style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.primaryBright(context))),
+                        if (p.sellsAsBox && p.boxSellingPrice != null)
+                          Text('${Currency.format(p.boxSellingPrice!)}/box',
+                              style: TextStyle(
+                                  fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.blueBright(context))),
                       ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // ── Right: stock + actions ──
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: out
+                          ? AppTheme.danger.withValues(alpha: 0.1)
+                          : isLow
+                              ? AppTheme.warning.withValues(alpha: 0.1)
+                              : AppTheme.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      out ? 'Out' : '${p.totalStockPieces} pc',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
+                          color: out
+                              ? AppTheme.dangerBright(context)
+                              : isLow
+                                  ? AppTheme.warningBright(context)
+                                  : AppTheme.successBright(context)),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
+                      const SizedBox(width: 3),
+                      _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ── Price Tag ──
-  Widget _priceTag(String text, Color color, bool isSmall) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(text,
-          style: TextStyle(
-              fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
-              fontWeight: FontWeight.w600,
-              color: color)),
-    );
-  }
-
-  // ── Action Button ──
+  // ── Action Button (compact) ──
   Widget _actionBtn(IconData icon, VoidCallback onTap, Color color, bool isSmall) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: Container(
-        padding: EdgeInsets.all(isSmall ? 5 : 6),
+        padding: EdgeInsets.all(isSmall ? 3 : 4),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: isSmall ? 16 : 17, color: color),
+        child: Icon(icon, size: isSmall ? 13 : 14, color: color),
       ),
     );
   }
@@ -509,25 +469,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Icons.inventory_2;
   }
 
-  // ── Show Form (unchanged logic, just cleaned up) ──
+  // ── Show Form ──
   void _showForm({Product? product}) {
+    final isEditing = product != null;
     final nameCtrl = TextEditingController(text: product?.name ?? '');
-    final costCtrl =
-        TextEditingController(text: product?.costPrice.toString() ?? '');
-    final priceCtrl =
-        TextEditingController(text: product?.sellingPrice.toString() ?? '');
-    final stockCtrl =
-        TextEditingController(text: product?.currentStock.toString() ?? '0');
-    final minCtrl =
-        TextEditingController(text: product?.minimumStock.toString() ?? '5');
-    final unitsPerBoxCtrl =
-        TextEditingController(text: product?.unitsPerBox.toString() ?? '1');
-    final stockBoxesCtrl =
-        TextEditingController(text: product?.stockBoxes.toString() ?? '0');
-    final boxCostCtrl =
-        TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
-    final boxPriceCtrl =
-        TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
+    final costCtrl = TextEditingController(text: product?.costPrice.toString() ?? '');
+    final priceCtrl = TextEditingController(text: product?.sellingPrice.toString() ?? '');
+    final stockCtrl = TextEditingController(text: product?.currentStock.toString() ?? '0');
+    final minCtrl = TextEditingController(text: product?.minimumStock.toString() ?? '5');
+    final unitsPerBoxCtrl = TextEditingController(text: product?.unitsPerBox.toString() ?? '1');
+    final stockBoxesCtrl = TextEditingController(text: product?.stockBoxes.toString() ?? '0');
+    final boxCostCtrl = TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
+    final boxPriceCtrl = TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
+    // Supplier fields (only for new products)
+    final supplierCtrl = TextEditingController();
+    final supplierPhoneCtrl = TextEditingController();
+    final supplierEmailCtrl = TextEditingController();
+    final invoiceCtrl = TextEditingController();
+    final purchaseNotesCtrl = TextEditingController();
+    String paymentMethod = 'cash';
+
     String sellingUnit = product?.sellingUnit ?? 'piece';
     String? selectedCategoryId = product?.categoryId;
 
@@ -549,13 +510,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                    product != null ? Icons.edit : Icons.add,
-                    color: AppTheme.primary,
-                    size: 20),
+                child: Icon(isEditing ? Icons.edit : Icons.add, color: AppTheme.primary, size: 20),
               ),
               const SizedBox(width: 10),
-              Text(product != null ? 'Edit Product' : 'Add Product',
+              Text(isEditing ? 'Edit Product' : 'Add Product',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ],
           ),
@@ -563,25 +521,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // ── Product Details ──
                 _field(nameCtrl, 'Product Name *'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Category'),
                   value: selectedCategoryId,
-                  items: _categories
-                      .map((c) =>
-                          DropdownMenuItem(value: c.id, child: Text(c.name)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setDialogState(() => selectedCategoryId = v),
+                  items: _categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                  onChanged: (v) => setDialogState(() => selectedCategoryId = v),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Selling Unit'),
                   value: sellingUnit,
                   items: const [
-                    DropdownMenuItem(
-                        value: 'piece', child: Text('Piece')),
+                    DropdownMenuItem(value: 'piece', child: Text('Piece')),
                     DropdownMenuItem(value: 'box', child: Text('Box')),
                   ],
                   onChanged: (v) {
@@ -595,72 +549,91 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   const SizedBox(height: 12),
                   _field(unitsPerBoxCtrl, 'Units Per Box',
                       keyboardType: TextInputType.number,
-                      onChanged: (_) {
-                    setDialogState(() {});
-                    recalcPieces();
-                  }),
+                      onChanged: (_) { setDialogState(() {}); recalcPieces(); }),
                 ],
                 const SizedBox(height: 12),
-                _field(costCtrl, 'Cost Price (per piece)',
-                    keyboardType: TextInputType.number),
+                _field(costCtrl, 'Cost Price (per piece)', keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                _field(priceCtrl, 'Selling Price (per piece)',
-                    keyboardType: TextInputType.number),
+                _field(priceCtrl, 'Selling Price (per piece)', keyboardType: TextInputType.number),
                 if (sellingUnit != 'piece') ...[
                   const SizedBox(height: 12),
-                  _field(boxCostCtrl, 'Box Cost Price',
-                      keyboardType: TextInputType.number),
+                  _field(boxCostCtrl, 'Box Cost Price', keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
-                  _field(boxPriceCtrl, 'Box Selling Price',
-                      keyboardType: TextInputType.number),
+                  _field(boxPriceCtrl, 'Box Selling Price', keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                   _field(stockBoxesCtrl, 'Stock (Boxes)',
-                      keyboardType: TextInputType.number, onChanged: (_) {
-                    setDialogState(() {});
-                    recalcPieces();
-                  }),
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) { setDialogState(() {}); recalcPieces(); }),
                 ],
                 const SizedBox(height: 12),
                 _field(stockCtrl,
-                    sellingUnit == 'box'
-                        ? 'Stock (Auto: Boxes × Units/Box)'
-                        : 'Stock (Pieces)',
-                    keyboardType: TextInputType.number,
-                    readOnly: sellingUnit == 'box'),
+                    sellingUnit == 'box' ? 'Stock (Auto: Boxes × Units/Box)' : 'Stock (Pieces)',
+                    keyboardType: TextInputType.number, readOnly: sellingUnit == 'box'),
                 const SizedBox(height: 12),
                 _field(minCtrl, 'Min Stock', keyboardType: TextInputType.number),
+
+                // ── Supplier Info (only when adding new product) ──
+                if (!isEditing) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.success.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('Supplier & Purchase Info (Optional)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
+                  ),
+                  const SizedBox(height: 12),
+                  _field(supplierCtrl, 'Supplier Company'),
+                  const SizedBox(height: 12),
+                  _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
+                  const SizedBox(height: 12),
+                  _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
+                  const SizedBox(height: 12),
+                  _field(invoiceCtrl, 'Invoice Number'),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Payment Method'),
+                    value: paymentMethod,
+                    items: const [
+                      DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                      DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                      DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                      DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+                      DropdownMenuItem(value: 'other', child: Text('Other')),
+                    ],
+                    onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
+                  ),
+                  const SizedBox(height: 12),
+                  _field(purchaseNotesCtrl, 'Purchase Notes'),
+                ],
               ],
             ),
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Product name is required.'),
-                      backgroundColor: AppTheme.danger));
+                      content: Text('Product name is required.'), backgroundColor: AppTheme.danger));
                   return;
                 }
-                if (selectedCategoryId == null ||
-                    selectedCategoryId!.isEmpty) {
+                if (selectedCategoryId == null || selectedCategoryId!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Please select a category.'),
-                      backgroundColor: AppTheme.danger));
+                      content: Text('Please select a category.'), backgroundColor: AppTheme.danger));
                   return;
                 }
                 if (double.tryParse(costCtrl.text) == null) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Valid cost price is required.'),
-                      backgroundColor: AppTheme.danger));
+                      content: Text('Valid cost price is required.'), backgroundColor: AppTheme.danger));
                   return;
                 }
                 if (double.tryParse(priceCtrl.text) == null) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Valid selling price is required.'),
-                      backgroundColor: AppTheme.danger));
+                      content: Text('Valid selling price is required.'), backgroundColor: AppTheme.danger));
                   return;
                 }
                 final data = {
@@ -672,29 +645,50 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   'sellingUnit': sellingUnit,
                   'unitsPerBox': int.tryParse(unitsPerBoxCtrl.text) ?? 1,
                   'stockBoxes': int.tryParse(stockBoxesCtrl.text) ?? 0,
-                  'currentStock': sellingUnit == 'box'
-                      ? 0
-                      : (int.tryParse(stockCtrl.text) ?? 0),
+                  'currentStock': sellingUnit == 'box' ? 0 : (int.tryParse(stockCtrl.text) ?? 0),
                   'boxCostPrice': double.tryParse(boxCostCtrl.text) ?? 0,
                   'boxSellingPrice': double.tryParse(boxPriceCtrl.text) ?? 0,
                 };
                 try {
-                  if (product != null) {
-                    await ApiService.updateProduct(product.id, data);
+                  if (isEditing) {
+                    await ApiService.updateProduct(product!.id, data);
                   } else {
-                    await ApiService.createProduct(data);
+                    // Create product
+                    final res = await ApiService.createProduct(data);
+                    final newProduct = res['product'];
+                    // If stock was entered and supplier info provided, record a purchase
+                    final qty = sellingUnit == 'box'
+                        ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
+                        : (int.tryParse(stockCtrl.text) ?? 0);
+                    final hasSupplier = supplierCtrl.text.isNotEmpty || supplierPhoneCtrl.text.isNotEmpty;
+                    if (qty > 0 && hasSupplier && newProduct != null) {
+                      final unitCost = sellingUnit == 'box'
+                          ? (double.tryParse(boxCostCtrl.text) ?? 0)
+                          : (double.tryParse(costCtrl.text) ?? 0);
+                      await ApiService.createPurchase({
+                        'productId': newProduct['_id'],
+                        'quantity': qty,
+                        'purchaseUnit': sellingUnit,
+                        'unitCost': unitCost,
+                        'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
+                        'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
+                        'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
+                        'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
+                        'paymentMethod': paymentMethod,
+                        'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
+                      });
+                    }
                   }
                   if (ctx.mounted) Navigator.pop(ctx);
                   _load();
                 } catch (e) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: AppTheme.danger));
+                        content: Text(e.toString()), backgroundColor: AppTheme.danger));
                   }
                 }
               },
-              child: Text(product != null ? 'Update' : 'Create'),
+              child: Text(isEditing ? 'Update' : 'Create'),
             ),
           ],
         ),
@@ -713,154 +707,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         labelText: label,
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
-      ),
-    );
-  }
-
-  void _showRecordPurchase(Product p) {
-    String purchaseUnit = p.sellsAsBox ? 'box' : 'piece';
-    final qtyCtrl = TextEditingController();
-    final costCtrl = TextEditingController(
-        text: purchaseUnit == 'box'
-            ? (p.boxCostPrice ?? p.costPrice * p.unitsPerBox).toString()
-            : p.costPrice.toString());
-    final supplierCtrl = TextEditingController();
-    final supplierPhoneCtrl = TextEditingController();
-    final supplierEmailCtrl = TextEditingController();
-    final invoiceCtrl = TextEditingController();
-    final notesCtrl = TextEditingController();
-    String paymentMethod = 'cash';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.local_shipping, color: AppTheme.success, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text('Add Stock: ${p.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (p.sellsAsBox) ...[
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Purchase Unit'),
-                    value: purchaseUnit,
-                    items: const [
-                      DropdownMenuItem(value: 'box', child: Text('Full Box')),
-                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
-                    ],
-                    onChanged: (v) {
-                      setDialogState(() {
-                        purchaseUnit = v ?? 'box';
-                        costCtrl.text = purchaseUnit == 'box'
-                            ? (p.boxCostPrice ?? p.costPrice * p.unitsPerBox).toString()
-                            : p.costPrice.toString();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                _field(qtyCtrl, 'Quantity *', keyboardType: TextInputType.number,
-                    onChanged: (_) => setDialogState(() {})),
-                const SizedBox(height: 12),
-                _field(costCtrl, 'Unit Cost *', keyboardType: TextInputType.number),
-                const SizedBox(height: 12),
-                if (qtyCtrl.text.isNotEmpty && costCtrl.text.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total Cost', style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context))),
-                        Text(Currency.formatWhole((double.tryParse(qtyCtrl.text) ?? 0) * (double.tryParse(costCtrl.text) ?? 0)),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary)),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                Text('Supplier Information', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
-                const SizedBox(height: 8),
-                _field(supplierCtrl, 'Supplier Company'),
-                const SizedBox(height: 12),
-                _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
-                const SizedBox(height: 12),
-                _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
-                const SizedBox(height: 16),
-                Text('Payment Details', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Payment Method'),
-                  value: paymentMethod,
-                  items: const [
-                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                    DropdownMenuItem(value: 'credit', child: Text('Credit')),
-                    DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                    DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
-                    DropdownMenuItem(value: 'other', child: Text('Other')),
-                  ],
-                  onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
-                ),
-                const SizedBox(height: 12),
-                _field(invoiceCtrl, 'Invoice Number'),
-                const SizedBox(height: 12),
-                _field(notesCtrl, 'Notes'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
-              onPressed: () async {
-                if (qtyCtrl.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Quantity is required.'), backgroundColor: AppTheme.danger),
-                  );
-                  return;
-                }
-                try {
-                  await ApiService.createPurchase({
-                    'productId': p.id,
-                    'quantity': int.tryParse(qtyCtrl.text) ?? 0,
-                    'purchaseUnit': purchaseUnit,
-                    'unitCost': double.tryParse(costCtrl.text) ?? 0,
-                    'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
-                    'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
-                    'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
-                    'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
-                    'paymentMethod': paymentMethod,
-                    'notes': notesCtrl.text.isNotEmpty ? notesCtrl.text : null,
-                  });
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  _load();
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
-                    );
-                  }
-                }
-              },
-              child: const Text('Record'),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -123,32 +123,35 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
-    return Column(
-      children: [
-        // ── Header ──
-        Padding(
-          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Purchases',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, 20),
-                            fontWeight: FontWeight.bold)),
-                    Text(
-                        'Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, 13),
-                            color: AppTheme.secondaryText(context))),
-                  ],
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+        final content = Column(
+          children: [
+            // ── Header ──
+            Padding(
+              padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Purchases',
+                            style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, 20),
+                                fontWeight: FontWeight.bold)),
+                        Text(
+                            'Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
+                            style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, 13),
+                                color: AppTheme.secondaryText(context))),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
 
         // ── Filter Bar ──
         Padding(
@@ -224,6 +227,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                     ),
         ),
       ],
+        );
+        if (isWide) {
+          return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content));
+        }
+        return content;
+      },
     );
   }
 
