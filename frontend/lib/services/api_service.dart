@@ -366,11 +366,12 @@ class ApiService {
   }
 
   // ── Purchases (Add Stock) ──
-  static Future<Map<String, dynamic>> getPurchases() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/purchases'),
-      headers: _headers(),
-    );
+  static Future<Map<String, dynamic>> getPurchases({String? startDate, String? endDate}) async {
+    final params = <String, String>{};
+    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/purchases').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 

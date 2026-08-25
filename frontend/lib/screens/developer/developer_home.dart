@@ -25,16 +25,13 @@ class _DeveloperHomeState extends State<DeveloperHome> {
 
   static Widget _empty() => const SizedBox();
 
-  Widget _buildPage(int index) {
-    switch (index) {
-      case 0: return DeveloperDashboard(onNavigateToTab: (i) => setState(() => _currentIndex = i));
-      case 1: return const BusinessesScreen();
-      case 2: return const UsersScreen();
-      case 3: return const PasswordManagerScreen();
-      case 4: return const AuditLogsScreen();
-      default: return const DeveloperDashboard();
-    }
-  }
+  late final List<Widget> _pages = [
+    DeveloperDashboard(onNavigateToTab: (i) => setState(() => _currentIndex = i)),
+    const BusinessesScreen(),
+    const UsersScreen(),
+    const PasswordManagerScreen(),
+    const AuditLogsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +40,10 @@ class _DeveloperHomeState extends State<DeveloperHome> {
       onItemTap: (i) => setState(() => _currentIndex = i),
       items: _items,
       title: 'Developer Dashboard',
-      body: _buildPage(_currentIndex),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'employee_dashboard.dart';
 import '../admin/products_screen.dart';
 import '../admin/categories_screen.dart';
 import '../admin/sales_screen.dart';
+import '../admin/purchases_screen.dart';
 import '../admin/damages_screen.dart';
 import '../admin/reports_screen.dart';
 
@@ -21,23 +22,22 @@ class _EmployeeHomeState extends State<EmployeeHome> {
     DrawerItem(icon: Icons.inventory_2_outlined, label: 'Products', builder: _empty),
     DrawerItem(icon: Icons.category_outlined, label: 'Categories', builder: _empty),
     DrawerItem(icon: Icons.shopping_cart_outlined, label: 'Sales', builder: _empty),
+    DrawerItem(icon: Icons.local_shipping_outlined, label: 'Purchases', builder: _empty),
     DrawerItem(icon: Icons.warning_amber_outlined, label: 'Damages', builder: _empty),
     DrawerItem(icon: Icons.bar_chart_outlined, label: 'Reports', builder: _empty),
   ];
 
   static Widget _empty() => const SizedBox();
 
-  Widget _buildPage(int index) {
-    switch (index) {
-      case 0: return const EmployeeDashboard();
-      case 1: return const ProductsScreen();
-      case 2: return const CategoriesScreen();
-      case 3: return const SalesScreen();
-      case 4: return const DamagesScreen();
-      case 5: return const ReportsScreen();
-      default: return const EmployeeDashboard();
-    }
-  }
+  late final List<Widget> _pages = const [
+    EmployeeDashboard(),
+    ProductsScreen(),
+    CategoriesScreen(),
+    SalesScreen(),
+    PurchasesScreen(),
+    DamagesScreen(),
+    ReportsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,10 @@ class _EmployeeHomeState extends State<EmployeeHome> {
       onItemTap: (i) => setState(() => _currentIndex = i),
       items: _items,
       title: 'Employee Dashboard',
-      body: _buildPage(_currentIndex),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
     );
   }
 }

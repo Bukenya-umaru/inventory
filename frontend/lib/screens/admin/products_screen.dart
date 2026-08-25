@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/product.dart';
@@ -17,6 +18,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   bool _loading = true;
   String _search = '';
   bool _lowStockOnly = false;
+  Timer? _searchTimer;
 
   @override
   void initState() {
@@ -24,16 +26,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getProducts(
-        search: _search.isNotEmpty ? _search : null,
-        lowStock: _lowStockOnly,
-      );
+      final results = await Future.wait([
+        ApiService.getProducts(
+          search: _search.isNotEmpty ? _search : null,
+          lowStock: _lowStockOnly,
+        ),
+        ApiService.getCategories(),
+      ]);
+      final res = results[0];
+      final catRes = results[1];
       final list =
           (res['products'] as List).map((p) => Product.fromJson(p)).toList();
-      final catRes = await ApiService.getCategories();
       final cats =
           (catRes['categories'] as List).map((c) => Category.fromJson(c)).toList();
       setState(() {
@@ -149,7 +161,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
                   onChanged: (v) {
                     _search = v;
-                    _load();
+                    _searchTimer?.cancel();
+                    _searchTimer = Timer(const Duration(milliseconds: 350), () => _load());
                   },
                 ),
               ),
@@ -432,6 +445,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        _actionBtn(Icons.local_shipping_outlined, () => _showRecordPurchase(p), AppTheme.successBright(context), isSmall),
+                        const SizedBox(width: 4),
                         _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
                         const SizedBox(width: 4),
                         _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
@@ -698,6 +713,154 @@ class _ProductsScreenState extends State<ProductsScreen> {
         labelText: label,
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
+      ),
+    );
+  }
+
+  void _showRecordPurchase(Product p) {
+    String purchaseUnit = p.sellsAsBox ? 'box' : 'piece';
+    final qtyCtrl = TextEditingController();
+    final costCtrl = TextEditingController(
+        text: purchaseUnit == 'box'
+            ? (p.boxCostPrice ?? p.costPrice * p.unitsPerBox).toString()
+            : p.costPrice.toString());
+    final supplierCtrl = TextEditingController();
+    final supplierPhoneCtrl = TextEditingController();
+    final supplierEmailCtrl = TextEditingController();
+    final invoiceCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    String paymentMethod = 'cash';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.local_shipping, color: AppTheme.success, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Add Stock: ${p.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (p.sellsAsBox) ...[
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Purchase Unit'),
+                    value: purchaseUnit,
+                    items: const [
+                      DropdownMenuItem(value: 'box', child: Text('Full Box')),
+                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
+                    ],
+                    onChanged: (v) {
+                      setDialogState(() {
+                        purchaseUnit = v ?? 'box';
+                        costCtrl.text = purchaseUnit == 'box'
+                            ? (p.boxCostPrice ?? p.costPrice * p.unitsPerBox).toString()
+                            : p.costPrice.toString();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                _field(qtyCtrl, 'Quantity *', keyboardType: TextInputType.number,
+                    onChanged: (_) => setDialogState(() {})),
+                const SizedBox(height: 12),
+                _field(costCtrl, 'Unit Cost *', keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                if (qtyCtrl.text.isNotEmpty && costCtrl.text.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Total Cost', style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context))),
+                        Text(Currency.formatWhole((double.tryParse(qtyCtrl.text) ?? 0) * (double.tryParse(costCtrl.text) ?? 0)),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text('Supplier Information', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
+                const SizedBox(height: 8),
+                _field(supplierCtrl, 'Supplier Company'),
+                const SizedBox(height: 12),
+                _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
+                const SizedBox(height: 12),
+                _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 16),
+                Text('Payment Details', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Payment Method'),
+                  value: paymentMethod,
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                    DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                    DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
+                ),
+                const SizedBox(height: 12),
+                _field(invoiceCtrl, 'Invoice Number'),
+                const SizedBox(height: 12),
+                _field(notesCtrl, 'Notes'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+              onPressed: () async {
+                if (qtyCtrl.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Quantity is required.'), backgroundColor: AppTheme.danger),
+                  );
+                  return;
+                }
+                try {
+                  await ApiService.createPurchase({
+                    'productId': p.id,
+                    'quantity': int.tryParse(qtyCtrl.text) ?? 0,
+                    'purchaseUnit': purchaseUnit,
+                    'unitCost': double.tryParse(costCtrl.text) ?? 0,
+                    'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
+                    'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
+                    'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
+                    'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
+                    'paymentMethod': paymentMethod,
+                    'notes': notesCtrl.text.isNotEmpty ? notesCtrl.text : null,
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  _load();
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
+                    );
+                  }
+                }
+              },
+              child: const Text('Record'),
+            ),
+          ],
+        ),
       ),
     );
   }

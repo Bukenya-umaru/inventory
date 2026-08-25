@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_provider.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 import '../../utils/download_helper.dart';
@@ -41,12 +43,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (_startDate != null) startStr = DateFormat('yyyy-MM-dd').format(_startDate!);
       if (_endDate != null) endStr = DateFormat('yyyy-MM-dd').format(_endDate!);
 
-      final reportRes = await ApiService.getDetailedReport(
-        period: _period,
-        startDate: startStr,
-        endDate: endStr,
-      );
-      final invRes = await ApiService.getInventoryReport();
+      final results = await Future.wait([
+        ApiService.getDetailedReport(
+          period: _period,
+          startDate: startStr,
+          endDate: endStr,
+        ),
+        ApiService.getInventoryReport(),
+      ]);
+      final reportRes = results[0];
+      final invRes = results[1];
       setState(() {
         _report = reportRes['report'];
         _inventory = invRes['inventory'];
@@ -114,9 +120,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _downloadReport() async {
     if (_report == null) return;
     try {
+      final auth = context.read<AuthProvider>();
+      final businessName = auth.branding?.businessName ?? '';
       final bytes = await PdfReportBuilder.build(
         report: _report!,
         dateRangeLabel: _dateRangeLabel(),
+        businessName: businessName,
       );
       final fileName = 'report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
       await downloadBytes(bytes, fileName, 'application/pdf');

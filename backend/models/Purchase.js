@@ -33,6 +33,20 @@ const purchaseSchema = new mongoose.Schema({
   supplier: {
     type: String
   },
+  supplierPhone: {
+    type: String
+  },
+  supplierEmail: {
+    type: String
+  },
+  invoiceNumber: {
+    type: String
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['cash', 'credit', 'bank_transfer', 'mobile_money', 'other'],
+    default: 'cash'
+  },
   notes: {
     type: String
   },

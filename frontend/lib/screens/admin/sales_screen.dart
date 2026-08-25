@@ -46,8 +46,12 @@ class _SalesScreenState extends State<SalesScreen> {
         startStr = startUtc.toIso8601String();
         endStr = endUtc.toIso8601String();
       }
-      final salesRes = await ApiService.getSales(startDate: startStr, endDate: endStr);
-      final prodRes = await ApiService.getProducts();
+      final results = await Future.wait([
+        ApiService.getSales(startDate: startStr, endDate: endStr),
+        ApiService.getProducts(),
+      ]);
+      final salesRes = results[0];
+      final prodRes = results[1];
       setState(() {
         _sales = (salesRes['sales'] as List).map((s) => Sale.fromJson(s)).toList();
         _products = (prodRes['products'] as List).map((p) => Product.fromJson(p)).toList();

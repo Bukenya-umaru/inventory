@@ -1,7 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class PdfReportBuilder {
   static final _dateFmt = DateFormat('MMM d, yyyy');
@@ -20,9 +20,12 @@ class PdfReportBuilder {
   static Future<List<int>> build({
     required Map<String, dynamic> report,
     required String dateRangeLabel,
+    String businessName = '',
   }) async {
-    final font = GoogleFonts.roboto();
-    final fontBold = GoogleFonts.robotoBold();
+    final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final font = pw.Font.ttf(fontData);
+    final fontBoldData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
+    final fontBold = pw.Font.ttf(fontBoldData);
 
     final pdf = pw.Document(
       theme: pw.ThemeData.withFont(
@@ -56,11 +59,25 @@ class PdfReportBuilder {
       return a.compareTo(b);
     });
 
+    // Sort sales by date descending (newest first)
+    final sortedSales = List.of(sales)..sort((a, b) {
+      final da = a['saleDate'] != null ? DateTime.parse(a['saleDate']) : DateTime(0);
+      final db = b['saleDate'] != null ? DateTime.parse(b['saleDate']) : DateTime(0);
+      return db.compareTo(da);
+    });
+
+    // Sort damages by date descending (newest first)
+    final sortedDamages = List.of(damages)..sort((a, b) {
+      final da = a['reportDate'] != null ? DateTime.parse(a['reportDate']) : DateTime(0);
+      final db = b['reportDate'] != null ? DateTime.parse(b['reportDate']) : DateTime(0);
+      return db.compareTo(da);
+    });
+
     // ── Page 1: Cover + Summary ──
     pdf.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
-      header: (ctx) => _header(dateRangeLabel),
+      header: (ctx) => _header(dateRangeLabel, businessName),
       footer: (ctx) => _footer(ctx.pageNumber, ctx.pagesCount),
       build: (ctx) => [
         pw.SizedBox(height: 16),
@@ -86,7 +103,7 @@ class PdfReportBuilder {
       pdf.addPage(pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        header: (ctx) => _header(dateRangeLabel),
+        header: (ctx) => _header(dateRangeLabel, businessName),
         footer: (ctx) => _footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
           _sectionTitle('Product Details (${sortedProductKeys.length})'),
@@ -100,31 +117,31 @@ class PdfReportBuilder {
     }
 
     // ── Page 3+: Sales List ──
-    if (sales.isNotEmpty) {
+    if (sortedSales.isNotEmpty) {
       pdf.addPage(pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        header: (ctx) => _header(dateRangeLabel),
+        header: (ctx) => _header(dateRangeLabel, businessName),
         footer: (ctx) => _footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
-          _sectionTitle('Sales Transactions (${sales.length})'),
+          _sectionTitle('Sales Transactions (${sortedSales.length})'),
           pw.SizedBox(height: 8),
-          _salesTable(sales),
+          _salesTable(sortedSales),
         ],
       ));
     }
 
     // ── Page 4+: Damages List ──
-    if (damages.isNotEmpty) {
+    if (sortedDamages.isNotEmpty) {
       pdf.addPage(pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        header: (ctx) => _header(dateRangeLabel),
+        header: (ctx) => _header(dateRangeLabel, businessName),
         footer: (ctx) => _footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
-          _sectionTitle('Damage Reports (${damages.length})'),
+          _sectionTitle('Damage Reports (${sortedDamages.length})'),
           pw.SizedBox(height: 8),
-          _damagesTable(damages),
+          _damagesTable(sortedDamages),
         ],
       ));
     }
@@ -133,7 +150,7 @@ class PdfReportBuilder {
   }
 
   // ── Header ──
-  static pw.Widget _header(String dateRange) {
+  static pw.Widget _header(String dateRange, String businessName) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 12),
       decoration: pw.BoxDecoration(
@@ -145,8 +162,12 @@ class PdfReportBuilder {
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              if (businessName.isNotEmpty)
+                pw.Text(businessName, style: pw.TextStyle(
+                  fontSize: 22, fontWeight: pw.FontWeight.bold, color: _darkText)),
+              pw.SizedBox(height: 2),
               pw.Text('INVENTORY REPORT', style: pw.TextStyle(
-                fontSize: 20, fontWeight: pw.FontWeight.bold, color: _primary)),
+                fontSize: 16, fontWeight: pw.FontWeight.bold, color: _primary)),
               pw.SizedBox(height: 4),
               pw.Text('Period: $dateRange', style: pw.TextStyle(
                 fontSize: 11, color: _mutedText)),
@@ -387,7 +408,7 @@ class PdfReportBuilder {
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: pw.BoxDecoration(
-                  color: _primary.withAlpha(25),
+                  color: _primary.withAlpha(0.1),
                   borderRadius: pw.BorderRadius.circular(8),
                 ),
                 child: pw.Text('Stock: $totalStock', style: pw.TextStyle(

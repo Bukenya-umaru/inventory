@@ -9,9 +9,14 @@ const { authenticate, requireActiveTenant, requirePermission } = require('../mid
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
-    const { page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 100, startDate, endDate } = req.query;
 
     const query = { tenantId };
+    if (startDate || endDate) {
+      query.purchaseDate = {};
+      if (startDate) query.purchaseDate.$gte = new Date(startDate);
+      if (endDate) query.purchaseDate.$lte = new Date(endDate);
+    }
     const total = await Purchase.countDocuments(query);
     const purchases = await Purchase.find(query)
       .populate('productId', 'name sku')
@@ -33,7 +38,7 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 // POST /api/purchases - Add stock (purchase)
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
-    const { productId, quantity, purchaseUnit: reqPurchaseUnit, unitCost, supplier, notes } = req.body;
+    const { productId, quantity, purchaseUnit: reqPurchaseUnit, unitCost, supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes } = req.body;
 
     if (!productId || !quantity) {
       return res.status(400).json({ success: false, message: 'Product and quantity required.' });
@@ -61,6 +66,10 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       unitCost: cost,
       totalCost,
       supplier,
+      supplierPhone,
+      supplierEmail,
+      invoiceNumber,
+      paymentMethod,
       notes,
       recordedBy: req.userId
     });
@@ -80,7 +89,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       userId: req.userId,
       userRole: req.user.role,
       action: `Recorded purchase: ${quantity}x ${product.name} (${purchaseUnit})`,
-      details: { productName: product.name, quantity, purchaseUnit, unitCost: cost, totalCost, supplier },
+      details: { productName: product.name, quantity, purchaseUnit, unitCost: cost, totalCost, supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod },
       ipAddress: req.ip
     });
 
@@ -95,6 +104,10 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         unitCost: cost,
         totalCost,
         supplier,
+        supplierPhone,
+        supplierEmail,
+        invoiceNumber,
+        paymentMethod,
         purchaseDate: purchase.purchaseDate
       }
     });

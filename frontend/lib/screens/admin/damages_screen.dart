@@ -44,8 +44,12 @@ class _DamagesScreenState extends State<DamagesScreen> {
         startStr = startUtc.toIso8601String();
         endStr = endUtc.toIso8601String();
       }
-      final dmgRes = await ApiService.getDamages(startDate: startStr, endDate: endStr);
-      final prodRes = await ApiService.getProducts();
+      final results = await Future.wait([
+        ApiService.getDamages(startDate: startStr, endDate: endStr),
+        ApiService.getProducts(),
+      ]);
+      final dmgRes = results[0];
+      final prodRes = results[1];
       setState(() {
         _damages = (dmgRes['damages'] as List).map((d) => Damage.fromJson(d)).toList();
         _products = (prodRes['products'] as List).map((p) => Product.fromJson(p)).toList();
