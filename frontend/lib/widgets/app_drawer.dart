@@ -266,7 +266,17 @@ class ResponsiveNavWrapper extends StatelessWidget {
 
     // Narrow screen: drawer (hamburger)
     return Scaffold(
-      appBar: appBar ?? AppBar(title: Text(title ?? '')),
+      appBar: appBar ?? AppBar(
+        title: Text(title ?? ''),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
+            onPressed: () {},
+          ),
+          _SettingsMenu(),
+          const SizedBox(width: 8),
+        ],
+      ),
       drawer: AppDrawer(
         selectedIndex: selectedIndex,
         onItemTap: onItemTap,
@@ -285,9 +295,9 @@ class _SettingsMenu extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
 
     return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      icon: Icon(Icons.settings_outlined, color: AppTheme.mutedIcon(context)),
+      offset: const Offset(0, 36),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      icon: Icon(Icons.settings_outlined, color: AppTheme.mutedIcon(context), size: 22),
       onSelected: (value) {
         if (value == 'toggle_theme') {
           themeProvider.toggle();
@@ -298,42 +308,43 @@ class _SettingsMenu extends StatelessWidget {
       itemBuilder: (_) => [
         PopupMenuItem<String>(
           value: 'toggle_theme',
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                themeProvider.isDark ? Icons.light_mode : Icons.dark_mode,
-                size: 20,
-                color: themeProvider.isDark ? Colors.amber : Colors.grey.shade600,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                themeProvider.isDark ? 'Light Mode' : 'Dark Mode',
-                style: TextStyle(fontSize: AppTheme.fontSize(context, 14)),
+                themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
+                size: 16,
+                color: themeProvider.isDark ? Colors.amber : Colors.orange,
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                width: 40,
-                child: Switch(
-                  value: themeProvider.isDark,
-                  onChanged: (_) => themeProvider.toggle(),
-                  activeColor: AppTheme.primary,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Text(
+                themeProvider.isDark ? 'Dark Mode' : 'Light Mode',
+                style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 13),
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                themeProvider.isDark ? Icons.check_circle : Icons.check_circle_outline,
+                size: 16,
+                color: themeProvider.isDark ? Colors.amber : AppTheme.success,
               ),
             ],
           ),
         ),
-        const PopupMenuDivider(),
+        const PopupMenuDivider(height: 1),
         PopupMenuItem<String>(
           value: 'logout',
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Row(
             children: [
-              const Icon(Icons.logout, size: 20, color: AppTheme.danger),
-              const SizedBox(width: 12),
+              const Icon(Icons.logout, size: 16, color: AppTheme.danger),
+              const SizedBox(width: 8),
               Text('Logout',
                 style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 14),
+                  fontSize: AppTheme.fontSize(context, 13),
                   color: AppTheme.danger)),
             ],
           ),
