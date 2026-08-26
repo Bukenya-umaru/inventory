@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
+const Purchase = require('../models/Purchase');
 const Category = require('../models/Category');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
@@ -43,7 +44,9 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 // POST /api/products
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
-    const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit, sellingUnit, unitsPerBox, stockBoxes, boxSellingPrice, boxCostPrice } = req.body;
+    const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit, sellingUnit, unitsPerBox, stockBoxes, boxSellingPrice, boxCostPrice,
+      // Supplier / purchase info (optional, used when merging)
+      supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes, purchaseUnit: reqPurchaseUnit } = req.body;
 
     if (!name || !categoryId || costPrice === undefined || sellingPrice === undefined) {
       return res.status(400).json({ success: false, message: 'Required fields missing.' });
@@ -57,6 +60,80 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       return res.status(400).json({ success: false, message: 'Invalid category.' });
     }
 
+    // Check if a product with the same name already exists for this tenant
+    const normalizedName = name.trim().toLowerCase();
+    const existingProduct = await Product.findOne({
+      tenantId,
+      isActive: true,
+      name: { $regex: new RegExp(`^${normalizedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    });
+
+    if (existingProduct) {
+      // ── Merge: product name already exists ──
+      // Determine the quantity to add and the purchase unit
+      let purchaseUnit = reqPurchaseUnit || 'box';
+      if (!['piece', 'box'].includes(purchaseUnit)) purchaseUnit = 'box';
+
+      const qtyToAdd = sellingUnit === 'box'
+        ? (stockBoxes || 0)
+        : (currentStock || 0);
+
+      // Update stock on existing product
+      if (qtyToAdd > 0) {
+        if (purchaseUnit === 'box') {
+          existingProduct.stockBoxes += qtyToAdd;
+        } else {
+          existingProduct.currentStock += qtyToAdd;
+        }
+        await existingProduct.save();
+      }
+
+      // Create purchase record if supplier info or quantity is provided
+      let purchase = null;
+      if (qtyToAdd > 0 || supplier) {
+        const unitCost = purchaseUnit === 'box'
+          ? (boxCostPrice || existingProduct.boxCostPrice || existingProduct.costPrice * (existingProduct.unitsPerBox || 1))
+          : (costPrice || existingProduct.costPrice);
+        const totalCost = unitCost * (qtyToAdd || 0);
+
+        purchase = new Purchase({
+          tenantId,
+          productId: existingProduct._id,
+          quantity: qtyToAdd || 0,
+          purchaseUnit,
+          unitCost,
+          totalCost,
+          supplier,
+          supplierPhone,
+          supplierEmail,
+          invoiceNumber,
+          paymentMethod,
+          notes,
+          recordedBy: req.userId
+        });
+        await purchase.save();
+      }
+
+      await createAuditLog({
+        tenantId,
+        eventType: 'purchase_recorded',
+        userId: req.userId,
+        userRole: req.user.role,
+        action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — product already existed`,
+        details: { productName: existingProduct.name, quantity: qtyToAdd, purchaseUnit, supplier, merged: true },
+        ipAddress: req.ip
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Product "${existingProduct.name}" already exists. Stock updated (+${qtyToAdd} ${purchaseUnit}s).`,
+        product: existingProduct,
+        merged: true,
+        purchase
+      });
+    }
+
+    // ── No duplicate — create new product ──
     const product = new Product({
       name,
       description,

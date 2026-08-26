@@ -649,37 +649,58 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   'boxCostPrice': double.tryParse(boxCostCtrl.text) ?? 0,
                   'boxSellingPrice': double.tryParse(boxPriceCtrl.text) ?? 0,
                 };
+                bool merged = false;
                 try {
                   if (isEditing) {
                     await ApiService.updateProduct(product!.id, data);
                   } else {
-                    // Create product
-                    final res = await ApiService.createProduct(data);
-                    final newProduct = res['product'];
-                    // If stock was entered and supplier info provided, record a purchase
-                    final qty = sellingUnit == 'box'
-                        ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
-                        : (int.tryParse(stockCtrl.text) ?? 0);
-                    final hasSupplier = supplierCtrl.text.isNotEmpty || supplierPhoneCtrl.text.isNotEmpty;
-                    if (qty > 0 && hasSupplier && newProduct != null) {
-                      final unitCost = sellingUnit == 'box'
-                          ? (double.tryParse(boxCostCtrl.text) ?? 0)
-                          : (double.tryParse(costCtrl.text) ?? 0);
-                      await ApiService.createPurchase({
-                        'productId': newProduct['_id'],
-                        'quantity': qty,
-                        'purchaseUnit': sellingUnit,
-                        'unitCost': unitCost,
-                        'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
-                        'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
-                        'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
-                        'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
-                        'paymentMethod': paymentMethod,
-                        'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
-                      });
+                    // Merge supplier info into data so the backend can handle dedup + purchase in one call
+                    final sendData = Map<String, dynamic>.from(data);
+                    sendData['supplier'] = supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null;
+                    sendData['supplierPhone'] = supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null;
+                    sendData['supplierEmail'] = supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null;
+                    sendData['invoiceNumber'] = invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null;
+                    sendData['paymentMethod'] = paymentMethod;
+                    sendData['notes'] = purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null;
+
+                    // Create product (backend detects duplicates and merges stock)
+                    final res = await ApiService.createProduct(sendData);
+                    merged = res['merged'] == true;
+
+                    // If NOT merged (new product) and stock + supplier provided, record a purchase
+                    if (!merged) {
+                      final newProduct = res['product'];
+                      final qty = sellingUnit == 'box'
+                          ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
+                          : (int.tryParse(stockCtrl.text) ?? 0);
+                      final hasSupplier = supplierCtrl.text.isNotEmpty || supplierPhoneCtrl.text.isNotEmpty;
+                      if (qty > 0 && hasSupplier && newProduct != null) {
+                        final unitCost = sellingUnit == 'box'
+                            ? (double.tryParse(boxCostCtrl.text) ?? 0)
+                            : (double.tryParse(costCtrl.text) ?? 0);
+                        await ApiService.createPurchase({
+                          'productId': newProduct['_id'],
+                          'quantity': qty,
+                          'purchaseUnit': sellingUnit,
+                          'unitCost': unitCost,
+                          'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
+                          'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
+                          'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
+                          'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
+                          'paymentMethod': paymentMethod,
+                          'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
+                        });
+                      }
                     }
                   }
-                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    final msg = merged
+                        ? 'Stock updated — product already exists.'
+                        : 'Product created.';
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(msg), backgroundColor: AppTheme.success));
+                  }
                   _load();
                 } catch (e) {
                   if (ctx.mounted) {

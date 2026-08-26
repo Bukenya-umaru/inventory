@@ -34,8 +34,18 @@ class InventoryApp extends StatelessWidget {
         builder: (context, themeProvider, _) => MaterialApp(
           title: 'Inventory Management',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.theme,
-          darkTheme: AppTheme.darkTheme,
+          theme: AppTheme.theme.copyWith(
+            colorScheme: AppTheme.theme.colorScheme.copyWith(
+              primary: themeProvider.accentColor,
+            ),
+            primaryColor: themeProvider.accentColor,
+          ),
+          darkTheme: AppTheme.darkTheme.copyWith(
+            colorScheme: AppTheme.darkTheme.colorScheme.copyWith(
+              primary: themeProvider.accentColor,
+            ),
+            primaryColor: themeProvider.accentColor,
+          ),
           themeMode: themeProvider.themeMode,
           home: const AuthGate(),
         // Allow system font scaling (accessibility) but cap at 1.5x

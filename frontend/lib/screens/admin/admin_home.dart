@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/app_drawer.dart';
 import 'admin_dashboard.dart';
+import 'store_screen.dart';
 import 'products_screen.dart';
 import 'categories_screen.dart';
 import 'sales_screen.dart';
@@ -25,6 +26,7 @@ class _AdminHomeState extends State<AdminHome> {
     DrawerItem(icon: Icons.shopping_cart_outlined, label: 'Sales', builder: _empty),
     DrawerItem(icon: Icons.local_shipping_outlined, label: 'Purchases', builder: _empty),
     DrawerItem(icon: Icons.warning_amber_outlined, label: 'Damages', builder: _empty),
+    DrawerItem(icon: Icons.storefront_outlined, label: 'Store', builder: _empty),
     DrawerItem(icon: Icons.bar_chart_outlined, label: 'Reports', builder: _empty),
     DrawerItem(icon: Icons.people_outline, label: 'Employees', builder: _empty),
   ];
@@ -39,6 +41,7 @@ class _AdminHomeState extends State<AdminHome> {
     SalesScreen(),
     PurchasesScreen(),
     DamagesScreen(),
+    StoreScreen(),
     ReportsScreen(),
     EmployeesScreen(),
   ];
