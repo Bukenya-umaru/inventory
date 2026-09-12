@@ -123,11 +123,8 @@ class _SalesScreenState extends State<SalesScreen> {
       filterLabel = '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
-        final content = Column(
-          children: [
+    return Column(
+      children: [
             // ── Header ──
             Padding(
               padding: EdgeInsets.all(AppTheme.pad(context, 16)),
@@ -228,12 +225,6 @@ class _SalesScreenState extends State<SalesScreen> {
                     ),
         ),
       ],
-        );
-        if (isWide) {
-          return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content));
-        }
-        return content;
-      },
     );
   }
 

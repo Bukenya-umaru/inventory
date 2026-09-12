@@ -65,6 +65,8 @@ class _StoreScreenState extends State<StoreScreen> {
   int get _totalStock => _filtered.fold(0, (s, p) => s + p.totalStockPieces);
   double get _totalValue =>
       _filtered.fold(0.0, (s, p) => s + (p.sellingPrice * p.totalStockPieces));
+  int get _totalBoxes =>
+      _filtered.fold(0, (s, p) => s + (p.sellsAsBox ? p.stockBoxes : 0));
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +94,7 @@ class _StoreScreenState extends State<StoreScreen> {
                             fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
                             fontWeight: FontWeight.bold)),
                     Text(
-                        '${_filtered.length} items • $_totalStock pcs • ${Currency.formatWhole(_totalValue)}',
+                        '${_filtered.length} items • $_totalBoxes bx • $_totalStock pcs • ${Currency.formatWhole(_totalValue)}',
                         style: TextStyle(
                             fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
                             color: AppTheme.secondaryText(context))),
@@ -355,7 +357,11 @@ class _StoreScreenState extends State<StoreScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  out ? 'Out of Stock' : '${p.totalStockPieces} pcs',
+                  out
+                      ? 'Out of Stock'
+                      : p.sellsAsBox
+                          ? '${p.stockBoxes} bx${p.currentStock > 0 ? ', ${p.currentStock} pc' : ''}'
+                          : '${p.totalStockPieces} pcs',
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
@@ -382,7 +388,7 @@ class _StoreScreenState extends State<StoreScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => Padding(
+      builder: (ctx) => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,

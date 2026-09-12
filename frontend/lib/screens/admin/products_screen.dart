@@ -409,7 +409,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      out ? 'Out' : '${p.totalStockPieces} pc',
+                      out
+                          ? 'Out'
+                          : p.sellsAsBox
+                              ? '${p.stockBoxes} bx${p.currentStock > 0 ? ', ${p.currentStock} pc' : ''}'
+                              : '${p.totalStockPieces} pc',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),

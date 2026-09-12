@@ -47,6 +47,7 @@ class InventoryApp extends StatelessWidget {
             primaryColor: themeProvider.accentColor,
           ),
           themeMode: themeProvider.themeMode,
+          themeAnimationDuration: Duration.zero, // switch themes instantly, no fade
           home: const AuthGate(),
         // Allow system font scaling (accessibility) but cap at 1.5x
         builder: (context, child) {

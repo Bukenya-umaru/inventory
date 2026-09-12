@@ -123,11 +123,8 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
-        final content = Column(
-          children: [
+    return Column(
+      children: [
             // ── Header ──
             Padding(
               padding: EdgeInsets.all(AppTheme.pad(context, 16)),
@@ -227,12 +224,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                     ),
         ),
       ],
-        );
-        if (isWide) {
-          return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 720), child: content));
-        }
-        return content;
-      },
     );
   }
 
@@ -361,39 +352,34 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
             style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: AppTheme.fontSize(context, 14))),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        subtitle: Text(
+          'Qty: ${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'} • ${Currency.format(p.unitCost)} each'
+          '${p.supplier != null && p.supplier!.isNotEmpty ? ' • ${p.supplier!}' : ''}'
+          '${p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty ? ' • INV: ${p.invoiceNumber}' : ''}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
+        leading:
+            Icon(Icons.local_shipping, size: 20, color: AppTheme.primary),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Qty: ${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'} • ${Currency.format(p.unitCost)} each',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: AppTheme.fontSize(context, 12)),
-            ),
-            if (p.supplier != null && p.supplier!.isNotEmpty)
-              Text(
-                'Supplier: ${p.supplier!}${p.supplierPhone != null && p.supplierPhone!.isNotEmpty ? ' • ${p.supplierPhone}' : ''}',
+            Text(Currency.formatWhole(p.totalCost),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: AppTheme.fontSize(context, 13))),
+            Text(_paymentLabel(p.paymentMethod),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 11),
-                    color: AppTheme.secondaryText(context)),
-              ),
-            if (p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty)
-              Text(
-                'INV: ${p.invoiceNumber} • ${_paymentLabel(p.paymentMethod)}',
-                style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, 11),
-                    color: AppTheme.secondaryText(context)),
-              ),
+                    color: AppTheme.secondaryText(context))),
           ],
         ),
-        leading:
-            Icon(Icons.local_shipping, size: 20, color: AppTheme.primary),
-        trailing: Text(Currency.formatWhole(p.totalCost),
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: AppTheme.fontSize(context, 13))),
       ),
     );
   }

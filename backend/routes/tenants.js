@@ -304,17 +304,22 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const todayProfit = todaySales.reduce((sum, s) => sum + s.profit, 0);
 
     const employeeCount = await User.countDocuments({ tenantId, role: 'employee', isActive: true });
-    const productCount = await Product.countDocuments({ tenantId, isActive: true });
-    const lowStockProducts = await Product.countDocuments({
-      tenantId, isActive: true,
-      $expr: { $lte: ['$currentStock', '$minimumStock'] }
-    });
+    const products = await Product.find({ tenantId, isActive: true });
+    const productCount = products.length;
+    const lowStockProducts = products.filter(p => p.currentStock <= p.minimumStock).length;
 
     // Monthly stats
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthlySales = await Sale.find({ tenantId, saleDate: { $gte: monthStart } });
     const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.totalAmount, 0);
     const monthlyProfit = monthlySales.reduce((sum, s) => sum + s.profit, 0);
+
+    const categoryCount = await Category.countDocuments({ tenantId, isActive: true });
+    const totalStockValue = products.reduce((sum, p) => {
+      const pieceValue = p.costPrice * p.currentStock;
+      const boxValue = (p.boxCostPrice || p.costPrice * (p.unitsPerBox || 1)) * (p.stockBoxes || 0);
+      return sum + pieceValue + boxValue;
+    }, 0);
 
     res.json({
       success: true,
@@ -323,7 +328,10 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
         monthly: { revenue: monthlyRevenue, profit: monthlyProfit, salesCount: monthlySales.length },
         employeeCount,
         productCount,
-        lowStockProducts
+        lowStockProducts,
+        lowStockCount: lowStockProducts,
+        categoryCount,
+        totalStockValue
       }
     });
   } catch (error) {
