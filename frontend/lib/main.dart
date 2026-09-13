@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_provider.dart';
+import 'services/notification_sound_service.dart';
 import 'services/theme_provider.dart';
 import 'utils/theme.dart';
 import 'screens/auth/login_screen.dart';
@@ -11,6 +12,7 @@ import 'screens/employee/employee_home.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  NotificationSoundService.instance.preload(); // load mute pref + warm player
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

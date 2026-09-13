@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/app_events.dart';
+import '../services/activity_watcher.dart';
 import '../services/theme_provider.dart';
 import '../utils/theme.dart';
+import '../screens/shared/activity_notifications_screen.dart';
 
 /// Breakpoint width: screens wider than this show the permanent sidebar.
 const double kWideScreenBreakpoint = 900;
@@ -248,10 +251,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
                     ],
                   ),
                   actions: [
-                    IconButton(
-                      icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
-                      onPressed: () {},
-                    ),
+                    const _NotificationBell(),
                     _SettingsMenu(),
                     const SizedBox(width: 8),
                   ],
@@ -269,10 +269,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
       appBar: appBar ?? AppBar(
         title: Text(title ?? ''),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
-            onPressed: () {},
-          ),
+          const _NotificationBell(),
           _SettingsMenu(),
           const SizedBox(width: 8),
         ],
@@ -283,6 +280,106 @@ class ResponsiveNavWrapper extends StatelessWidget {
         items: items,
       ),
       body: body,
+    );
+  }
+}
+
+/// Notification bell in the AppBar: shows an unread badge and opens the
+/// activity feed (works for admin and employee).
+class _NotificationBell extends StatefulWidget {
+  const _NotificationBell();
+
+  @override
+  State<_NotificationBell> createState() => _NotificationBellState();
+}
+
+class _NotificationBellState extends State<_NotificationBell> {
+  int _unread = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUnread();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Start the background watcher once we know the user's role; it polls
+    // unread activity and plays the notification sound on new items.
+    final role = context.watch<AuthProvider>().user?.role;
+    ActivityWatcher.instance.updateRole(role);
+    if (role == 'admin' || role == 'employee') {
+      ActivityWatcher.instance.start();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    if (['sales', 'purchases', 'damages', 'products', 'categories'].contains(event)) {
+      _fetchUnread();
+    }
+  }
+
+  Future<void> _fetchUnread() async {
+    try {
+      final res = await ApiService.getActivity(limit: 1);
+      if (mounted) setState(() => _unread = (res['unreadCount'] ?? 0) as int);
+    } catch (_) {
+      // offline — badge just stays as-is
+    }
+  }
+
+  Future<void> _open() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ActivityNotificationsScreen()),
+    );
+    _fetchUnread(); // badge may have changed while viewing
+    await ActivityWatcher.instance.resync(); // new baseline, no sound
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    // Business account users only (developer has no business bell)
+    if (auth.user?.role != 'admin' && auth.user?.role != 'employee') {
+      return const SizedBox.shrink();
+    }
+    return Stack(
+      children: [
+        IconButton(
+          icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
+          tooltip: 'Activity',
+          onPressed: _open,
+        ),
+        if (_unread > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              decoration: const BoxDecoration(
+                color: AppTheme.danger,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _unread > 99 ? '99+' : '$_unread',
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

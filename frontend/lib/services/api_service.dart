@@ -428,6 +428,25 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  // ── Activity notifications ──
+  static Future<Map<String, dynamic>> getActivity({int limit = 50, List<String>? types}) async {
+    final params = <String, String>{'limit': '$limit'};
+    if (types != null && types.isNotEmpty) params['types'] = types.join(',');
+    final response = await http.get(
+      Uri.parse('$baseUrl/audit/activity').replace(queryParameters: params),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<void> markActivitiesSeen() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/audit/activity/seen'),
+      headers: _headers(),
+    );
+    await _handleResponse(response);
+  }
+
   // ── Audit ──
   static Future<Map<String, dynamic>> getAuditLogs({String? eventType, String? severity}) async {
     final params = <String, String>{};

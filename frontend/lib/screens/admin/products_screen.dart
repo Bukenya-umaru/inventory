@@ -26,16 +26,27 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _load();
+    // Stay live: product changes from this screen or any other section
+    // (create, restock, delete, category edits) refresh the list instantly.
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    if (event == 'products') {
+      _load(silent: true);
+    }
   }
 
   @override
   void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
     _searchTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final results = await Future.wait([
         ApiService.getProducts(
@@ -877,10 +888,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 'Stock updated: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — purchase recorded'),
             backgroundColor: AppTheme.success));
       }
-      // Stock changed: Purchases section gets the intake, Store/others get new stock
+      // Stock changed: Purchases section gets the intake, Products/Store/others refresh
       AppEvents.instance.emit('purchases');
-      AppEvents.instance.emit('products');
-      _load();
+      AppEvents.instance.emit('products'); // this screen reloads via _onEvent
     } catch (e) {
       if (ctx.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1106,18 +1116,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         final unitCost = sellingUnit == 'box'
                             ? (double.tryParse(boxCostCtrl.text) ?? 0)
                             : (double.tryParse(costCtrl.text) ?? 0);
-                        await ApiService.createPurchase({
-                          'productId': newProduct['_id'],
-                          'quantity': qty,
-                          'purchaseUnit': sellingUnit,
-                          'unitCost': unitCost,
-                          'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
-                          'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
-                          'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
-                          'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
-                          'paymentMethod': paymentMethod,
-                          'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
-                        });
+                        try {
+                          await ApiService.createPurchase({
+                            'productId': newProduct['_id'],
+                            'quantity': qty,
+                            'purchaseUnit': sellingUnit,
+                            'unitCost': unitCost,
+                            'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
+                            'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
+                            'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
+                            'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
+                            'paymentMethod': paymentMethod,
+                            'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
+                          });
+                        } catch (pErr) {
+                          // The product IS created — a failed purchase record must
+                          // not abort the flow, or the UI never refreshes and the
+                          // new product appears in neither Products nor Store.
+                          debugPrint('Purchase record failed: $pErr');
+                        }
                       }
                     }
                   }
@@ -1130,6 +1147,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         content: Text(msg), backgroundColor: AppTheme.success));
                   }
                   // Notify every section: stock/product data changed
+                  // (Products + Store screens listen and reload instantly)
                   AppEvents.instance.emit('purchases');
                   AppEvents.instance.emit('products');
                 } catch (e) {
@@ -1181,8 +1199,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
     if (confirm == true) {
       await ApiService.deleteProduct(p.id);
+      // This screen reloads via _onEvent; Store/others listen too
       AppEvents.instance.emit('products');
-      _load();
     }
   }
 }

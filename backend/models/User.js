@@ -101,6 +101,11 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  // Notifications: timestamp of last activity-feed visit (unread = newer audit logs)
+  lastActivityReadAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
