@@ -225,10 +225,13 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Create Business Account')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppTheme.dialogMaxWidth),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
           children: [
             // Section: Business Information
             _sectionHeader('Business Information'),
@@ -385,6 +388,8 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
@@ -687,7 +692,7 @@ class _TenantCard extends StatelessWidget {
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
                                   child: Image.network(
-                                    'http://10.0.2.2:5000${tenant.businessLogo}',
+                                    ApiService.fileUrl(tenant.businessLogo),
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Column(
                                       mainAxisAlignment: MainAxisAlignment.center,

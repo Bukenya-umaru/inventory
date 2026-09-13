@@ -17,6 +17,13 @@ class ApiService {
     return 'http://localhost:5000/api';
   }
 
+  /// Server root (no /api suffix) — used for uploaded files like logos.
+  static String get serverUrl => baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+
+  /// Full URL for an uploaded file path (e.g. '/uploads/logos/123.png').
+  static String fileUrl(String? path) =>
+      (path == null || path.isEmpty) ? '' : '$serverUrl$path';
+
   static String? _token;
 
   static Future<void> setToken(String token) async {

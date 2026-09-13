@@ -93,6 +93,9 @@ class AppTheme {
     return base;
   }
 
+  /// Shared dialog width cap so forms don't stretch edge-to-edge on big screens.
+  static const double dialogMaxWidth = 480;
+
   // ── Light theme ──
   static ThemeData get theme => ThemeData(
     brightness: Brightness.light,
@@ -105,6 +108,9 @@ class AppTheme {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
+    ),
+    dialogTheme: const DialogThemeData(
+      constraints: BoxConstraints(maxWidth: dialogMaxWidth),
     ),
     cardTheme: CardThemeData(
       color: card,
@@ -151,6 +157,9 @@ class AppTheme {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       centerTitle: false,
+    ),
+    dialogTheme: const DialogThemeData(
+      constraints: BoxConstraints(maxWidth: dialogMaxWidth),
     ),
     cardTheme: CardThemeData(
       color: darkCard,

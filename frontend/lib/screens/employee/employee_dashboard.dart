@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../utils/theme.dart';
 
 class EmployeeDashboard extends StatelessWidget {
@@ -36,7 +37,7 @@ class EmployeeDashboard extends StatelessWidget {
                     if (branding?.businessLogo != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
+                        child: Image.network(ApiService.fileUrl(branding!.businessLogo),
                           height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 40)),
                       )
                     else
@@ -95,7 +96,7 @@ class EmployeeDashboard extends StatelessWidget {
               if (branding?.businessLogo != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network('http://10.0.2.2:5000${branding!.businessLogo!}',
+                  child: Image.network(ApiService.fileUrl(branding!.businessLogo),
                     height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 40)),
                 )
               else

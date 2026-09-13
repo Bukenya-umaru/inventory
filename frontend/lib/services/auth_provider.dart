@@ -31,6 +31,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Re-fetch the current user + business branding (logo, name) from the server.
+  /// Called when the app resumes so developer-uploaded branding appears live.
+  Future<void> refreshBranding() async {
+    if (_user == null) return;
+    try {
+      final res = await ApiService.getMe();
+      _user = User.fromJson(res['user']);
+      _branding = res['branding'] != null ? Branding.fromJson(res['branding']) : null;
+      notifyListeners();
+    } catch (_) {
+      // Offline or server error - keep the cached branding
+    }
+  }
+
   Future<String?> login(String email, String password) async {
     try {
       final res = await ApiService.login(email, password);

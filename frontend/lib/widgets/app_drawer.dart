@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/api_service.dart';
 import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 
@@ -109,7 +110,7 @@ class _DrawerContent extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      'http://10.0.2.2:5000${branding!.businessLogo!}',
+                      ApiService.fileUrl(branding!.businessLogo),
                       height: isSmall ? 28 : 32,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.storefront, size: 28, color: Colors.white),
