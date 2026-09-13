@@ -46,7 +46,9 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
   try {
     const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit, sellingUnit, unitsPerBox, stockBoxes, boxSellingPrice, boxCostPrice,
       // Supplier / purchase info (optional, used when merging)
-      supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes, purchaseUnit: reqPurchaseUnit } = req.body;
+      supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes, purchaseUnit: reqPurchaseUnit, unitCost: reqUnitCost,
+      // Batch prices for a restock (per purchaseUnit) — update the product's buy & sell prices
+      batchCostPrice, batchSellingPrice } = req.body;
 
     if (!name || !categoryId || costPrice === undefined || sellingPrice === undefined) {
       return res.status(400).json({ success: false, message: 'Required fields missing.' });
@@ -71,12 +73,57 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     if (existingProduct) {
       // ── Merge: product name already exists ──
       // Determine the quantity to add and the purchase unit
-      let purchaseUnit = reqPurchaseUnit || 'box';
+      let purchaseUnit = reqPurchaseUnit || (sellingUnit === 'piece' ? 'piece' : 'box');
       if (!['piece', 'box'].includes(purchaseUnit)) purchaseUnit = 'box';
 
       const qtyToAdd = sellingUnit === 'box'
         ? (stockBoxes || 0)
         : (currentStock || 0);
+
+      const upb = existingProduct.unitsPerBox || 1;
+
+      // Restocking at the same price as before must NOT modify the product's prices.
+      // Only apply a price update when the entered batch price actually differs from
+      // the current one (compared at the unit it was entered for; small tolerance
+      // for float/rounding drift).
+      const differs = (newVal, prevVal) =>
+        Math.abs(Number(newVal) - Number(prevVal ?? 0)) >= 0.01;
+      let pricesUpdated = false;
+
+      if (batchCostPrice != null) {
+        const prevCost = purchaseUnit === 'box'
+          ? (existingProduct.boxCostPrice ?? existingProduct.costPrice * upb)
+          : existingProduct.costPrice;
+        if (differs(batchCostPrice, prevCost)) {
+          if (purchaseUnit === 'box') {
+            existingProduct.boxCostPrice = batchCostPrice;
+            existingProduct.costPrice = Math.round((batchCostPrice / upb) * 100) / 100;
+          } else {
+            existingProduct.costPrice = batchCostPrice;
+            if (upb > 1) {
+              existingProduct.boxCostPrice = Math.round(batchCostPrice * upb * 100) / 100;
+            }
+          }
+          pricesUpdated = true;
+        }
+      }
+      if (batchSellingPrice != null) {
+        const prevSell = purchaseUnit === 'box'
+          ? (existingProduct.boxSellingPrice ?? existingProduct.sellingPrice * upb)
+          : existingProduct.sellingPrice;
+        if (differs(batchSellingPrice, prevSell)) {
+          if (purchaseUnit === 'box') {
+            existingProduct.boxSellingPrice = batchSellingPrice;
+            existingProduct.sellingPrice = Math.round((batchSellingPrice / upb) * 100) / 100;
+          } else {
+            existingProduct.sellingPrice = batchSellingPrice;
+            if (upb > 1) {
+              existingProduct.boxSellingPrice = Math.round(batchSellingPrice * upb * 100) / 100;
+            }
+          }
+          pricesUpdated = true;
+        }
+      }
 
       // Update stock on existing product
       if (qtyToAdd > 0) {
@@ -88,20 +135,42 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         await existingProduct.save();
       }
 
+      // Record the price change in the product's history (only when prices changed)
+      if (pricesUpdated) {
+        existingProduct.priceHistory.push({
+          costPrice: existingProduct.costPrice,
+          sellingPrice: existingProduct.sellingPrice,
+          boxCostPrice: existingProduct.boxCostPrice ?? undefined,
+          boxSellingPrice: existingProduct.boxSellingPrice ?? undefined,
+          unitsPerBox: existingProduct.unitsPerBox,
+          source: 'restock',
+          changedBy: req.userId
+        });
+        try {
+          await existingProduct.save();
+        } catch (histErr) {
+          console.error('Price history error:', histErr);
+        }
+      }
+
+      // Effective unit cost for this restock (per purchaseUnit); falls back to batch/product prices
+      const unitCost = reqUnitCost != null
+        ? reqUnitCost
+        : purchaseUnit === 'box'
+          ? (batchCostPrice ?? boxCostPrice ?? existingProduct.boxCostPrice ?? existingProduct.costPrice * upb)
+          : (batchCostPrice ?? costPrice ?? existingProduct.costPrice);
+      const totalCost = unitCost * (qtyToAdd || 0);
+
       // Create purchase record if supplier info or quantity is provided
       let purchase = null;
       if (qtyToAdd > 0 || supplier) {
-        const unitCost = purchaseUnit === 'box'
-          ? (boxCostPrice || existingProduct.boxCostPrice || existingProduct.costPrice * (existingProduct.unitsPerBox || 1))
-          : (costPrice || existingProduct.costPrice);
-        const totalCost = unitCost * (qtyToAdd || 0);
-
         purchase = new Purchase({
           tenantId,
           productId: existingProduct._id,
           quantity: qtyToAdd || 0,
           purchaseUnit,
           unitCost,
+          unitSellingPrice: batchSellingPrice ?? undefined,
           totalCost,
           supplier,
           supplierPhone,
@@ -114,21 +183,26 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         await purchase.save();
       }
 
-      await createAuditLog({
-        tenantId,
-        eventType: 'purchase_recorded',
-        userId: req.userId,
-        userRole: req.user.role,
-        action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — product already existed`,
-        details: { productName: existingProduct.name, quantity: qtyToAdd, purchaseUnit, supplier, merged: true },
-        ipAddress: req.ip
-      });
+      const priceChange = pricesUpdated
+        ? `buy ${existingProduct.costPrice}, sell ${existingProduct.sellingPrice}`
+        : null;
+
+        await createAuditLog({
+          tenantId,
+          eventType: 'purchase_recorded',
+          userId: req.userId,
+          userRole: req.user.role,
+          action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — product already existed${priceChange ? ` — prices updated (${priceChange})` : ''}`,
+          details: { productName: existingProduct.name, quantity: qtyToAdd, purchaseUnit, supplier, merged: true, unitCost, unitSellingPrice: batchSellingPrice ?? null },
+          ipAddress: req.ip
+        });
 
       return res.status(200).json({
         success: true,
         message: `Product "${existingProduct.name}" already exists. Stock updated (+${qtyToAdd} ${purchaseUnit}s).`,
         product: existingProduct,
         merged: true,
+        pricesUpdated,
         purchase
       });
     }
@@ -154,6 +228,23 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     });
 
     await product.save();
+
+    // Seed the price history with the initial prices
+    product.priceHistory.push({
+      costPrice: product.costPrice,
+      sellingPrice: product.sellingPrice,
+      boxCostPrice: product.boxCostPrice ?? undefined,
+      boxSellingPrice: product.boxSellingPrice ?? undefined,
+      unitsPerBox: product.unitsPerBox,
+      source: 'created',
+      changedBy: req.userId
+    });
+    // Save again silently — history failures must not fail the request
+    try {
+      await product.save();
+    } catch (histErr) {
+      console.error('Price history seed error:', histErr);
+    }
 
     await createAuditLog({
       tenantId,
@@ -185,8 +276,31 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('edit_pr
     delete updates.tenantId;
     delete updates.createdBy;
 
+    // Detect price changes before applying the update so we can record history
+    const priceFields = ['costPrice', 'sellingPrice', 'boxCostPrice', 'boxSellingPrice', 'unitsPerBox'];
+    const priceChanged = priceFields.some(
+      (f) => updates[f] !== undefined && Number(updates[f]) !== Number(product[f] ?? 0)
+    );
+
     Object.assign(product, updates);
     await product.save();
+
+    if (priceChanged) {
+      product.priceHistory.push({
+        costPrice: product.costPrice,
+        sellingPrice: product.sellingPrice,
+        boxCostPrice: product.boxCostPrice ?? undefined,
+        boxSellingPrice: product.boxSellingPrice ?? undefined,
+        unitsPerBox: product.unitsPerBox,
+        source: 'edit',
+        changedBy: req.userId
+      });
+      try {
+        await product.save();
+      } catch (histErr) {
+        console.error('Price history error:', histErr);
+      }
+    }
 
     res.json({ success: true, message: 'Product updated.', product });
   } catch (error) {

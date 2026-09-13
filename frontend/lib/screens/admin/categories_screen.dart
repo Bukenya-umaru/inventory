@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
 
@@ -342,6 +343,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       description: descCtrl.text.isNotEmpty ? descCtrl.text : null);
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
+                // Categories feed Products/Store sections: notify them
+                AppEvents.instance.emit('products');
                 _load();
               } catch (e) {
                 if (ctx.mounted) {
@@ -377,6 +380,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
     if (confirm == true) {
       await ApiService.deleteCategory(c.id);
+      AppEvents.instance.emit('products');
       _load();
     }
   }

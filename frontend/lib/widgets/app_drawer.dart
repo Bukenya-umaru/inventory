@@ -121,8 +121,7 @@ class _DrawerContent extends StatelessWidget {
                 Expanded(
                   child: Text(
                     branding?.businessName ?? 'Inventory',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
                     style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
                         fontWeight: FontWeight.bold,

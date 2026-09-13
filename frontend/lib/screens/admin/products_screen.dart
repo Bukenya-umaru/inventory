@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
@@ -428,6 +430,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      _actionBtn(Icons.add_circle_outline, () => _showRestockDialog(p), AppTheme.successBright(context), isSmall),
+                      const SizedBox(width: 3),
+                      _actionBtn(Icons.history, () => _showPriceHistory(p), AppTheme.warningBright(context), isSmall),
+                      const SizedBox(width: 3),
                       _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
                       const SizedBox(width: 3),
                       _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
@@ -473,6 +479,416 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Icons.inventory_2;
   }
 
+  // ── Find duplicate product by name (case-insensitive) ──
+  Product? _findDuplicate(String name) {
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return null;
+    for (final p in _products) {
+      if (p.name.trim().toLowerCase() == n) return p;
+    }
+    return null;
+  }
+
+  // ── Duplicate product banner (tap to add stock) ──
+  Widget _duplicateBanner(BuildContext dialogCtx, Product p) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(dialogCtx); // close the add-product form
+        _showRestockDialog(p);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppTheme.warning.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.warning.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 18, color: AppTheme.warning),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '"${p.name}" already exists (${p.sellsAsBox ? '${p.stockBoxes} box(es), ${p.currentStock} pc' : '${p.totalStockPieces} pc'}). Tap to add stock.',
+                style: TextStyle(fontSize: 12, color: AppTheme.warning),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Price History viewer ──
+  void _showPriceHistory(Product p) {
+    final history = p.priceHistory;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.history, color: AppTheme.warning, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Price History',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text(p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 12, color: AppTheme.secondaryText(context))),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: history.isEmpty
+            ? Text('No price changes recorded yet.',
+                style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context)))
+            : SizedBox(
+                width: 360,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (ctx, i) {
+                    final h = history[i];
+                    final dateStr =
+                        DateFormat('MMM d, yyyy').format(h.changedAt.toLocal());
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      leading: Icon(
+                        i == history.length - 1
+                            ? Icons.flag
+                            : Icons.history_toggle_off,
+                        size: 18,
+                        color: i == history.length - 1
+                            ? AppTheme.success
+                            : AppTheme.secondaryText(context),
+                      ),
+                      title: Text(
+                        h.unitsPerBox > 1 && h.boxCostPrice != null
+                            ? '${Currency.format(h.boxCostPrice!)} → ${Currency.format(h.boxSellingPrice ?? 0)} / box (${Currency.format(h.costPrice)} → ${Currency.format(h.sellingPrice)} / pc)'
+                            : '${Currency.format(h.costPrice)} → ${Currency.format(h.sellingPrice)} / pc',
+                        style: const TextStyle(
+                            fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text('$dateStr • ${h.sourceLabel}',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.secondaryText(context))),
+                    );
+                  },
+                ),
+              ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  // ── Quick Restock: add quantity to an existing product ──
+  void _showRestockDialog(Product p) {
+    final qtyCtrl = TextEditingController();
+    final supplierCtrl = TextEditingController();
+    final supplierPhoneCtrl = TextEditingController();
+    final supplierEmailCtrl = TextEditingController();
+    final invoiceCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    String unit = p.sellsAsBox ? 'box' : 'piece';
+    // Buy & sell prices for this batch, pre-filled with the current product prices
+    // (derived box prices are rounded to avoid float noise)
+    String fmtPrice(num v) =>
+        v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
+    final costCtrl = TextEditingController(
+        text: unit == 'box'
+            ? fmtPrice(p.boxCostPrice ?? (p.costPrice * p.unitsPerBox))
+            : fmtPrice(p.costPrice));
+    final sellPriceCtrl = TextEditingController(
+        text: unit == 'box'
+            ? fmtPrice(p.boxSellingPrice ?? (p.sellingPrice * p.unitsPerBox))
+            : fmtPrice(p.sellingPrice));
+    String paymentMethod = 'cash';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.add_shopping_cart, color: AppTheme.success, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Add Stock',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text(p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12, color: AppTheme.secondaryText(context))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.success.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  p.sellsAsBox
+                      ? 'Current stock: ${p.stockBoxes} box(es), ${p.currentStock} pc'
+                      : 'Current stock: ${p.totalStockPieces} pc',
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success),
+                ),
+              ),
+              if (p.priceHistory.length > 1) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Last price change: ${DateFormat('MMM d, yyyy').format(p.priceHistory.last.changedAt.toLocal())} — leaving the pre-filled prices unchanged keeps this batch at the current prices.',
+                  style: TextStyle(
+                      fontSize: 10.5, color: AppTheme.secondaryText(context)),
+                ),
+              ],
+              const SizedBox(height: 12),
+              if (p.sellsAsBox) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Boxes'),
+                        selected: unit == 'box',
+                        onSelected: (_) => setDialogState(() {
+                          unit = 'box';
+                          costCtrl.text = fmtPrice(p.boxCostPrice ?? (p.costPrice * p.unitsPerBox));
+                          sellPriceCtrl.text = fmtPrice(p.boxSellingPrice ?? (p.sellingPrice * p.unitsPerBox));
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Pieces'),
+                        selected: unit == 'piece',
+                        onSelected: (_) => setDialogState(() {
+                          unit = 'piece';
+                          costCtrl.text = fmtPrice(p.costPrice);
+                          sellPriceCtrl.text = fmtPrice(p.sellingPrice);
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextField(
+                controller: qtyCtrl,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Quantity to add (${unit == 'box' ? 'boxes' : 'pieces'}) *',
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // ── Supplier & Purchase Info ──
+              Row(
+                children: [
+                  Icon(Icons.local_shipping, size: 14, color: AppTheme.success),
+                  const SizedBox(width: 6),
+                  Text('Supplier & Purchase Info',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.success)),
+                  const SizedBox(width: 4),
+                  Text('* Supplier required',
+                      style: TextStyle(fontSize: 10, color: AppTheme.secondaryText(context))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _field(supplierCtrl, 'Supplier Company *'),
+              const SizedBox(height: 12),
+              _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
+              const SizedBox(height: 12),
+              _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 12),
+              _field(costCtrl,
+                  unit == 'box' ? 'Buying Price (per box) *' : 'Buying Price (per piece) *',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _field(sellPriceCtrl,
+                  unit == 'box' ? 'Selling Price (per box) *' : 'Selling Price (per piece) *',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 12),
+              _field(invoiceCtrl, 'Invoice Number'),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Payment Method'),
+                value: paymentMethod,
+                items: const [
+                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                  DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+                  DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+                  DropdownMenuItem(value: 'other', child: Text('Other')),
+                ],
+                onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
+              ),
+              const SizedBox(height: 12),
+              _field(notesCtrl, 'Notes'),
+            ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => _submitRestock(
+                  ctx,
+                  p,
+                  qtyCtrl,
+                  unit,
+                  supplierCtrl: supplierCtrl,
+                  supplierPhoneCtrl: supplierPhoneCtrl,
+                  supplierEmailCtrl: supplierEmailCtrl,
+                  invoiceCtrl: invoiceCtrl,
+                  notesCtrl: notesCtrl,
+                  costCtrl: costCtrl,
+                  sellPriceCtrl: sellPriceCtrl,
+                  paymentMethod: paymentMethod),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitRestock(
+    BuildContext ctx,
+    Product p,
+    TextEditingController qtyCtrl,
+    String unit, {
+    required TextEditingController supplierCtrl,
+    required TextEditingController supplierPhoneCtrl,
+    required TextEditingController supplierEmailCtrl,
+    required TextEditingController invoiceCtrl,
+    required TextEditingController notesCtrl,
+    required TextEditingController costCtrl,
+    required TextEditingController sellPriceCtrl,
+    required String paymentMethod,
+  }) async {
+    final qty = int.tryParse(qtyCtrl.text) ?? 0;
+    if (qty <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Enter a quantity greater than 0.'),
+          backgroundColor: AppTheme.danger));
+      return;
+    }
+    // Supplier is required so every restock is traceable to a purchase
+    if (supplierCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Supplier company is required.'),
+          backgroundColor: AppTheme.danger));
+      return;
+    }
+    final buyPrice = double.tryParse(costCtrl.text);
+    if (buyPrice == null || buyPrice < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Enter the buying price for this batch.'),
+          backgroundColor: AppTheme.danger));
+      return;
+    }
+    final sellPrice = double.tryParse(sellPriceCtrl.text);
+    if (sellPrice == null || sellPrice < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Enter the selling price for this batch.'),
+          backgroundColor: AppTheme.danger));
+      return;
+    }
+    try {
+      // Backend detects the duplicate name and merges the quantity into existing stock,
+      // records a Purchase with the supplier info, and updates the product prices
+      await ApiService.createProduct({
+        'name': p.name,
+        'categoryId': p.categoryId,
+        'minimumStock': p.minimumStock,
+        'sellingUnit': unit,
+        'unitsPerBox': p.unitsPerBox,
+        'stockBoxes': unit == 'box' ? qty : 0,
+        'currentStock': unit == 'piece' ? qty : 0,
+        'purchaseUnit': unit,
+        // Prices for this batch (per box or per piece) — backend stores the buying
+        // price on the purchase and updates the product's buy & sell prices
+        'costPrice': buyPrice,
+        'sellingPrice': sellPrice,
+        'batchCostPrice': buyPrice,
+        'batchSellingPrice': sellPrice,
+        'supplier': supplierCtrl.text.trim(),
+        'supplierPhone': supplierPhoneCtrl.text.trim().isNotEmpty
+            ? supplierPhoneCtrl.text.trim()
+            : null,
+        'supplierEmail': supplierEmailCtrl.text.trim().isNotEmpty
+            ? supplierEmailCtrl.text.trim()
+            : null,
+        'invoiceNumber': invoiceCtrl.text.trim().isNotEmpty ? invoiceCtrl.text.trim() : null,
+        'paymentMethod': paymentMethod,
+        'notes': notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
+      });
+      if (ctx.mounted) {
+        Navigator.pop(ctx);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Stock updated: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — purchase recorded'),
+            backgroundColor: AppTheme.success));
+      }
+      // Stock changed: Purchases section gets the intake, Store/others get new stock
+      AppEvents.instance.emit('purchases');
+      AppEvents.instance.emit('products');
+      _load();
+    } catch (e) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString()), backgroundColor: AppTheme.danger));
+      }
+    }
+  }
+
   // ── Show Form ──
   void _showForm({Product? product}) {
     final isEditing = product != null;
@@ -495,6 +911,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     String sellingUnit = product?.sellingUnit ?? 'piece';
     String? selectedCategoryId = product?.categoryId;
+    Product? duplicate;
 
     void recalcPieces() {
       final boxes = int.tryParse(stockBoxesCtrl.text) ?? 0;
@@ -526,7 +943,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ── Product Details ──
-                _field(nameCtrl, 'Product Name *'),
+                _field(nameCtrl, 'Product Name *',
+                    onChanged: (v) => setDialogState(() => duplicate = _findDuplicate(v))),
+                if (!isEditing && duplicate != null) ...[
+                  const SizedBox(height: 10),
+                  _duplicateBanner(ctx, duplicate!),
+                ],
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Category'),
@@ -677,8 +1099,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       final qty = sellingUnit == 'box'
                           ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
                           : (int.tryParse(stockCtrl.text) ?? 0);
-                      final hasSupplier = supplierCtrl.text.isNotEmpty || supplierPhoneCtrl.text.isNotEmpty;
-                      if (qty > 0 && hasSupplier && newProduct != null) {
+                      // Any initial stock counts as a purchase so the Purchases
+                      // section receives the product intake on that date,
+                      // even if no supplier was provided.
+                      if (qty > 0 && newProduct != null) {
                         final unitCost = sellingUnit == 'box'
                             ? (double.tryParse(boxCostCtrl.text) ?? 0)
                             : (double.tryParse(costCtrl.text) ?? 0);
@@ -705,7 +1129,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(msg), backgroundColor: AppTheme.success));
                   }
-                  _load();
+                  // Notify every section: stock/product data changed
+                  AppEvents.instance.emit('purchases');
+                  AppEvents.instance.emit('products');
                 } catch (e) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -755,6 +1181,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
     if (confirm == true) {
       await ApiService.deleteProduct(p.id);
+      AppEvents.instance.emit('products');
       _load();
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../services/auth_provider.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
@@ -33,10 +34,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+    // Stay live: purchases/restocks from other screens affect the reports data
+    AppEvents.instance.subscribe(_onEvent);
+  }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  void _onEvent(String event) {
+    if (!mounted) return;
+    if (event == 'purchases') {
+      _load(silent: true); // no spinner flash on background refresh
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       String? startStr;
       String? endStr;
@@ -126,6 +145,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         report: _report!,
         dateRangeLabel: _dateRangeLabel(),
         businessName: businessName,
+        inventory: _inventory,
       );
       final fileName = 'report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
       await downloadBytes(bytes, fileName, 'application/pdf');

@@ -1,3 +1,50 @@
+/// A snapshot of the product's prices at a point in time.
+class PriceHistoryEntry {
+  final double costPrice; // per piece
+  final double sellingPrice; // per piece
+  final double? boxCostPrice;
+  final double? boxSellingPrice;
+  final int unitsPerBox;
+  final String source; // created | restock | edit
+  final DateTime changedAt;
+
+  PriceHistoryEntry({
+    required this.costPrice,
+    required this.sellingPrice,
+    this.boxCostPrice,
+    this.boxSellingPrice,
+    this.unitsPerBox = 1,
+    this.source = 'restock',
+    required this.changedAt,
+  });
+
+  factory PriceHistoryEntry.fromJson(Map<String, dynamic> json) {
+    return PriceHistoryEntry(
+      costPrice: (json['costPrice'] ?? 0).toDouble(),
+      sellingPrice: (json['sellingPrice'] ?? 0).toDouble(),
+      boxCostPrice: (json['boxCostPrice'] as num?)?.toDouble(),
+      boxSellingPrice: (json['boxSellingPrice'] as num?)?.toDouble(),
+      unitsPerBox: (json['unitsPerBox'] as num?)?.toInt() ?? 1,
+      source: json['source']?.toString() ?? 'restock',
+      changedAt: json['changedAt'] != null
+          ? DateTime.parse(json['changedAt'])
+          : DateTime.now(),
+    );
+  }
+
+  String get sourceLabel {
+    switch (source) {
+      case 'created':
+        return 'Initial price';
+      case 'edit':        return 'Manual edit';
+      case 'restock':
+        return 'Restock';
+      default:
+        return 'Restock';
+    }
+  }
+}
+
 class Product {
   final String id;
   final String name;
@@ -15,6 +62,7 @@ class Product {
   final int stockBoxes;
   final double? boxSellingPrice;
   final double? boxCostPrice;
+  final List<PriceHistoryEntry> priceHistory;
 
   Product({
     required this.id,
@@ -33,6 +81,7 @@ class Product {
     this.stockBoxes = 0,
     this.boxSellingPrice,
     this.boxCostPrice,
+    this.priceHistory = const [],
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -57,6 +106,10 @@ class Product {
       stockBoxes: (json['stockBoxes'] as num?)?.toInt() ?? 0,
       boxSellingPrice: (json['boxSellingPrice'] as num?)?.toDouble(),
       boxCostPrice: (json['boxCostPrice'] as num?)?.toDouble(),
+      priceHistory: (json['priceHistory'] as List?)
+              ?.map((h) => PriceHistoryEntry.fromJson(h as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 

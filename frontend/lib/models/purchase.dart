@@ -5,6 +5,7 @@ class Purchase {
   final int quantity;
   final String purchaseUnit;
   final double unitCost;
+  final double? unitSellingPrice;
   final double totalCost;
   final String? supplier;
   final String? supplierPhone;
@@ -22,6 +23,7 @@ class Purchase {
     required this.quantity,
     this.purchaseUnit = 'box',
     required this.unitCost,
+    this.unitSellingPrice,
     required this.totalCost,
     this.supplier,
     this.supplierPhone,
@@ -45,6 +47,7 @@ class Purchase {
       quantity: json['quantity'] ?? 0,
       purchaseUnit: json['purchaseUnit'] ?? 'box',
       unitCost: (json['unitCost'] ?? 0).toDouble(),
+      unitSellingPrice: (json['unitSellingPrice'] as num?)?.toDouble(),
       totalCost: (json['totalCost'] ?? 0).toDouble(),
       supplier: json['supplier'],
       supplierPhone: json['supplierPhone'],

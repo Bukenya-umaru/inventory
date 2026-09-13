@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
@@ -24,16 +25,27 @@ class _StoreScreenState extends State<StoreScreen> {
   void initState() {
     super.initState();
     _load();
+    // Stay live: new/changed products from other sections appear automatically
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    // Only interested in product data changing (skip own search reloads)
+    if (event == 'products') {
+      _load(silent: true);
+    }
   }
 
   @override
   void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
     _searchTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       final results = await Future.wait([
         ApiService.getProducts(

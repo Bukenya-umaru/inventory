@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/damage.dart';
 import '../../models/product.dart';
 import '../../utils/theme.dart';
@@ -30,10 +31,30 @@ class _DamagesScreenState extends State<DamagesScreen> {
   }
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+    // Stay live: stock changes from restocks/sales made elsewhere
+    AppEvents.instance.subscribe(_onEvent);
+  }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  void _onEvent(String event) {
+    if (!mounted) return;
+    if (event == 'products') {
+      _load(silent: true); // product list/stock changed
+    } else if (event == 'damages') {
+      _load(silent: true); // a damage was reported elsewhere
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
     try {
       String? startStr;
       String? endStr;
@@ -472,6 +493,9 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     'reason': reasonCtrl.text,
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
+                  // Stock changed + damages list changed: notify all sections
+                  AppEvents.instance.emit('products');
+                  AppEvents.instance.emit('damages');
                   _showToday();
                 } catch (e) {
                   if (ctx.mounted) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/purchase.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
@@ -31,6 +32,21 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   void initState() {
     super.initState();
     _load();
+    // Stay live: the section reloads whenever a purchase/restock happens anywhere
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    if (event == 'purchases') {
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
   }
 
   Future<void> _load() async {

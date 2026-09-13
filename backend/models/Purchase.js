@@ -26,6 +26,10 @@ const purchaseSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  unitSellingPrice: {
+    type: Number,
+    min: 0
+  },
   totalCost: {
     type: Number,
     required: true

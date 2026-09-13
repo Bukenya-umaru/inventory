@@ -75,6 +75,19 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Price history: every distinct buy/sell price the product has had.
+  // Each purchase keeps its own unitCost/unitSellingPrice, so old batches
+  // retain their original buy price even after prices change.
+  priceHistory: [{
+    costPrice: { type: Number, required: true },   // per piece
+    sellingPrice: { type: Number, required: true }, // per piece
+    boxCostPrice: { type: Number },
+    boxSellingPrice: { type: Number },
+    unitsPerBox: { type: Number },
+    source: { type: String, enum: ['created', 'restock', 'edit'], default: 'restock' },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    changedAt: { type: Date, default: Date.now }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
