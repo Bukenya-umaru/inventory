@@ -5,7 +5,6 @@ const Product = require('../models/Product');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
-// GET /api/damages
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -39,7 +38,6 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   }
 });
 
-// POST /api/damages - Report damaged goods
 router.post('/', authenticate, requireActiveTenant, requirePermission('record_damages'), async (req, res) => {
   try {
     const { productId, quantity, damageUnit: reqDamageUnit, reason } = req.body;
@@ -55,7 +53,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    // Determine damage unit
     let damageUnit = reqDamageUnit || product.sellingUnit || 'piece';
     if (!['piece', 'box'].includes(damageUnit)) damageUnit = 'piece';
 
@@ -65,7 +62,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
       availableStock = product.stockBoxes || 0;
     } else {
       costPrice = product.costPrice;
-      // Total available pieces = loose pieces + pieces inside full boxes
+
       availableStock = (product.currentStock || 0) + ((product.stockBoxes || 0) * (product.unitsPerBox || 1));
     }
 
@@ -86,7 +83,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
     });
     await damage.save();
 
-    // Deduct stock — for pieces, open boxes if loose stock runs out
     if (damageUnit === 'box') {
       product.stockBoxes -= quantity;
     } else {

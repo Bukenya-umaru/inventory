@@ -6,15 +6,12 @@ const { decryptPassword } = require('../utils/encryption');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate } = require('../middleware/auth');
 
-/**
- * Check if viewer can see target's password
- */
 const canViewPassword = (viewer, targetUser) => {
-  // Developer can view all passwords
+
   if (viewer.role === 'developer') {
     return true;
   }
-  // Admin can view only their employees
+
   if (viewer.role === 'admin') {
     if (viewer.tenantId.toString() !== targetUser.tenantId.toString()) {
       return false;
@@ -24,11 +21,10 @@ const canViewPassword = (viewer, targetUser) => {
     }
     return true;
   }
-  // Employees cannot view any passwords
+
   return false;
 };
 
-// GET /api/passwords/view/:userId - View a user's password
 router.get('/view/:userId', authenticate, async (req, res) => {
   try {
     const targetUser = await User.findById(req.params.userId);
@@ -36,15 +32,12 @@ router.get('/view/:userId', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // Check permission
     if (!canViewPassword(req.user, targetUser)) {
       return res.status(403).json({ success: false, message: 'Not authorized to view this password.' });
     }
 
-    // Decrypt password
     const decryptedPassword = decryptPassword(targetUser.encryptedPassword, targetUser.passwordIV);
 
-    // Log the password view
     const log = new PasswordViewLog({
       tenantId: targetUser.tenantId,
       viewerId: req.userId,
@@ -56,7 +49,6 @@ router.get('/view/:userId', authenticate, async (req, res) => {
     });
     await log.save();
 
-    // Update user's password view count
     targetUser.passwordViewCount += 1;
     targetUser.lastPasswordView = new Date();
     await targetUser.save();
@@ -85,7 +77,6 @@ router.get('/view/:userId', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/passwords/audit - View password audit logs
 router.get('/audit', authenticate, async (req, res) => {
   try {
     let query = {};
@@ -108,7 +99,6 @@ router.get('/audit', authenticate, async (req, res) => {
   }
 });
 
-// PUT /api/passwords/reset/:userId - Developer/Admin reset a password
 router.put('/reset/:userId', authenticate, async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -121,7 +111,6 @@ router.put('/reset/:userId', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // Check permission
     if (!canViewPassword(req.user, targetUser)) {
       return res.status(403).json({ success: false, message: 'Not authorized to reset this password.' });
     }

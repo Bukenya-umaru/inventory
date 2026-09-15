@@ -2,25 +2,26 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-
-class ApiService {
-  // Auto-detect: emulator uses 10.0.2.2, real device uses localhost
+import 'package:shared_preferences/shared_preferences.dart';class ApiService {
   static String get baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api';
-    if (Platform.isAndroid) {
-      // Works for both emulator and real device on local network
-      return 'http://10.0.2.2:5000/api';
+    if (kIsWeb) {
+      return _env('API_BASE_URL') ?? 'http://localhost:5000/api';
     }
-    // iOS, desktop, etc.
-    return 'http://localhost:5000/api';
+    if (Platform.isAndroid) {
+      return _env('API_BASE_URL_ANDROID') ??
+          _env('API_BASE_URL') ??
+          'http://10.0.2.2:5000/api';
+    }
+    return _env('API_BASE_URL') ?? 'http://localhost:5000/api';
   }
 
-  /// Server root (no /api suffix) — used for uploaded files like logos.
+  static String? _env(String key) =>
+      dotenv.isInitialized ? dotenv.maybeGet(key) : null;
+
   static String get serverUrl => baseUrl.replaceAll(RegExp(r'/api/?$'), '');
 
-  /// Full URL for an uploaded file path (e.g. '/uploads/logos/123.png').
   static String fileUrl(String? path) =>
       (path == null || path.isEmpty) ? '' : '$serverUrl$path';
 
@@ -60,7 +61,6 @@ class ApiService {
     throw ApiException(body['message'] ?? 'Request failed', response.statusCode);
   }
 
-  // ── Auth ──
   static Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
@@ -101,7 +101,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Tenants ──
   static Future<Map<String, dynamic>> getTenants({String? status, String? search}) async {
     final params = <String, String>{};
     if (status != null && status.isNotEmpty) params['status'] = status;
@@ -154,7 +153,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  /// Create tenant with optional logo bytes (multipart upload, web-compatible)
   static Future<Map<String, dynamic>> createTenantWithLogo(
     Map<String, dynamic> data,
     List<int>? logoBytes,
@@ -201,7 +199,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  /// Update branding with optional logo bytes (multipart upload, web-compatible)
   static Future<Map<String, dynamic>> updateBrandingWithLogo(
     String tenantId,
     Map<String, dynamic> data,
@@ -226,7 +223,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Users ──
   static Future<Map<String, dynamic>> getUsers({String? role, String? search}) async {
     final params = <String, String>{};
     if (role != null && role.isNotEmpty) params['role'] = role;
@@ -263,7 +259,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Products ──
   static Future<Map<String, dynamic>> getProducts({String? search, bool? lowStock}) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
@@ -299,7 +294,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Categories ──
   static Future<Map<String, dynamic>> getCategories() async {
     final response = await http.get(
       Uri.parse('$baseUrl/categories'),
@@ -334,7 +328,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Sales ──
   static Future<Map<String, dynamic>> getSales({String? startDate, String? endDate}) async {
     final params = <String, String>{};
     if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
@@ -353,7 +346,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Damages ──
   static Future<Map<String, dynamic>> getDamages({String? startDate, String? endDate}) async {
     final params = <String, String>{};
     if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
@@ -372,7 +364,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Purchases (Add Stock) ──
   static Future<Map<String, dynamic>> getPurchases({String? startDate, String? endDate}) async {
     final params = <String, String>{};
     if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
@@ -391,7 +382,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Reports ──
   static Future<Map<String, dynamic>> getProfitReport({String period = 'daily', String? startDate, String? endDate}) async {
     final params = <String, String>{'period': period};
     if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
@@ -418,7 +408,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Developer: Create Admin Account ──
   static Future<Map<String, dynamic>> createAdminAccount(Map<String, dynamic> data) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/admin'),
@@ -428,7 +417,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Activity notifications ──
   static Future<Map<String, dynamic>> getActivity({int limit = 50, List<String>? types}) async {
     final params = <String, String>{'limit': '$limit'};
     if (types != null && types.isNotEmpty) params['types'] = types.join(',');
@@ -447,7 +435,6 @@ class ApiService {
     await _handleResponse(response);
   }
 
-  // ── Audit ──
   static Future<Map<String, dynamic>> getAuditLogs({String? eventType, String? severity}) async {
     final params = <String, String>{};
     if (eventType != null && eventType.isNotEmpty) params['eventType'] = eventType;
@@ -457,7 +444,6 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  // ── Passwords ──
   static Future<Map<String, dynamic>> viewPassword(String userId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/passwords/view/$userId'),
@@ -491,4 +477,4 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
-}
+}

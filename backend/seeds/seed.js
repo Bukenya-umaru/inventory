@@ -8,36 +8,42 @@ const Category = require('../models/Category');
 const Product = require('../models/Product');
 const { encryptPassword } = require('../utils/encryption');
 
+const devPassword = process.env.SEED_DEVELOPER_PASSWORD;
+const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+const empPassword = process.env.SEED_EMPLOYEE_PASSWORD;
+
+if (!devPassword || !adminPassword || !empPassword) {
+  console.error('Missing seed credentials in .env.');
+  console.error('Set SEED_DEVELOPER_PASSWORD, SEED_ADMIN_PASSWORD and SEED_EMPLOYEE_PASSWORD in backend/.env');
+  process.exit(1);
+}
+
 const seed = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Check if developer exists
     const existingDev = await User.findOne({ role: 'developer' });
     if (existingDev) {
       console.log('Developer account already exists. Skipping seed.');
       process.exit(0);
     }
 
-    // Create developer account
-    const devPassword = 'admin123';
     const { encryptedPassword, iv } = encryptPassword(devPassword);
     const passwordHash = await bcrypt.hash(devPassword, 12);
 
     const developer = new User({
       name: 'System Developer',
-      email: 'developer@system.com',
+      email: (process.env.SEED_DEVELOPER_EMAIL || 'developer@system.com').toLowerCase(),
       encryptedPassword,
       passwordIV: iv,
       passwordHash,
       role: 'developer'
     });
     await developer.save();
-    console.log('✅ Developer account created: developer@system.com / admin123');
+    console.log(`✅ Developer account created: ${process.env.SEED_DEVELOPER_EMAIL || 'developer@system.com'}`);
 
     // Create sample business
-    const adminPassword = 'admin123';
     const { encryptedPassword: adminEnc, iv: adminIv } = encryptPassword(adminPassword);
     const adminHash = await bcrypt.hash(adminPassword, 12);
 
@@ -55,7 +61,7 @@ const seed = async () => {
 
     const admin = new User({
       name: 'John Doe',
-      email: 'john@abcretail.com',
+      email: (process.env.SEED_ADMIN_EMAIL || 'john@abcretail.com').toLowerCase(),
       encryptedPassword: adminEnc,
       passwordIV: adminIv,
       passwordHash: adminHash,
@@ -71,7 +77,7 @@ const seed = async () => {
       ]
     });
     await admin.save();
-    console.log('✅ Admin account created: john@abcretail.com / admin123');
+    console.log(`✅ Admin account created: ${process.env.SEED_ADMIN_EMAIL || 'john@abcretail.com'}`);
 
     // Create categories
     const catNames = ['Electronics', 'Clothing', 'Food & Beverage', 'Furniture', 'Books', 'Health & Beauty'];
@@ -105,7 +111,6 @@ const seed = async () => {
     ];
 
     for (const emp of empNames) {
-      const empPassword = 'admin123';
       const { encryptedPassword: empEnc, iv: empIv } = encryptPassword(empPassword);
       const empHash = await bcrypt.hash(empPassword, 12);
 
@@ -128,10 +133,10 @@ const seed = async () => {
     console.log('✅ Sample employees created');
 
     console.log('\n🎉 Seed completed successfully!');
-    console.log('\nLogin credentials:');
-    console.log('  Developer: developer@system.com / admin123');
-    console.log('  Admin:     john@abcretail.com / admin123');
-    console.log('  Employee:  sarah@abcretail.com / admin123');
+    console.log('\nLogin accounts created (passwords set via .env):');
+    console.log(`  Developer: ${process.env.SEED_DEVELOPER_EMAIL || 'developer@system.com'}`);
+    console.log(`  Admin:     ${process.env.SEED_ADMIN_EMAIL || 'john@abcretail.com'}`);
+    console.log('  Employee:  sarah@abcretail.com');
 
     process.exit(0);
   } catch (error) {
@@ -140,4 +145,4 @@ const seed = async () => {
   }
 };
 
-seed();
+seed();

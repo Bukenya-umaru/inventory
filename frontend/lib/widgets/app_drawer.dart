@@ -8,7 +8,6 @@ import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 import '../screens/shared/activity_notifications_screen.dart';
 
-/// Breakpoint width: screens wider than this show the permanent sidebar.
 const double kWideScreenBreakpoint = 900;
 
 class AppDrawer extends StatelessWidget {
@@ -44,7 +43,6 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
-/// Permanent sidebar for wide screens (laptops, desktops).
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTap;
@@ -77,7 +75,6 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
-/// Shared drawer/sidebar content.
 class _DrawerContent extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTap;
@@ -100,7 +97,7 @@ class _DrawerContent extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-          // Branding header
+
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(isSmall ? 14 : 20),
@@ -135,7 +132,7 @@ class _DrawerContent extends StatelessWidget {
               ],
             ),
           ),
-          // Nav items
+
           Expanded(
             child: Container(
               color: AppTheme.sidebarBg,
@@ -198,8 +195,6 @@ class _DrawerContent extends StatelessWidget {
   }
 }
 
-/// Responsive wrapper: shows permanent sidebar on wide screens,
-/// and a drawer (hamburger menu) on narrow screens.
 class ResponsiveNavWrapper extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemTap;
@@ -224,7 +219,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
     final isWide = screenWidth >= kWideScreenBreakpoint;
 
     if (isWide) {
-      // Wide screen: permanent sidebar + body
+
       return Scaffold(
         backgroundColor: AppTheme.surfaceColor(context),
         body: Row(
@@ -264,7 +259,6 @@ class ResponsiveNavWrapper extends StatelessWidget {
       );
     }
 
-    // Narrow screen: drawer (hamburger)
     return Scaffold(
       appBar: appBar ?? AppBar(
         title: Text(title ?? ''),
@@ -284,8 +278,6 @@ class ResponsiveNavWrapper extends StatelessWidget {
   }
 }
 
-/// Notification bell in the AppBar: shows an unread badge and opens the
-/// activity feed (works for admin and employee).
 class _NotificationBell extends StatefulWidget {
   const _NotificationBell();
 
@@ -306,8 +298,7 @@ class _NotificationBellState extends State<_NotificationBell> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Start the background watcher once we know the user's role; it polls
-    // unread activity and plays the notification sound on new items.
+
     final role = context.watch<AuthProvider>().user?.role;
     ActivityWatcher.instance.updateRole(role);
     if (role == 'admin' || role == 'employee') {
@@ -333,7 +324,7 @@ class _NotificationBellState extends State<_NotificationBell> {
       final res = await ApiService.getActivity(limit: 1);
       if (mounted) setState(() => _unread = (res['unreadCount'] ?? 0) as int);
     } catch (_) {
-      // offline — badge just stays as-is
+
     }
   }
 
@@ -342,14 +333,14 @@ class _NotificationBellState extends State<_NotificationBell> {
       context,
       MaterialPageRoute(builder: (_) => const ActivityNotificationsScreen()),
     );
-    _fetchUnread(); // badge may have changed while viewing
-    await ActivityWatcher.instance.resync(); // new baseline, no sound
+    _fetchUnread(); 
+    await ActivityWatcher.instance.resync(); 
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    // Business account users only (developer has no business bell)
+
     if (auth.user?.role != 'admin' && auth.user?.role != 'employee') {
       return const SizedBox.shrink();
     }
@@ -384,7 +375,6 @@ class _NotificationBellState extends State<_NotificationBell> {
   }
 }
 
-/// Settings menu shown as a popup from the AppBar settings icon.
 class _SettingsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -508,7 +498,7 @@ class _SettingsMenu extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Current color preview
+
                 Container(
                   height: 40,
                   decoration: BoxDecoration(
@@ -525,7 +515,7 @@ class _SettingsMenu extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Color grid
+
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,

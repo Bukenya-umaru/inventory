@@ -7,7 +7,6 @@ import 'package:http/testing.dart';
 import 'package:inventory_app/screens/admin/store_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Raw JSON returned by the mocked API, mimicking the backend response shape.
 const List<Map<String, dynamic>> _testProducts = [
   {
     '_id': 'p1',
@@ -89,12 +88,11 @@ Future<void> _pumpStoreAt(
         home: Scaffold(body: StoreScreen()),
       ),
     );
-    // First pump builds loading state, second lets the mocked API resolve.
+
     await tester.pump();
     await tester.pumpAndSettle();
   }, () => MockClient(_mockHandler));
 
-  // Any layout overflow (RenderFlex error) or build exception fails the test.
   expect(tester.takeException(), isNull);
 }
 

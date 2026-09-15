@@ -2,7 +2,7 @@ class User {
   final String id;
   final String name;
   final String email;
-  final String role; // developer, admin, employee
+  final String role; 
   final String? tenantId;
   final List<String> permissions;
   final String? employeeId;

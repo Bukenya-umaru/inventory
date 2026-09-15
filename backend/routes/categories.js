@@ -4,7 +4,6 @@ const Category = require('../models/Category');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
-// GET /api/categories
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -15,7 +14,6 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   }
 });
 
-// POST /api/categories
 router.post('/', authenticate, requireActiveTenant, requirePermission('manage_categories'), async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -53,7 +51,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('manage_ca
   }
 });
 
-// PUT /api/categories/:id
 router.put('/:id', authenticate, requireActiveTenant, requirePermission('manage_categories'), async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
@@ -72,7 +69,6 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('manage_
   }
 });
 
-// DELETE /api/categories/:id
 router.delete('/:id', authenticate, requireActiveTenant, requirePermission('manage_categories'), async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;

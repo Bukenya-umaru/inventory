@@ -11,7 +11,6 @@ const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-// GET /api/tenants - Developer: list all businesses
 router.get('/', authenticate, requireRole('developer'), async (req, res) => {
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
@@ -31,7 +30,6 @@ router.get('/', authenticate, requireRole('developer'), async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    // Get user counts per tenant
     const tenantsWithCounts = await Promise.all(
       tenants.map(async (t) => {
         const userCount = await User.countDocuments({ tenantId: t._id, isActive: true });
@@ -50,7 +48,6 @@ router.get('/', authenticate, requireRole('developer'), async (req, res) => {
   }
 });
 
-// GET /api/tenants/stats - Developer dashboard stats
 router.get('/stats', authenticate, requireRole('developer'), async (req, res) => {
   try {
     const totalBusinesses = await Tenant.countDocuments();
@@ -61,7 +58,6 @@ router.get('/stats', authenticate, requireRole('developer'), async (req, res) =>
     const totalEmployees = await User.countDocuments({ role: 'employee', isActive: true });
     const totalUsers = totalAdmins + totalEmployees;
 
-    // Recent activities
     const recentTenants = await Tenant.find().sort({ createdAt: -1 }).limit(5);
 
     res.json({
@@ -83,7 +79,6 @@ router.get('/stats', authenticate, requireRole('developer'), async (req, res) =>
   }
 });
 
-// POST /api/tenants - Developer: create a business
 router.post('/', authenticate, requireRole('developer'), upload.single('businessLogo'), async (req, res) => {
   try {
     const {
@@ -95,13 +90,11 @@ router.post('/', authenticate, requireRole('developer'), upload.single('business
       return res.status(400).json({ success: false, message: 'Required fields missing.' });
     }
 
-    // Check if email already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already registered.' });
     }
 
-    // Create tenant
     const tenant = new Tenant({
       businessName,
       businessType: businessType || 'Retail',
@@ -115,7 +108,6 @@ router.post('/', authenticate, requireRole('developer'), upload.single('business
     });
     await tenant.save();
 
-    // Create admin user for the business
     const { encryptedPassword, iv } = encryptPassword(password);
     const passwordHash = await bcrypt.hash(password, 12);
 
@@ -138,7 +130,6 @@ router.post('/', authenticate, requireRole('developer'), upload.single('business
     });
     await adminUser.save();
 
-    // Create default categories
     const categories = defaultCategories
       ? JSON.parse(defaultCategories)
       : ['Electronics', 'Clothing', 'Food & Beverage', 'Furniture', 'Books', 'Health & Beauty'];
@@ -180,7 +171,6 @@ router.post('/', authenticate, requireRole('developer'), upload.single('business
   }
 });
 
-// PUT /api/tenants/:id/suspend - Developer: suspend business
 router.put('/:id/suspend', authenticate, requireRole('developer'), async (req, res) => {
   try {
     const { reason } = req.body;
@@ -215,7 +205,6 @@ router.put('/:id/suspend', authenticate, requireRole('developer'), async (req, r
   }
 });
 
-// PUT /api/tenants/:id/reactivate - Developer: reactivate business
 router.put('/:id/reactivate', authenticate, requireRole('developer'), async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.params.id);
@@ -248,7 +237,6 @@ router.put('/:id/reactivate', authenticate, requireRole('developer'), async (req
   }
 });
 
-// DELETE /api/tenants/:id - Developer: permanently delete business
 router.delete('/:id', authenticate, requireRole('developer'), async (req, res) => {
   try {
     const { confirmation } = req.body;
@@ -261,13 +249,11 @@ router.delete('/:id', authenticate, requireRole('developer'), async (req, res) =
       return res.status(404).json({ success: false, message: 'Business not found.' });
     }
 
-    // Mark as deleted instead of removing
     tenant.status = 'deleted';
     tenant.deletionReason = req.body.reason || 'Developer deletion';
     tenant.deletionDate = new Date();
     await tenant.save();
 
-    // Deactivate all users
     await User.updateMany({ tenantId: tenant._id }, { isActive: false, deletedAt: new Date(), deletedBy: req.userId });
 
     await createAuditLog({
@@ -288,7 +274,6 @@ router.delete('/:id', authenticate, requireRole('developer'), async (req, res) =
   }
 });
 
-// GET /api/tenants/:id/dashboard - Admin dashboard for their business
 router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const tenantId = req.user.tenantId;
@@ -308,7 +293,6 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const productCount = products.length;
     const lowStockProducts = products.filter(p => p.currentStock <= p.minimumStock).length;
 
-    // Monthly stats
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthlySales = await Sale.find({ tenantId, saleDate: { $gte: monthStart } });
     const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.totalAmount, 0);
@@ -339,7 +323,6 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
   }
 });
 
-// PUT /api/tenants/:id/branding - Developer: update business branding
 router.put('/:id/branding', authenticate, requireRole('developer'), upload.single('businessLogo'), async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.params.id);

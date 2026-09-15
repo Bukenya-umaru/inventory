@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_provider.dart';
 import 'services/notification_sound_service.dart';
@@ -10,9 +11,14 @@ import 'screens/developer/developer_home.dart';
 import 'screens/admin/admin_home.dart';
 import 'screens/employee/employee_home.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  NotificationSoundService.instance.preload(); // load mute pref + warm player
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {}
+
+  NotificationSoundService.instance.preload(); 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -49,12 +55,12 @@ class InventoryApp extends StatelessWidget {
             primaryColor: themeProvider.accentColor,
           ),
           themeMode: themeProvider.themeMode,
-          themeAnimationDuration: Duration.zero, // switch themes instantly, no fade
+          themeAnimationDuration: Duration.zero, 
           home: const AuthGate(),
-        // Allow system font scaling (accessibility) but cap at 1.5x
+
         builder: (context, child) {
           final mediaQuery = MediaQuery.of(context);
-          final currentScale = mediaQuery.textScaler.scale(14) / 14; // derive factor
+          final currentScale = mediaQuery.textScaler.scale(14) / 14; 
           final clampedScaler = TextScaler.linear(
             currentScale.clamp(0.8, 1.5),
           );
@@ -90,8 +96,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // Refresh user + branding (logo, business name) whenever the app resumes,
-  // so developer-uploaded branding shows up without re-login.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -111,7 +115,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
         if (!auth.isAuthenticated) {
           return const LoginScreen();
         }
-        // Route based on role — same login, different dashboards
+
         switch (auth.user!.role) {
           case 'developer':
             return const DeveloperHome();
@@ -124,4 +128,4 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       },
     );
   }
-}
+}

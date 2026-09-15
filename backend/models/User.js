@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
-  // Password stored with AES-256 encryption
+
   encryptedPassword: {
     type: String,
     required: true
@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Also store bcrypt hash for authentication
+
   passwordHash: {
     type: String,
     required: true
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     ref: 'Tenant',
     default: null
   },
-  // Account Creation Tracking
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -56,7 +56,7 @@ const userSchema = new mongoose.Schema({
   backupReason: {
     type: String
   },
-  // Employee Details
+
   employeeId: {
     type: String,
     sparse: true
@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema({
   position: {
     type: String
   },
-  // Permissions
+
   permissions: [{
     type: String,
     enum: [
@@ -90,7 +90,7 @@ const userSchema = new mongoose.Schema({
   deletionReason: {
     type: String
   },
-  // Password viewing audit
+
   passwordViewCount: {
     type: Number,
     default: 0
@@ -101,7 +101,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  // Notifications: timestamp of last activity-feed visit (unread = newer audit logs)
+
   lastActivityReadAt: {
     type: Date,
     default: null

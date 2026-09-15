@@ -1,9 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-/**
- * Authenticate JWT token
- */
 const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -29,9 +26,6 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-/**
- * Require specific roles
- */
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -44,13 +38,10 @@ const requireRole = (...roles) => {
   };
 };
 
-/**
- * Require active tenant (non-suspended)
- */
 const requireActiveTenant = async (req, res, next) => {
   try {
     if (req.user.role === 'developer') {
-      return next(); // Developer bypasses tenant check
+      return next(); 
     }
     if (!req.user.tenantId) {
       return res.status(403).json({ success: false, message: 'No business associated.' });
@@ -67,16 +58,13 @@ const requireActiveTenant = async (req, res, next) => {
   }
 };
 
-/**
- * Check specific permission
- */
 const requirePermission = (permission) => {
   return (req, res, next) => {
     if (req.user.role === 'developer') {
-      return next(); // Developer has all permissions
+      return next(); 
     }
     if (req.user.role === 'admin') {
-      return next(); // Admin has all business permissions
+      return next(); 
     }
     if (!req.user.permissions || !req.user.permissions.includes(permission)) {
       return res.status(403).json({ success: false, message: `Permission denied: ${permission}` });

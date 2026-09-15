@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
+
                       Container(
                         padding: EdgeInsets.all(isSmall ? 16 : 24),
                         decoration: BoxDecoration(
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppTheme.primary),
                       ),
                       SizedBox(height: isSmall ? 16 : 28),
-                      // Title
+
                       Text('Inventory Management',
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, isSmall ? 22 : 28),
@@ -99,7 +99,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: isSmall ? 24 : 40),
 
-                      // Error
                       if (_error != null)
                         Container(
                           width: double.infinity,
@@ -122,7 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                      // Email
                       TextFormField(
                         controller: _emailCtrl,
                         keyboardType: TextInputType.emailAddress,
@@ -142,7 +140,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: isSmall ? 12 : 18),
 
-                      // Password
                       TextFormField(
                         controller: _passCtrl,
                         obscureText: _obscure,
@@ -166,7 +163,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: isSmall ? 20 : 32),
 
-                      // Login button
                       SizedBox(
                         width: double.infinity,
                         height: isSmall ? 46 : 52,

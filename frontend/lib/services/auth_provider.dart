@@ -24,15 +24,13 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      // Token invalid or server unreachable - clear and show login
+
       await ApiService.clearToken();
     }
     _loading = false;
     notifyListeners();
   }
 
-  /// Re-fetch the current user + business branding (logo, name) from the server.
-  /// Called when the app resumes so developer-uploaded branding appears live.
   Future<void> refreshBranding() async {
     if (_user == null) return;
     try {
@@ -41,7 +39,7 @@ class AuthProvider extends ChangeNotifier {
       _branding = res['branding'] != null ? Branding.fromJson(res['branding']) : null;
       notifyListeners();
     } catch (_) {
-      // Offline or server error - keep the cached branding
+
     }
   }
 
@@ -54,7 +52,7 @@ class AuthProvider extends ChangeNotifier {
         _branding = Branding.fromJson(res['branding']);
       }
       notifyListeners();
-      return null; // success
+      return null; 
     } on ApiException catch (e) {
       return e.message;
     } catch (e) {

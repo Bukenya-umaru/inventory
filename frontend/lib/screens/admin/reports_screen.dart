@@ -37,14 +37,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: purchases/restocks from other screens affect the reports data
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
   void _onEvent(String event) {
     if (!mounted) return;
     if (event == 'purchases') {
-      _load(silent: true); // no spinner flash on background refresh
+      _load(silent: true); 
     }
   }
 
@@ -135,7 +135,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return _period[0].toUpperCase() + _period.substring(1);
   }
 
-  // ── PDF Download ──
   Future<void> _downloadReport() async {
     if (_report == null) return;
     try {
@@ -171,7 +170,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final visibleSales = _showAllSales ? sales : sales.take(5).toList();
     final visibleDamages = _showAllDamages ? damages : damages.take(5).toList();
 
-    // Sort allProducts: those with sales/damages first, then alphabetically
     final sortedProductKeys = allProducts.keys.toList()..sort((a, b) {
       final pa = allProducts[a] as Map;
       final pb = allProducts[b] as Map;
@@ -188,7 +186,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: ListView(
         padding: EdgeInsets.all(AppTheme.pad(context, 16)),
         children: [
-          // ── Header + Download ──
+
           Row(
             children: [
               Expanded(
@@ -210,7 +208,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           SizedBox(height: AppTheme.pad(context, 12)),
 
-          // ── Period Chips ──
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -230,7 +227,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           SizedBox(height: AppTheme.pad(context, 16)),
 
-          // ── Summary Cards ──
           Row(
             children: [
               Expanded(child: _summaryCard('Revenue', Currency.formatWhole((r['totalRevenue'] ?? 0)), AppTheme.success, Icons.trending_up)),
@@ -256,7 +252,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           SizedBox(height: AppTheme.pad(context, 20)),
 
-          // ── Per-Product Detail Cards ──
           if (allProducts.isNotEmpty) ...[
             _sectionHeader('Product Details (${allProducts.length})'),
             const SizedBox(height: 8),
@@ -268,7 +263,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SizedBox(height: AppTheme.pad(context, 20)),
           ],
 
-          // ── Product Sales Breakdown Table ──
           if (productBreakdown.isNotEmpty) ...[
             _sectionHeader('Sales by Product'),
             const SizedBox(height: 8),
@@ -276,7 +270,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SizedBox(height: AppTheme.pad(context, 20)),
           ],
 
-          // ── Product Damage Breakdown Table ──
           if (damageBreakdown.isNotEmpty) ...[
             _sectionHeader('Damages by Product'),
             const SizedBox(height: 8),
@@ -284,7 +277,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SizedBox(height: AppTheme.pad(context, 20)),
           ],
 
-          // ── Sales List ──
           if (sales.isNotEmpty) ...[
             _sectionHeader('All Sales (${sales.length})'),
             const SizedBox(height: 8),
@@ -296,7 +288,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SizedBox(height: AppTheme.pad(context, 20)),
           ],
 
-          // ── Damages List ──
           if (damages.isNotEmpty) ...[
             _sectionHeader('All Damages (${damages.length})'),
             const SizedBox(height: 8),
@@ -308,7 +299,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             SizedBox(height: AppTheme.pad(context, 20)),
           ],
 
-          // ── Inventory ──
           _sectionHeader('Inventory Overview'),
           SizedBox(height: AppTheme.pad(context, 8)),
           Row(
@@ -326,7 +316,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ── Per-Product Detail Card ──
   Widget _productDetailCard(String name, Map p) {
     final isExpanded = _expandedProduct == name;
     final qtySold = p['quantitySold'] ?? 0;
@@ -367,7 +356,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           padding: EdgeInsets.all(AppTheme.pad(context, 12)),
           child: Column(
             children: [
-              // ── Header Row ──
+
               Row(
                 children: [
                   Container(
@@ -404,7 +393,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
 
-              // ── Quick Stats Row ──
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -416,7 +404,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
 
-              // ── Expanded Details ──
               if (isExpanded) ...[
                 const Divider(height: 16),
                 _detailGrid(p),
@@ -456,7 +443,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return Column(
       children: [
-        // Pricing
+
         _detailRow('Cost Price', Currency.format(costPrice)),
         _detailRow('Selling Price', Currency.format(sellPrice)),
         if (unit == 'box') ...[
@@ -467,7 +454,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _detailRow('Total Stock (pcs)', '$totalStock'),
         _detailRow('Minimum Stock', '$minStock'),
         const Divider(height: 12),
-        // Sales
+
         _detailRow('Quantity Sold', '${p['quantitySold'] ?? 0}'),
         _detailRow('Sales Revenue', Currency.formatWhole(revenue)),
         _detailRow('Cost of Goods Sold', Currency.formatWhole(costOfGoods)),
@@ -475,7 +462,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _detailRow('Profit Margin', '${margin.toStringAsFixed(1)}%', color: margin > 0 ? AppTheme.success : AppTheme.danger),
         _detailRow('Sales Transactions', '${p['salesCount'] ?? 0}'),
         const Divider(height: 12),
-        // Damages
+
         _detailRow('Quantity Damaged', '${p['quantityDamaged'] ?? 0}', color: (p['quantityDamaged'] ?? 0) > 0 ? AppTheme.danger : null),
         _detailRow('Damage Loss', '-${Currency.formatWhole(loss)}', color: loss > 0 ? AppTheme.danger : null),
         _detailRow('Damage Reports', '${p['damageCount'] ?? 0}'),
@@ -494,8 +481,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
     );
   }
-
-  // ── Existing Widgets ──
 
   Widget _periodChip(String value, String label) {
     final isActive = _period == value;

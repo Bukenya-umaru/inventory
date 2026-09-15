@@ -13,9 +13,7 @@ class Currency {
     decimalDigits: 2,
   );
 
-  /// Format as "UGX 50,000" (no decimals) – good for large amounts / headers.
   static String formatWhole(num amount) => _whole.format(amount);
 
-  /// Format as "UGX 50,000.00" (2 decimals) – good for unit prices.
   static String format(num amount) => _withDecimals.format(amount);
 }

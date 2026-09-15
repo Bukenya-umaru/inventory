@@ -32,7 +32,7 @@ const tenantSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // Account Status
+
   status: {
     type: String,
     enum: ['active', 'suspended', 'deleted'],

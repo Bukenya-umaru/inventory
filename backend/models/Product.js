@@ -75,12 +75,10 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Price history: every distinct buy/sell price the product has had.
-  // Each purchase keeps its own unitCost/unitSellingPrice, so old batches
-  // retain their original buy price even after prices change.
+
   priceHistory: [{
-    costPrice: { type: Number, required: true },   // per piece
-    sellingPrice: { type: Number, required: true }, // per piece
+    costPrice: { type: Number, required: true },   
+    sellingPrice: { type: Number, required: true }, 
     boxCostPrice: { type: Number },
     boxSellingPrice: { type: Number },
     unitsPerBox: { type: Number },

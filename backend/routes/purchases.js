@@ -5,7 +5,6 @@ const Product = require('../models/Product');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
-// GET /api/purchases
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -35,7 +34,6 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   }
 });
 
-// POST /api/purchases - Add stock (purchase)
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
     const { productId, quantity, purchaseUnit: reqPurchaseUnit, unitCost, supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes } = req.body;
@@ -51,7 +49,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    // Determine purchase unit — default to box
     let purchaseUnit = reqPurchaseUnit || 'box';
     if (!['piece', 'box'].includes(purchaseUnit)) purchaseUnit = 'box';
 
@@ -75,7 +72,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     });
     await purchase.save();
 
-    // Add stock
     if (purchaseUnit === 'box') {
       product.stockBoxes += quantity;
     } else {

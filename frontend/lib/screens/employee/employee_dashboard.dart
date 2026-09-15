@@ -24,7 +24,7 @@ class EmployeeDashboard extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        // Welcome + Quick Actions row
+
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

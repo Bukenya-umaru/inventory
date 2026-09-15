@@ -5,7 +5,7 @@ class ThemeProvider extends ChangeNotifier {
   static const _keyDark = 'dark_mode';
   static const _keyAccent = 'accent_color';
   bool _isDark = false;
-  int _accentColorValue = 0xFFE53935; // default red
+  int _accentColorValue = 0xFFE53935; 
   SharedPreferences? _prefs;
 
   bool get isDark => _isDark;

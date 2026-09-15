@@ -6,7 +6,6 @@ const Category = require('../models/Category');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
-// GET /api/products
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -41,13 +40,12 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   }
 });
 
-// POST /api/products
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
     const { name, description, sku, categoryId, costPrice, sellingPrice, currentStock, minimumStock, unit, sellingUnit, unitsPerBox, stockBoxes, boxSellingPrice, boxCostPrice,
-      // Supplier / purchase info (optional, used when merging)
+
       supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes, purchaseUnit: reqPurchaseUnit, unitCost: reqUnitCost,
-      // Batch prices for a restock (per purchaseUnit) — update the product's buy & sell prices
+
       batchCostPrice, batchSellingPrice } = req.body;
 
     if (!name || !categoryId || costPrice === undefined || sellingPrice === undefined) {
@@ -56,13 +54,11 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
 
     const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
 
-    // Verify category belongs to tenant
     const category = await Category.findOne({ _id: categoryId, tenantId });
     if (!category) {
       return res.status(400).json({ success: false, message: 'Invalid category.' });
     }
 
-    // Check if a product with the same name already exists for this tenant
     const normalizedName = name.trim().toLowerCase();
     const existingProduct = await Product.findOne({
       tenantId,
@@ -71,8 +67,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     });
 
     if (existingProduct) {
-      // ── Merge: product name already exists ──
-      // Determine the quantity to add and the purchase unit
+
       let purchaseUnit = reqPurchaseUnit || (sellingUnit === 'piece' ? 'piece' : 'box');
       if (!['piece', 'box'].includes(purchaseUnit)) purchaseUnit = 'box';
 
@@ -82,10 +77,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
 
       const upb = existingProduct.unitsPerBox || 1;
 
-      // Restocking at the same price as before must NOT modify the product's prices.
-      // Only apply a price update when the entered batch price actually differs from
-      // the current one (compared at the unit it was entered for; small tolerance
-      // for float/rounding drift).
       const differs = (newVal, prevVal) =>
         Math.abs(Number(newVal) - Number(prevVal ?? 0)) >= 0.01;
       let pricesUpdated = false;
@@ -125,7 +116,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         }
       }
 
-      // Update stock on existing product
       if (qtyToAdd > 0) {
         if (purchaseUnit === 'box') {
           existingProduct.stockBoxes += qtyToAdd;
@@ -135,7 +125,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         await existingProduct.save();
       }
 
-      // Record the price change in the product's history (only when prices changed)
       if (pricesUpdated) {
         existingProduct.priceHistory.push({
           costPrice: existingProduct.costPrice,
@@ -153,7 +142,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         }
       }
 
-      // Effective unit cost for this restock (per purchaseUnit); falls back to batch/product prices
       const unitCost = reqUnitCost != null
         ? reqUnitCost
         : purchaseUnit === 'box'
@@ -161,7 +149,6 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
           : (batchCostPrice ?? costPrice ?? existingProduct.costPrice);
       const totalCost = unitCost * (qtyToAdd || 0);
 
-      // Create purchase record if supplier info or quantity is provided
       let purchase = null;
       if (qtyToAdd > 0 || supplier) {
         purchase = new Purchase({

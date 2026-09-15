@@ -32,7 +32,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: the section reloads whenever a purchase/restock happens anywhere
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
@@ -141,7 +141,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
     return Column(
       children: [
-            // ── Header ──
+
             Padding(
               padding: EdgeInsets.all(AppTheme.pad(context, 16)),
               child: Row(
@@ -166,7 +166,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               ),
             ),
 
-        // ── Filter Bar ──
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
@@ -214,7 +213,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
         ),
 
-        // ── Active filter label ──
         Padding(
           padding: EdgeInsets.fromLTRB(
               AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
@@ -228,7 +226,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
         ),
 
-        // ── Purchases List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

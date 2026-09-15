@@ -42,7 +42,7 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        // Row 1: Stats + Capacity
+
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -80,7 +80,6 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
         ),
         const SizedBox(height: 16),
 
-        // Row 2: Quick Actions + Business Details
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -186,7 +185,6 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
     );
   }
 
-  // ── Shared Widgets ──
   Widget _sectionCard({required String title, required Widget child}) {
     return Card(
       child: Padding(

@@ -6,4 +6,4 @@ void main() {
     await tester.pumpWidget(const InventoryApp());
     expect(find.text('Inventory Management'), findsOneWidget);
   });
-}
+}

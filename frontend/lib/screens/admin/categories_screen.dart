@@ -35,18 +35,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  // Gradient colors for category cards
   static const List<List<Color>> _gradients = [
-    [Color(0xFFE53935), Color(0xFFC62828)], // red
-    [Color(0xFF1E88E5), Color(0xFF1565C0)], // blue
-    [Color(0xFF43A047), Color(0xFF2E7D32)], // green
-    [Color(0xFFFB8C00), Color(0xFFF57C00)], // orange
-    [Color(0xFF8E24AA), Color(0xFF6A1B9A)], // purple
-    [Color(0xFF00ACC1), Color(0xFF00838F)], // teal
-    [Color(0xFFD81B60), Color(0xFFAD1457)], // pink
-    [Color(0xFF5C6BC0), Color(0xFF3949AB)], // indigo
-    [Color(0xFF6D4C41), Color(0xFF4E342E)], // brown
-    [Color(0xFF00897B), Color(0xFF00695C)], // teal dark
+    [Color(0xFFE53935), Color(0xFFC62828)], 
+    [Color(0xFF1E88E5), Color(0xFF1565C0)], 
+    [Color(0xFF43A047), Color(0xFF2E7D32)], 
+    [Color(0xFFFB8C00), Color(0xFFF57C00)], 
+    [Color(0xFF8E24AA), Color(0xFF6A1B9A)], 
+    [Color(0xFF00ACC1), Color(0xFF00838F)], 
+    [Color(0xFFD81B60), Color(0xFFAD1457)], 
+    [Color(0xFF5C6BC0), Color(0xFF3949AB)], 
+    [Color(0xFF6D4C41), Color(0xFF4E342E)], 
+    [Color(0xFF00897B), Color(0xFF00695C)], 
   ];
 
   List<Color> _cardGradient(int index) =>
@@ -76,7 +75,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
     return Column(
       children: [
-        // ── Header ──
+
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 12 : AppTheme.pad(context, 16),
@@ -109,7 +108,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
         ),
 
-        // ── Category Grid ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -131,7 +129,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // ── Empty State ──
   Widget _emptyState() {
     return Center(
       child: Column(
@@ -161,7 +158,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // ── Wide Grid (laptop) ──
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -175,7 +171,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // ── Mobile Grid ──
   Widget _mobileGrid(bool isSmall) {
     final crossCount = isSmall ? 3 : 2;
     return GridView.builder(
@@ -190,7 +185,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // ── Category Card ──
   Widget _categoryCard(Category c, int index, bool isSmall) {
     final gradient = _cardGradient(index);
     final icon = _categoryIcon(c.name);
@@ -209,7 +203,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           child: Stack(
             children: [
-              // Background decorative circle (single, subtle)
+
               Positioned(
                 top: -18,
                 right: -18,
@@ -223,13 +217,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ),
               ),
 
-              // Content
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Icon + actions row
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -258,7 +251,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       ],
                     ),
                     const Spacer(),
-                    // Name
+
                     Text(c.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -276,7 +269,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  // ── Show Form ──
   void _showForm({Category? category}) {
     final ctrl = TextEditingController(text: category?.name ?? '');
     final descCtrl = TextEditingController(text: category?.description ?? '');
@@ -343,7 +335,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       description: descCtrl.text.isNotEmpty ? descCtrl.text : null);
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
-                // Categories feed Products/Store sections: notify them
+
                 AppEvents.instance.emit('products');
                 _load();
               } catch (e) {

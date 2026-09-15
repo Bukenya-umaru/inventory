@@ -58,29 +58,28 @@ A comprehensive multi-tenant inventory management system with three-tier hierarc
 ```bash
 cd backend
 npm install
-# Copy .env.example to .env and configure
-npm run seed    # Create initial data
-npm run dev     # Start development server on port 5000
+cp .env.example .env    # then fill in MONGODB_URI, JWT_SECRET, ENCRYPTION_KEY, seed passwords
+npm run seed            # Create initial data
+npm run dev             # Start development server on port 5000
 ```
 
 ### Frontend (Flutter)
 ```bash
 cd frontend
 flutter pub get
-flutter run     # Run on connected device/emulator
+cp .env.example .env    # then set API_BASE_URL to your backend's URL
+flutter run             # Run on connected device/emulator
 ```
 
-> **Note:** For Android emulator, the API base URL is `http://10.0.2.2:5000/api`.  
-> For iOS simulator/desktop, use `http://localhost:5000/api` (update in `lib/services/api_service.dart`).
+> **Note:** API endpoints are configured in `frontend/.env` (`API_BASE_URL`, `API_BASE_URL_ANDROID`).
+> The Android emulator automatically uses `API_BASE_URL_ANDROID` (e.g. `http://10.0.2.2:5000/api`).
+
+> **Security:** `.env` files are gitignored — never commit them. `.env.example` files are committed templates.
 
 ### Login
 **All roles use the SAME login form.** After login, the app automatically routes to the correct dashboard based on role.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Developer | developer@system.com | Admin@123 |
-| Admin | john@abcretail.com | Admin@123 |
-| Employee | sarah@abcretail.com | Employee@123 |
+Seed account passwords are set in `backend/.env` (`SEED_DEVELOPER_PASSWORD`, `SEED_ADMIN_PASSWORD`, `SEED_EMPLOYEE_PASSWORD`) — they are no longer hardcoded.
 
 ## Project Structure
 

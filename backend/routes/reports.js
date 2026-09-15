@@ -5,7 +5,6 @@ const Damage = require('../models/Damage');
 const Product = require('../models/Product');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
-// GET /api/reports/profit - Daily/Monthly/Yearly profit
 router.get('/profit', authenticate, requireActiveTenant, requirePermission('view_profits'), async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -46,7 +45,6 @@ router.get('/profit', authenticate, requireActiveTenant, requirePermission('view
     const totalDamageLoss = damages.reduce((sum, d) => sum + d.estimatedLoss, 0);
     const netProfit = totalProfit - totalDamageLoss;
 
-    // Breakdown by product
     const productBreakdown = {};
     sales.forEach(sale => {
       const key = sale.productId.toString();
@@ -80,7 +78,6 @@ router.get('/profit', authenticate, requireActiveTenant, requirePermission('view
   }
 });
 
-// GET /api/reports/detailed - Detailed report with sales and damages lists
 router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -124,7 +121,6 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
 
     const products = await Product.find({ tenantId, isActive: true }).populate('categoryId', 'name');
 
-    // Build a map of all products with full details
     const allProductsMap = {};
     products.forEach(p => {
       const name = p.name;
@@ -140,20 +136,19 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
         sellingUnit: p.sellingUnit,
         minimumStock: p.minimumStock,
         totalStockPieces: (p.stockBoxes || 0) * (p.unitsPerBox || 1) + (p.currentStock || 0),
-        // Sales data (will be merged below)
+
         revenue: 0,
         profit: 0,
         quantitySold: 0,
         costOfGoodsSold: 0,
         salesCount: 0,
-        // Damage data (will be merged below)
+
         loss: 0,
         quantityDamaged: 0,
         damageCount: 0,
       };
     });
 
-    // Merge sales data into product map
     const productMap = {};
     sales.forEach(s => {
       const name = s.productId?.name || 'Unknown';
@@ -164,7 +159,6 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
       productMap[name].cost += s.costPrice * s.quantity;
       productMap[name].salesCount += 1;
 
-      // Also merge into allProductsMap
       if (allProductsMap[name]) {
         allProductsMap[name].revenue += s.totalAmount;
         allProductsMap[name].profit += s.profit;
@@ -172,7 +166,7 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
         allProductsMap[name].costOfGoodsSold += s.costPrice * s.quantity;
         allProductsMap[name].salesCount += 1;
       } else {
-        // Product not in inventory anymore
+
         allProductsMap[name] = {
           id: null,
           name,
@@ -197,7 +191,6 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
       }
     });
 
-    // Merge damage data
     const damageMap = {};
     damages.forEach(d => {
       const name = d.productId?.name || 'Unknown';
@@ -223,7 +216,6 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
       }
     });
 
-    // Summary
     const totalRevenue = sales.reduce((sum, s) => sum + s.totalAmount, 0);
     const totalProfit = sales.reduce((sum, s) => sum + s.profit, 0);
     const totalDamageLoss = damages.reduce((sum, d) => sum + d.estimatedLoss, 0);
@@ -273,7 +265,6 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
   }
 });
 
-// GET /api/reports/inventory - Inventory summary
 router.get('/inventory', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;

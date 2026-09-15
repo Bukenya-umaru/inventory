@@ -2,8 +2,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 
-/// Builds a plain, data-only PDF report: no colors, cards or decorations,
-/// just tables of the useful numbers.
 class PdfReportBuilder {
   static final _dateFmt = DateFormat('MMM d, yyyy');
   static final _dateTimeFmt = DateFormat('MMM d, yyyy HH:mm');
@@ -11,7 +9,6 @@ class PdfReportBuilder {
   static const _muted = PdfColor.fromInt(0xFF666666);
   static const _line = PdfColor.fromInt(0xFFBBBBBB);
 
-  /// Build the report PDF and return bytes.
   static Future<List<int>> build({
     required Map<String, dynamic> report,
     required String dateRangeLabel,
@@ -27,7 +24,6 @@ class PdfReportBuilder {
     final productBreakdown = (r['productBreakdown'] as Map?) ?? {};
     final damageBreakdown = (r['damageBreakdown'] as Map?) ?? {};
 
-    // Sort products: with activity first, then alphabetically
     final sortedProductKeys = allProducts.keys.toList()..sort((a, b) {
       final pa = allProducts[a] as Map;
       final pb = allProducts[b] as Map;
@@ -38,7 +34,6 @@ class PdfReportBuilder {
       return a.compareTo(b);
     });
 
-    // Sort sales and damages newest first
     final sortedSales = List.of(sales)..sort((a, b) {
       final da = a['saleDate'] != null ? DateTime.parse(a['saleDate']) : DateTime(0);
       final db = b['saleDate'] != null ? DateTime.parse(b['saleDate']) : DateTime(0);
@@ -59,7 +54,7 @@ class PdfReportBuilder {
           style: const pw.TextStyle(fontSize: 8, color: _muted)),
       ),
       build: (ctx) => [
-        // ── Title block (plain text lines) ──
+
         if (businessName.isNotEmpty)
           pw.Text(businessName, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
         pw.Text('Sales & Inventory Report', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
@@ -67,7 +62,6 @@ class PdfReportBuilder {
         pw.Text('Generated: ${_dateTimeFmt.format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: _muted)),
         pw.SizedBox(height: 16),
 
-        // ── Summary (label/value rows) ──
         _sectionTitle('Summary'),
         pw.SizedBox(height: 4),
         _kvRow('Total Revenue', _fmt((r['totalRevenue'] ?? 0).toDouble())),
@@ -78,7 +72,6 @@ class PdfReportBuilder {
         _kvRow('Damage Reports', '${r['totalDamageReports'] ?? 0}'),
         pw.SizedBox(height: 16),
 
-        // ── Inventory Overview ──
         if (inventory != null) ...[
           _sectionTitle('Inventory Overview'),
           pw.SizedBox(height: 4),
@@ -88,7 +81,6 @@ class PdfReportBuilder {
           pw.SizedBox(height: 16),
         ],
 
-        // ── Sales by Product ──
         if (productBreakdown.isNotEmpty) ...[
           _sectionTitle('Sales by Product'),
           pw.SizedBox(height: 4),
@@ -103,7 +95,6 @@ class PdfReportBuilder {
           pw.SizedBox(height: 16),
         ],
 
-        // ── Damages by Product ──
         if (damageBreakdown.isNotEmpty) ...[
           _sectionTitle('Damages by Product'),
           pw.SizedBox(height: 4),
@@ -118,7 +109,6 @@ class PdfReportBuilder {
           pw.SizedBox(height: 16),
         ],
 
-        // ── Product Details ──
         if (sortedProductKeys.isNotEmpty) ...[
           _sectionTitle('Product Details (${sortedProductKeys.length})'),
           pw.SizedBox(height: 4),
@@ -148,7 +138,6 @@ class PdfReportBuilder {
           pw.SizedBox(height: 16),
         ],
 
-        // ── Sales Transactions ──
         if (sortedSales.isNotEmpty) ...[
           _sectionTitle('Sales Transactions (${sortedSales.length})'),
           pw.SizedBox(height: 4),
@@ -171,7 +160,6 @@ class PdfReportBuilder {
           pw.SizedBox(height: 16),
         ],
 
-        // ── Damage Reports ──
         if (sortedDamages.isNotEmpty) ...[
           _sectionTitle('Damage Reports (${sortedDamages.length})'),
           pw.SizedBox(height: 4),
@@ -197,8 +185,6 @@ class PdfReportBuilder {
 
     return pdf.save();
   }
-
-  // ── Helpers ──
 
   static List<MapEntry> _sortedEntries(Map map, String sortKey) {
     return map.entries.toList()..sort((a, b) => (b.value[sortKey] ?? 0).compareTo(a.value[sortKey] ?? 0));

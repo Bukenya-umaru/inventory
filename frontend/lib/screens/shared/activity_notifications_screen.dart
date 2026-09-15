@@ -6,11 +6,6 @@ import '../../services/app_events.dart';
 import '../../services/notification_sound_service.dart';
 import '../../utils/theme.dart';
 
-/// Activity feed behind the notification bell. Shows INVENTORY activities
-/// (sales, damages, purchases, product/category changes) done by OTHER users in
-/// the business — never your own actions and never system loggings (logins,
-/// password events, account management). Tapping an item opens the full detail
-/// of that activity.
 class ActivityNotificationsScreen extends StatefulWidget {
   const ActivityNotificationsScreen({super.key});
   @override
@@ -24,11 +19,8 @@ class _ActivityNotificationsScreenState
   int _unreadCount = 0;
   bool _loading = true;
   String? _error;
-  AuditLog? _detail; // activity currently opened full-screen
+  AuditLog? _detail; 
 
-  // ── Event-type filters ──
-  // category key -> list of backend eventTypes (inventory activities only;
-  // the backend also enforces this allow-list and hides your own actions)
   static const Map<String, List<String>> _filterGroups = {
     'Sales': ['sale_recorded'],
     'Purchases': ['purchase_recorded', 'stock_merged'],
@@ -36,13 +28,13 @@ class _ActivityNotificationsScreenState
     'Products': ['product_created', 'product_updated', 'product_deleted'],
     'Categories': ['category_created', 'category_updated', 'category_deleted'],
   };
-  final Set<String> _selectedFilters = {}; // empty = All
+  final Set<String> _selectedFilters = {}; 
 
   @override
   void initState() {
     super.initState();
     _load();
-    // Live updates: any new activity refreshes the feed automatically
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
@@ -91,7 +83,7 @@ class _ActivityNotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Detail view: tapping an activity shows everything about it
+
     if (_detail != null) {
       return _buildDetail(_detail!);
     }
@@ -118,7 +110,7 @@ class _ActivityNotificationsScreenState
                 ),
               ),
             ),
-          // Sound on/off toggle
+
           ValueListenableBuilder<bool>(
             valueListenable: NotificationSoundService.instance.mutedNotifier,
             builder: (ctx, muted, _) => IconButton(
@@ -138,7 +130,7 @@ class _ActivityNotificationsScreenState
       ),
       body: Column(
         children: [
-          // ── Event-type filter chips ──
+
           SizedBox(
             height: 48,
             child: ListView(
@@ -179,7 +171,7 @@ class _ActivityNotificationsScreenState
               ],
             ),
           ),
-          // ── Feed ──
+
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -275,7 +267,6 @@ class _ActivityNotificationsScreenState
     );
   }
 
-  // ── Detail view: full info about one activity ──
   Widget _buildDetail(AuditLog log) {
     final df = DateFormat('EEEE, MMM d, yyyy • HH:mm');
     final color = _severityColor(log.severity);
@@ -339,7 +330,6 @@ class _ActivityNotificationsScreenState
     );
   }
 
-  // ── Mapping helpers ──
   static IconData _eventIcon(String eventType) {
     return switch (eventType) {
       'sale_recorded' => Icons.shopping_cart,

@@ -19,11 +19,9 @@ class _SalesScreenState extends State<SalesScreen> {
   bool _loading = true;
   bool _showAll = false;
 
-  // Raw nullable fields — safe after hot reload
   DateTime? _startDate;
   DateTime? _endDate;
 
-  // Safe getters that always return a valid DateTime
   DateTime get _safeStart => _startDate ?? _today();
   DateTime get _safeEnd => _endDate ?? _today();
 
@@ -36,16 +34,16 @@ class _SalesScreenState extends State<SalesScreen> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: stock changes from restocks/sales made elsewhere
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
   void _onEvent(String event) {
     if (!mounted) return;
     if (event == 'products') {
-      _load(silent: true); // product list/stock changed
+      _load(silent: true); 
     } else if (event == 'sales') {
-      _load(silent: true); // a sale was recorded elsewhere
+      _load(silent: true); 
     }
   }
 
@@ -61,7 +59,7 @@ class _SalesScreenState extends State<SalesScreen> {
       String? startStr;
       String? endStr;
       if (!_showAll) {
-        // Convert local dates to UTC so backend filters match correctly
+
         final startUtc = DateTime(_safeStart.year, _safeStart.month, _safeStart.day).toUtc();
         final endUtc = DateTime(_safeEnd.year, _safeEnd.month, _safeEnd.day, 23, 59, 59, 999).toUtc();
         startStr = startUtc.toIso8601String();
@@ -126,7 +124,6 @@ class _SalesScreenState extends State<SalesScreen> {
     final totalRev = _sales.fold(0.0, (s, sale) => s + sale.totalAmount);
     final totalProfit = _sales.fold(0.0, (s, sale) => s + sale.profit);
 
-    // Determine the active filter label
     String filterLabel;
     if (_showAll) {
       filterLabel = 'All Sales';
@@ -146,7 +143,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
     return Column(
       children: [
-            // ── Header ──
+
             Padding(
               padding: EdgeInsets.all(AppTheme.pad(context, 16)),
               child: Row(
@@ -171,7 +168,6 @@ class _SalesScreenState extends State<SalesScreen> {
               ),
             ),
 
-        // ── Filter Bar (scrollable for small screens) ──
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16), 0,
@@ -213,7 +209,6 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
         ),
 
-        // ── Active filter label ──
         Padding(
           padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
           child: Align(
@@ -223,7 +218,6 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
         ),
 
-        // ── Sales List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -527,7 +521,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     'customerName': customerCtrl.text.isNotEmpty ? customerCtrl.text : null,
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
-                  // Stock changed + sales list changed: notify all sections
+
                   AppEvents.instance.emit('products');
                   AppEvents.instance.emit('sales');
                   _showToday();

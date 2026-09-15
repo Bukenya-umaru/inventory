@@ -20,7 +20,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: inventory stats change on purchases/restocks made elsewhere
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
@@ -73,17 +73,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ── Wide / Laptop Layout ──
   Widget _wideLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
     final productCount = products;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        // Row 1: Sales Activity + Inventory Summary
+
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Sales Activity (left)
+
             Expanded(
               flex: 3,
               child: _sectionCard(
@@ -99,7 +98,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(width: 16),
-            // Inventory Summary (right)
+
             Expanded(
               flex: 2,
               child: _sectionCard(
@@ -119,11 +118,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 16),
 
-        // Row 2: Product Details + Top Selling Items
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Details (left)
+
             Expanded(
               flex: 3,
               child: _sectionCard(
@@ -139,7 +137,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(width: 16),
-            // Top Selling (right)
+
             Expanded(
               flex: 2,
               child: _sectionCard(
@@ -157,11 +155,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 16),
 
-        // Row 3: Purchase Order + Sales Order
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Purchase Order
+
             Expanded(
               flex: 2,
               child: _sectionCard(
@@ -179,7 +176,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(width: 16),
-            // Sales Order
+
             Expanded(
               flex: 3,
               child: _sectionCard(
@@ -199,13 +196,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ── Mobile / Narrow Layout ──
   Widget _mobileLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
     final productCount = products;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Sales Activity
+
         _sectionCard(
           title: 'Sales Activity',
           child: Column(
@@ -228,7 +224,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 12),
 
-        // Inventory Summary
         _sectionCard(
           title: 'Inventory Summary',
           child: Column(
@@ -243,7 +238,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 12),
 
-        // Product Details
         _sectionCard(
           title: 'Product Details',
           child: Column(
@@ -257,7 +251,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 12),
 
-        // Top Selling
         _sectionCard(
           title: 'Top Selling Items',
           child: Column(
@@ -270,7 +263,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 12),
 
-        // Purchase Order
         _sectionCard(
           title: 'Purchase Order',
           child: Column(
@@ -285,7 +277,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         const SizedBox(height: 12),
 
-        // Sales Order
         _sectionCard(
           title: 'Sales Order',
           child: Column(
@@ -299,8 +290,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
-
-  // ── Shared Widgets ──
 
   Widget _sectionCard({required String title, required Widget child}) {
     return Card(

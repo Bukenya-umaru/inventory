@@ -33,7 +33,6 @@ class _AdminHomeState extends State<AdminHome> {
 
   static Widget _empty() => const SizedBox();
 
-  // Build all pages once and keep them alive with IndexedStack
   late final List<Widget> _pages = const [
     AdminDashboard(),
     ProductsScreen(),

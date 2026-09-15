@@ -26,8 +26,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: product changes from this screen or any other section
-    // (create, restock, delete, category edits) refresh the list instantly.
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
@@ -71,7 +70,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  // Computed stats
   int get _totalProducts => _products.length;
   int get _inStock =>
       _products.where((p) => p.totalStockPieces > 0).length;
@@ -90,7 +88,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     return Column(
       children: [
-        // ── Header ──
+
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 12 : AppTheme.pad(context, 16),
@@ -130,7 +128,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           ),
         ),
-        // ── Stat Chips ──
+
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 12 : AppTheme.pad(context, 16), 0,
@@ -147,7 +145,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
 
-        // ── Search + Filter Bar ──
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 10 : AppTheme.pad(context, 16),
@@ -216,7 +213,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
         ),
 
-        // ── Product List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -233,7 +229,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Stat Chip (compact) ──
   Widget _statChip(String value, String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.1);
@@ -258,7 +253,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Empty State ──
   Widget _emptyState() {
     return Center(
       child: Column(
@@ -288,7 +282,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Wide Grid (laptop) ──
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
       padding: EdgeInsets.all(AppTheme.pad(context, 12)),
@@ -303,7 +296,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── List View (mobile) ──
   Widget _listView(bool isSmall) {
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
@@ -316,7 +308,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Product Card (compact) ──
   Widget _productCard(Product p, bool isSmall) {
     final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
     final out = p.totalStockPieces == 0;
@@ -330,7 +321,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 10, vertical: isSmall ? 6 : 8),
           child: Row(
             children: [
-              // ── Left: icon ──
+
               Container(
                 width: isSmall ? 32 : 36,
                 height: isSmall ? 32 : 36,
@@ -356,7 +347,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
               SizedBox(width: isSmall ? 8 : 10),
 
-              // ── Middle: info ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +396,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
 
-              // ── Right: stock + actions ──
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -459,7 +448,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Action Button (compact) ──
   Widget _actionBtn(IconData icon, VoidCallback onTap, Color color, bool isSmall) {
     return InkWell(
       onTap: onTap,
@@ -490,7 +478,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Icons.inventory_2;
   }
 
-  // ── Find duplicate product by name (case-insensitive) ──
   Product? _findDuplicate(String name) {
     final n = name.trim().toLowerCase();
     if (n.isEmpty) return null;
@@ -500,11 +487,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return null;
   }
 
-  // ── Duplicate product banner (tap to add stock) ──
   Widget _duplicateBanner(BuildContext dialogCtx, Product p) {
     return InkWell(
       onTap: () {
-        Navigator.pop(dialogCtx); // close the add-product form
+        Navigator.pop(dialogCtx); 
         _showRestockDialog(p);
       },
       borderRadius: BorderRadius.circular(8),
@@ -532,7 +518,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Price History viewer ──
   void _showPriceHistory(Product p) {
     final history = p.priceHistory;
     showDialog(
@@ -613,7 +598,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ── Quick Restock: add quantity to an existing product ──
   void _showRestockDialog(Product p) {
     final qtyCtrl = TextEditingController();
     final supplierCtrl = TextEditingController();
@@ -622,8 +606,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final invoiceCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     String unit = p.sellsAsBox ? 'box' : 'piece';
-    // Buy & sell prices for this batch, pre-filled with the current product prices
-    // (derived box prices are rounded to avoid float noise)
+
     String fmtPrice(num v) =>
         v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
     final costCtrl = TextEditingController(
@@ -737,7 +720,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // ── Supplier & Purchase Info ──
+
               Row(
                 children: [
                   Icon(Icons.local_shipping, size: 14, color: AppTheme.success),
@@ -831,7 +814,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           backgroundColor: AppTheme.danger));
       return;
     }
-    // Supplier is required so every restock is traceable to a purchase
+
     if (supplierCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Supplier company is required.'),
@@ -853,8 +836,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       return;
     }
     try {
-      // Backend detects the duplicate name and merges the quantity into existing stock,
-      // records a Purchase with the supplier info, and updates the product prices
+
       await ApiService.createProduct({
         'name': p.name,
         'categoryId': p.categoryId,
@@ -864,8 +846,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         'stockBoxes': unit == 'box' ? qty : 0,
         'currentStock': unit == 'piece' ? qty : 0,
         'purchaseUnit': unit,
-        // Prices for this batch (per box or per piece) — backend stores the buying
-        // price on the purchase and updates the product's buy & sell prices
+
         'costPrice': buyPrice,
         'sellingPrice': sellPrice,
         'batchCostPrice': buyPrice,
@@ -888,9 +869,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 'Stock updated: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — purchase recorded'),
             backgroundColor: AppTheme.success));
       }
-      // Stock changed: Purchases section gets the intake, Products/Store/others refresh
+
       AppEvents.instance.emit('purchases');
-      AppEvents.instance.emit('products'); // this screen reloads via _onEvent
+      AppEvents.instance.emit('products'); 
     } catch (e) {
       if (ctx.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -899,7 +880,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  // ── Show Form ──
   void _showForm({Product? product}) {
     final isEditing = product != null;
     final nameCtrl = TextEditingController(text: product?.name ?? '');
@@ -911,7 +891,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final stockBoxesCtrl = TextEditingController(text: product?.stockBoxes.toString() ?? '0');
     final boxCostCtrl = TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
     final boxPriceCtrl = TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
-    // Supplier fields (only for new products)
+
     final supplierCtrl = TextEditingController();
     final supplierPhoneCtrl = TextEditingController();
     final supplierEmailCtrl = TextEditingController();
@@ -952,7 +932,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Product Details ──
+
                 _field(nameCtrl, 'Product Name *',
                     onChanged: (v) => setDialogState(() => duplicate = _findDuplicate(v))),
                 if (!isEditing && duplicate != null) ...[
@@ -1008,7 +988,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 const SizedBox(height: 12),
                 _field(minCtrl, 'Min Stock', keyboardType: TextInputType.number),
 
-                // ── Supplier Info (only when adding new product) ──
                 if (!isEditing) ...[
                   const SizedBox(height: 20),
                   Container(
@@ -1090,7 +1069,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   if (isEditing) {
                     await ApiService.updateProduct(product!.id, data);
                   } else {
-                    // Merge supplier info into data so the backend can handle dedup + purchase in one call
+
                     final sendData = Map<String, dynamic>.from(data);
                     sendData['supplier'] = supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null;
                     sendData['supplierPhone'] = supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null;
@@ -1099,19 +1078,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     sendData['paymentMethod'] = paymentMethod;
                     sendData['notes'] = purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null;
 
-                    // Create product (backend detects duplicates and merges stock)
                     final res = await ApiService.createProduct(sendData);
                     merged = res['merged'] == true;
 
-                    // If NOT merged (new product) and stock + supplier provided, record a purchase
                     if (!merged) {
                       final newProduct = res['product'];
                       final qty = sellingUnit == 'box'
                           ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
                           : (int.tryParse(stockCtrl.text) ?? 0);
-                      // Any initial stock counts as a purchase so the Purchases
-                      // section receives the product intake on that date,
-                      // even if no supplier was provided.
+
                       if (qty > 0 && newProduct != null) {
                         final unitCost = sellingUnit == 'box'
                             ? (double.tryParse(boxCostCtrl.text) ?? 0)
@@ -1130,9 +1105,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
                           });
                         } catch (pErr) {
-                          // The product IS created — a failed purchase record must
-                          // not abort the flow, or the UI never refreshes and the
-                          // new product appears in neither Products nor Store.
+
                           debugPrint('Purchase record failed: $pErr');
                         }
                       }
@@ -1146,8 +1119,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(msg), backgroundColor: AppTheme.success));
                   }
-                  // Notify every section: stock/product data changed
-                  // (Products + Store screens listen and reload instantly)
+
                   AppEvents.instance.emit('purchases');
                   AppEvents.instance.emit('products');
                 } catch (e) {
@@ -1199,8 +1171,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
     if (confirm == true) {
       await ApiService.deleteProduct(p.id);
-      // This screen reloads via _onEvent; Store/others listen too
+
       AppEvents.instance.emit('products');
     }
   }
-}
+}

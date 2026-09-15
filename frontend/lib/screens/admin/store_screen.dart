@@ -18,20 +18,20 @@ class _StoreScreenState extends State<StoreScreen> {
   List<Category> _categories = [];
   bool _loading = true;
   String _search = '';
-  String? _selectedCategoryId; // null = All
+  String? _selectedCategoryId; 
   Timer? _searchTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
-    // Stay live: new/changed products from other sections appear automatically
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
   void _onEvent(String event) {
     if (!mounted) return;
-    // Only interested in product data changing (skip own search reloads)
+
     if (event == 'products') {
       _load(silent: true);
     }
@@ -88,7 +88,7 @@ class _StoreScreenState extends State<StoreScreen> {
 
     return Column(
       children: [
-        // ── Header ──
+
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 12 : AppTheme.pad(context, 16),
@@ -117,7 +117,6 @@ class _StoreScreenState extends State<StoreScreen> {
           ),
         ),
 
-        // ── Search ──
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 10 : AppTheme.pad(context, 16),
@@ -146,7 +145,6 @@ class _StoreScreenState extends State<StoreScreen> {
           ),
         ),
 
-        // ── Category Filter Chips ──
         Padding(
           padding: EdgeInsets.fromLTRB(
               isSmall ? 10 : AppTheme.pad(context, 16),
@@ -167,7 +165,6 @@ class _StoreScreenState extends State<StoreScreen> {
 
         const SizedBox(height: 6),
 
-        // ── Product Grid / List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -182,7 +179,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── Category Chip ──
   Widget _catChip(String label, String? catId) {
     final isActive = _selectedCategoryId == catId;
     return Padding(
@@ -207,7 +203,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── Empty State ──
   Widget _emptyState() {
     return Center(
       child: Column(
@@ -238,7 +233,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── Wide Grid (tablet / desktop) ──
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
       padding: EdgeInsets.all(AppTheme.pad(context, 12)),
@@ -253,7 +247,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── List View (mobile) ──
   Widget _listView(bool isSmall) {
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
@@ -266,7 +259,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── Product Card ──
   Widget _productCard(Product p, bool isSmall) {
     final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
     final out = p.totalStockPieces == 0;
@@ -281,7 +273,7 @@ class _StoreScreenState extends State<StoreScreen> {
               horizontal: isSmall ? 10 : 12, vertical: isSmall ? 8 : 10),
           child: Row(
             children: [
-              // ── Left: icon ──
+
               Container(
                 width: isSmall ? 36 : 40,
                 height: isSmall ? 36 : 40,
@@ -307,7 +299,6 @@ class _StoreScreenState extends State<StoreScreen> {
               ),
               SizedBox(width: isSmall ? 10 : 12),
 
-              // ── Middle: info ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +348,6 @@ class _StoreScreenState extends State<StoreScreen> {
                 ),
               ),
 
-              // ── Right: stock badge ──
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -391,7 +381,6 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  // ── Detail Sheet ──
   void _showDetails(Product p) {
     final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
     final out = p.totalStockPieces == 0;
@@ -498,4 +487,4 @@ class _StoreScreenState extends State<StoreScreen> {
     if (lower.contains('auto') || lower.contains('car')) return Icons.directions_car;
     return Icons.storefront;
   }
-}
+}

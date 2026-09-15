@@ -43,7 +43,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header with filters and create button
+
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -63,7 +63,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
             ],
           ),
         ),
-        // Filters
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -91,7 +91,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        // List
+
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -121,7 +121,6 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   }
 }
 
-// ── Create Business Screen ──
 class _CreateBusinessScreen extends StatefulWidget {
   final VoidCallback onCreated;
   const _CreateBusinessScreen({required this.onCreated});
@@ -146,7 +145,6 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
 
   final _types = ['Retail', 'Wholesale', 'Manufacturing', 'Service', 'Other'];
 
-  // Default categories (pre-selected)
   final _categories = [
     'Electronics',
     'Clothing',
@@ -233,11 +231,10 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
           children: [
-            // Section: Business Information
+
             _sectionHeader('Business Information'),
             const SizedBox(height: 12),
 
-            // Logo picker
             Center(
               child: GestureDetector(
                 onTap: _pickLogo,
@@ -314,7 +311,6 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Section: Admin/Owner Information
             _sectionHeader('Admin / Owner Information'),
             const SizedBox(height: 12),
             TextFormField(
@@ -349,7 +345,6 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Section: Default Categories
             _sectionHeader('Default Categories'),
             const SizedBox(height: 8),
             Wrap(
@@ -374,7 +369,6 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Submit
             SizedBox(
               height: 48,
               child: ElevatedButton(
@@ -410,7 +404,6 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
   }
 }
 
-// ── Tenant Card (list item) ──
 class _TenantCard extends StatelessWidget {
   final Tenant tenant;
   final VoidCallback onRefresh;
@@ -480,7 +473,7 @@ class _TenantCard extends StatelessWidget {
                 const SizedBox(width: 16),
                 _info(context, 'Users', '${tenant.userCount}'),
                 const Spacer(),
-                // Branding button
+
                 IconButton(
                   icon: const Icon(Icons.branding_watermark, size: 18),
                   tooltip: 'Manage Branding',
@@ -660,7 +653,7 @@ class _TenantCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo preview / picker
+
                 Center(
                   child: GestureDetector(
                     onTap: () async {

@@ -1,11 +1,10 @@
-/// A snapshot of the product's prices at a point in time.
 class PriceHistoryEntry {
-  final double costPrice; // per piece
-  final double sellingPrice; // per piece
+  final double costPrice; 
+  final double sellingPrice; 
   final double? boxCostPrice;
   final double? boxSellingPrice;
   final int unitsPerBox;
-  final String source; // created | restock | edit
+  final String source; 
   final DateTime changedAt;
 
   PriceHistoryEntry({
@@ -118,21 +117,15 @@ class Product {
   bool get sellsAsBox => sellingUnit == 'box';
   bool get sellsAsPiece => sellingUnit == 'piece';
 
-  /// Total stock expressed in pieces (full boxes × unitsPerBox + loose pieces)
   int get totalStockPieces => (stockBoxes * unitsPerBox) + currentStock;
 
-  /// Whether a box has been opened (has loose pieces but also full boxes, or loose pieces < unitsPerBox)
   bool get hasOpenBox => currentStock > 0 && currentStock < unitsPerBox && stockBoxes >= 0;
 
-  /// Number of full boxes
   int get fullBoxes => stockBoxes;
 
-  /// Number of loose individual pieces (from opened boxes)
   int get loosePieces => currentStock;
 
-  /// Whether there are any loose pieces available
   bool get hasLoosePieces => currentStock > 0;
 
-  /// Whether there are full unopened boxes
   bool get hasFullBoxes => stockBoxes > 0;
 }

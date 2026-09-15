@@ -34,16 +34,16 @@ class _DamagesScreenState extends State<DamagesScreen> {
   void initState() {
     super.initState();
     _load();
-    // Stay live: stock changes from restocks/sales made elsewhere
+
     AppEvents.instance.subscribe(_onEvent);
   }
 
   void _onEvent(String event) {
     if (!mounted) return;
     if (event == 'products') {
-      _load(silent: true); // product list/stock changed
+      _load(silent: true); 
     } else if (event == 'damages') {
-      _load(silent: true); // a damage was reported elsewhere
+      _load(silent: true); 
     }
   }
 
@@ -59,7 +59,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
       String? startStr;
       String? endStr;
       if (!_showAll) {
-        // Convert local dates to UTC so backend filters match correctly
+
         final startUtc = DateTime(_safeStart.year, _safeStart.month, _safeStart.day).toUtc();
         final endUtc = DateTime(_safeEnd.year, _safeEnd.month, _safeEnd.day, 23, 59, 59, 999).toUtc();
         startStr = startUtc.toIso8601String();
@@ -142,7 +142,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
 
     return Column(
       children: [
-        // ── Header ──
+
         Padding(
           padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
@@ -166,7 +166,6 @@ class _DamagesScreenState extends State<DamagesScreen> {
           ),
         ),
 
-        // ── Filter Bar (scrollable) ──
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16), 0,
@@ -208,7 +207,6 @@ class _DamagesScreenState extends State<DamagesScreen> {
           ),
         ),
 
-        // ── Active filter label ──
         Padding(
           padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
           child: Align(
@@ -218,7 +216,6 @@ class _DamagesScreenState extends State<DamagesScreen> {
           ),
         ),
 
-        // ── Damages List ──
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -493,7 +490,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     'reason': reasonCtrl.text,
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
-                  // Stock changed + damages list changed: notify all sections
+
                   AppEvents.instance.emit('products');
                   AppEvents.instance.emit('damages');
                   _showToday();

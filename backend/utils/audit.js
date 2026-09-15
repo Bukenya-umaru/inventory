@@ -1,8 +1,5 @@
 const AuditLog = require('../models/AuditLog');
 
-/**
- * Create an audit log entry
- */
 const createAuditLog = async ({
   tenantId = null,
   eventType,

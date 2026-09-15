@@ -8,12 +8,10 @@ const { encryptPassword, decryptPassword } = require('../utils/encryption');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate } = require('../middleware/auth');
 
-// Generate JWT
 const generateToken = (userId, role) => {
   return jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: '24h' });
 };
 
-// POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -31,7 +29,6 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Account is deactivated.' });
     }
 
-    // Check if tenant is active (except developer)
     if (user.role !== 'developer' && user.tenantId) {
       if (user.tenantId.status === 'suspended') {
         return res.status(403).json({ success: false, message: 'Business account is suspended.' });
@@ -53,13 +50,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
     const token = generateToken(user._id, user.role);
 
-    // Build tenant branding info
     let branding = null;
     if (user.tenantId) {
       branding = {
@@ -98,10 +93,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register-developer (initial setup)
 router.post('/register-developer', async (req, res) => {
   try {
-    // Check if developer already exists
+
     const existingDev = await User.findOne({ role: 'developer' });
     if (existingDev) {
       return res.status(400).json({ success: false, message: 'Developer account already exists.' });
@@ -144,7 +138,6 @@ router.post('/register-developer', async (req, res) => {
   }
 });
 
-// POST /api/auth/change-password
 router.post('/change-password', authenticate, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -186,7 +179,6 @@ router.post('/change-password', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
   try {
     let branding = null;
