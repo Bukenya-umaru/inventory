@@ -6,3 +6,4 @@ dist/
 .DS_Store
 uploads/logos/*
 !uploads/logos/.gitkeep
+!build/web
