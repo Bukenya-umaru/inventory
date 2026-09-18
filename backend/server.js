@@ -9,17 +9,22 @@ require('dotenv').config();
 const app = express();
 
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.ALLOWED_ORIGINS?.split(',') || []
-    : (origin, callback) => {
+// Origins allowed to call the API from a browser (CORS).
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
 
-        if (!origin || /^https?:\/\/localhost(:\d+)?(\/.*)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?(\/.*)?$/.test(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
+app.use(cors({
+  origin(origin, callback) {
+    // Allow requests with no Origin header (curl, server-to-server, health checks)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Convenience for local development
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
+    console.warn(`CORS blocked origin: ${origin}`);
+    return callback(null, false); // reject without throwing (no 500s on preflight)
+  },
   credentials: true
 }));
 
