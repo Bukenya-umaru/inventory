@@ -15,34 +15,10 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' } // allow frontend to load /uploads images
 }));
-// Origins allowed to call the API from a browser (CORS).
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
-
-app.use(cors({
-  origin(origin, callback) {
-    // Allow requests with no Origin header (curl, server-to-server, health checks)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Convenience for local development
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return callback(null, true);
-    console.warn(`CORS blocked origin: ${origin}`);
-    return callback(null, false); // reject without throwing (no 500s on preflight)
-  },
-  credentials: true
-}));
-
-// Preflights from disallowed origins fall through the cors middleware.
-// Answer them explicitly so the browser sees a clear 403, not a confusing 404.
-app.options('*', (req, res) => {
-  if (res.getHeader('Access-Control-Allow-Origin')) return res.sendStatus(204);
-  res.status(403).json({
-    success: false,
-    message: `CORS blocked for origin: ${req.headers.origin || 'unknown'}`
-  });
-});
+// CORS is fully open: the API authenticates with bearer tokens (no cookies),
+// so any origin is safe to allow. If you ever switch to cookie-based auth,
+// lock this down to a whitelist of known origins again.
+app.use(cors({ origin: true, credentials: false }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
