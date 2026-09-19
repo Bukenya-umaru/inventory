@@ -8,7 +8,13 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(helmet());
+// Render / other PaaS hosts sit behind a reverse proxy — trust it so
+// req.ip (used by rate limiting and audit logs) is the real client IP.
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' } // allow frontend to load /uploads images
+}));
 // Origins allowed to call the API from a browser (CORS).
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
