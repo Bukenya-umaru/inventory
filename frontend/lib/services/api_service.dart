@@ -5,7 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';class ApiService {
+  /// API base URL, normalized to always end with `/api` and have no
+  /// trailing slash, so misconfigured values like `https://host/` or
+  /// `https://host` still resolve to `https://host/api/...`.
   static String get baseUrl {
+    final url = _resolveBaseUrl().trim().replaceAll(RegExp(r'/+$'), '');
+    if (url.endsWith('/api')) return url;
+    return '$url/api';
+  }
+
+  static String _resolveBaseUrl() {
     if (kIsWeb) {
       return _env('API_BASE_URL') ?? 'http://localhost:5000/api';
     }
