@@ -28,6 +28,16 @@ app.use(cors({
   credentials: true
 }));
 
+// Preflights from disallowed origins fall through the cors middleware.
+// Answer them explicitly so the browser sees a clear 403, not a confusing 404.
+app.options('*', (req, res) => {
+  if (res.getHeader('Access-Control-Allow-Origin')) return res.sendStatus(204);
+  res.status(403).json({
+    success: false,
+    message: `CORS blocked for origin: ${req.headers.origin || 'unknown'}`
+  });
+});
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 100,
