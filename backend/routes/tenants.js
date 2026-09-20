@@ -8,7 +8,7 @@ const Product = require('../models/Product');
 const Sale = require('../models/Sale');
 const { encryptPassword } = require('../utils/encryption');
 const { createAuditLog } = require('../utils/audit');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireActiveTenant } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 router.get('/', authenticate, requireRole('developer'), async (req, res) => {
