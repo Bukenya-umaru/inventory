@@ -8,7 +8,7 @@ const Product = require('../models/Product');
 const Sale = require('../models/Sale');
 const { encryptPassword } = require('../utils/encryption');
 const { createAuditLog } = require('../utils/audit');
-const { authenticate, requireRole, requireActiveTenant } = require('../middleware/auth');
+const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 router.get('/', authenticate, requireRole('developer'), async (req, res) => {
@@ -323,28 +323,6 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
   }
 });
 
-// PUT /api/tenants/my-branding
-// Allows a tenant admin to update their own business branding (name, phone, address, logo).
-router.put('/my-branding', authenticate, requireActiveTenant, requireRole('admin'), upload.single('businessLogo'), async (req, res) => {
-  try {
-    const tenant = await Tenant.findById(req.user.tenantId);
-    if (!tenant) {
-      return res.status(404).json({ success: false, message: 'Business not found.' });
-    }
-
-    const { businessName, phoneNumber, address } = req.body;
-    if (businessName) tenant.businessName = businessName;
-    if (phoneNumber) tenant.phoneNumber = phoneNumber;
-    if (address) tenant.address = address;
-    if (req.file) tenant.businessLogo = `/uploads/logos/${req.file.filename}`;
-
-    await tenant.save();
-
-    res.json({ success: true, message: 'Branding updated.', tenant });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error.' });
-  }
-});
 
 router.put('/:id/branding', authenticate, requireRole('developer'), upload.single('businessLogo'), async (req, res) => {
   try {

@@ -246,29 +246,6 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updateMyBrandingWithLogo(
-    Map<String, dynamic> data,
-    List<int>? logoBytes,
-    String? logoName,
-  ) async {
-    final uri = Uri.parse('$baseUrl/tenants/my-branding');
-    final request = http.MultipartRequest('PUT', uri);
-    request.headers['Authorization'] = 'Bearer $_token';
-    data.forEach((key, value) {
-      request.fields[key] = value?.toString() ?? '';
-    });
-    if (logoBytes != null) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'businessLogo',
-        logoBytes,
-        filename: logoName ?? 'logo.png',
-      ));
-    }
-    final streamed = await request.send();
-    final response = await http.Response.fromStream(streamed);
-    return _handleResponse(response);
-  }
-
   static Future<Map<String, dynamic>> getUsers({String? role, String? search}) async {
     final params = <String, String>{};
     if (role != null && role.isNotEmpty) params['role'] = role;
