@@ -68,7 +68,7 @@ class EmployeeDashboard extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     if (auth.user?.hasPermission('view_inventory') == true)
-                      _actionCard(context, Icons.inventory, 'Products', Colors.blue),
+                      _actionCard(context, Icons.inventory, 'Stock', Colors.blue),
                     if (auth.user?.hasPermission('record_sales') == true)
                       _actionCard(context, Icons.shopping_cart, 'Sales', Colors.green),
                     if (auth.user?.hasPermission('record_damages') == true)
@@ -117,7 +117,7 @@ class EmployeeDashboard extends StatelessWidget {
             runSpacing: 12,
             children: [
               if (auth.user?.hasPermission('view_inventory') == true)
-                _actionCard(context, Icons.inventory, 'Products', Colors.blue),
+                _actionCard(context, Icons.inventory, 'Stock', Colors.blue),
               if (auth.user?.hasPermission('record_sales') == true)
                 _actionCard(context, Icons.shopping_cart, 'Sales', Colors.green),
               if (auth.user?.hasPermission('record_damages') == true)

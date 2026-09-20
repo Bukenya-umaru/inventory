@@ -224,7 +224,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   fontWeight: FontWeight.w600,
                   color: AppTheme.secondaryText(context))),
           const SizedBox(height: 6),
-          Text('Add products from the Products section',
+          Text('Add products from the Stock section',
               style: TextStyle(
                   fontSize: AppTheme.fontSize(context, 13),
                   color: AppTheme.secondaryText(context))),

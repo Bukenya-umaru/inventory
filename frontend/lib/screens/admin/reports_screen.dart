@@ -303,7 +303,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           SizedBox(height: AppTheme.pad(context, 8)),
           Row(
             children: [
-              Expanded(child: _miniCard('Products', '${inv['totalProducts'] ?? 0}')),
+              Expanded(child: _miniCard('Stock', '${inv['totalProducts'] ?? 0}')),
               const SizedBox(width: 8),
               Expanded(child: _miniCard('Stock Value', Currency.formatWhole((inv['totalStockValue'] ?? 0)))),
               const SizedBox(width: 8),

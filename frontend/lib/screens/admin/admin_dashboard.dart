@@ -91,7 +91,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     _activityStat(revenue, 'Revenue', AppTheme.primary, Icons.monetization_on),
                     _activityStat(profit, 'Profit', AppTheme.success, Icons.trending_up),
-                    _activityStat(products, 'Products', Colors.purple, Icons.inventory_2),
+                    _activityStat(products, 'Stock', Colors.purple, Icons.inventory_2),
                     _activityStat(employees, 'Employees', Colors.orange, Icons.people),
                   ],
                 ),

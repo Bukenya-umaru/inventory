@@ -25,7 +25,7 @@ class _ActivityNotificationsScreenState
     'Sales': ['sale_recorded'],
     'Purchases': ['purchase_recorded', 'stock_merged'],
     'Damages': ['damage_recorded'],
-    'Products': ['product_created', 'product_updated', 'product_deleted'],
+    'Stock': ['product_created', 'product_updated', 'product_deleted'],
     'Categories': ['category_created', 'category_updated', 'category_deleted'],
   };
   final Set<String> _selectedFilters = {}; 

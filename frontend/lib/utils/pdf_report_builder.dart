@@ -75,7 +75,7 @@ class PdfReportBuilder {
         if (inventory != null) ...[
           _sectionTitle('Inventory Overview'),
           pw.SizedBox(height: 4),
-          _kvRow('Products', '${inventory['totalProducts'] ?? 0}'),
+          _kvRow('Stock', '${inventory['totalProducts'] ?? 0}'),
           _kvRow('Stock Value', _fmt((inventory['totalStockValue'] ?? 0).toDouble())),
           _kvRow('Low Stock Items', '${inventory['lowStockCount'] ?? 0}'),
           pw.SizedBox(height: 16),

@@ -20,7 +20,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
 
   final _items = const [
     DrawerItem(icon: Icons.dashboard_outlined, label: 'Dashboard', builder: _empty),
-    DrawerItem(icon: Icons.inventory_2_outlined, label: 'Products', builder: _empty),
+    DrawerItem(icon: Icons.inventory_2_outlined, label: 'Stock', builder: _empty),
     DrawerItem(icon: Icons.category_outlined, label: 'Categories', builder: _empty),
     DrawerItem(icon: Icons.shopping_cart_outlined, label: 'Sales', builder: _empty),
     DrawerItem(icon: Icons.local_shipping_outlined, label: 'Purchases', builder: _empty),
