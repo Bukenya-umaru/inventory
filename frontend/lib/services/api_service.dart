@@ -34,6 +34,20 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
   static String fileUrl(String? path) =>
       (path == null || path.isEmpty) ? '' : '$serverUrl$path';
 
+  /// Fetches raw bytes of a server-hosted file (e.g. a business logo).
+  /// Returns null if the path is empty, the request fails, or the status
+  /// is not 200.
+  static Future<Uint8List?> fetchFile(String? path) async {
+    if (path == null || path.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse(fileUrl(path)));
+      if (response.statusCode == 200) return response.bodyBytes;
+    } catch (_) {
+      // Ignore network errors; callers fall back to no-file behavior.
+    }
+    return null;
+  }
+
   static String? _token;
 
   static Future<void> setToken(String token) async {
@@ -215,6 +229,29 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     String? logoName,
   ) async {
     final uri = Uri.parse('$baseUrl/tenants/$tenantId/branding');
+    final request = http.MultipartRequest('PUT', uri);
+    request.headers['Authorization'] = 'Bearer $_token';
+    data.forEach((key, value) {
+      request.fields[key] = value?.toString() ?? '';
+    });
+    if (logoBytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'businessLogo',
+        logoBytes,
+        filename: logoName ?? 'logo.png',
+      ));
+    }
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateMyBrandingWithLogo(
+    Map<String, dynamic> data,
+    List<int>? logoBytes,
+    String? logoName,
+  ) async {
+    final uri = Uri.parse('$baseUrl/tenants/my-branding');
     final request = http.MultipartRequest('PUT', uri);
     request.headers['Authorization'] = 'Bearer $_token';
     data.forEach((key, value) {

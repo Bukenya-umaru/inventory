@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
@@ -14,8 +16,20 @@ class PdfReportBuilder {
     required String dateRangeLabel,
     String businessName = '',
     Map<String, dynamic>? inventory,
+    Uint8List? logoBytes,
   }) async {
     final pdf = pw.Document();
+
+    // MemoryImage cannot decode every uploaded format (e.g. SVG); fall back
+    // to a text-only header instead of failing the whole export.
+    pw.MemoryImage? logoImage;
+    if (logoBytes != null) {
+      try {
+        logoImage = pw.MemoryImage(logoBytes);
+      } catch (_) {
+        logoImage = null;
+      }
+    }
 
     final r = report;
     final sales = (r['sales'] as List?) ?? [];
@@ -55,11 +69,31 @@ class PdfReportBuilder {
       ),
       build: (ctx) => [
 
-        if (businessName.isNotEmpty)
-          pw.Text(businessName, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-        pw.Text('Sales & Inventory Report', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-        pw.Text('Period: $dateRangeLabel', style: const pw.TextStyle(fontSize: 10, color: _muted)),
-        pw.Text('Generated: ${_dateTimeFmt.format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: _muted)),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            if (logoImage != null) ...[
+              pw.SizedBox(
+                height: 48,
+                width: 48,
+                child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+              ),
+              pw.SizedBox(width: 12),
+            ],
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  if (businessName.isNotEmpty)
+                    pw.Text(businessName, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Sales & Inventory Report', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Period: $dateRangeLabel', style: const pw.TextStyle(fontSize: 10, color: _muted)),
+                  pw.Text('Generated: ${_dateTimeFmt.format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: _muted)),
+                ],
+              ),
+            ),
+          ],
+        ),
         pw.SizedBox(height: 16),
 
         _sectionTitle('Summary'),

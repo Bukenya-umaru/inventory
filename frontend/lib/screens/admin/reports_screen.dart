@@ -140,11 +140,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     try {
       final auth = context.read<AuthProvider>();
       final businessName = auth.branding?.businessName ?? '';
+      final logoBytes = await ApiService.fetchFile(auth.branding?.businessLogo);
       final bytes = await PdfReportBuilder.build(
         report: _report!,
         dateRangeLabel: _dateRangeLabel(),
         businessName: businessName,
         inventory: _inventory,
+        logoBytes: logoBytes,
       );
       final fileName = 'report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.pdf';
       await downloadBytes(bytes, fileName, 'application/pdf');
@@ -160,6 +162,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
+    final auth = context.watch<AuthProvider>();
+    final branding = auth.branding;
     final r = _report ?? {};
     final inv = _inventory ?? {};
     final sales = (r['sales'] as List?) ?? [];
@@ -189,6 +193,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
           Row(
             children: [
+              if (branding?.businessLogo != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    ApiService.fileUrl(branding!.businessLogo),
+                    height: 40,
+                    width: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

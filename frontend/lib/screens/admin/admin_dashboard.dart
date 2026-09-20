@@ -73,11 +73,51 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  Widget _brandingCard() {
+    final auth = context.watch<AuthProvider>();
+    final branding = auth.branding;
+    return _sectionCard(
+      title: 'Welcome, ${auth.user?.name ?? 'Admin'}!',
+      child: Row(
+        children: [
+          if (branding?.businessLogo != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(ApiService.fileUrl(branding!.businessLogo),
+                height: 40,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.storefront, size: 40)),
+            )
+          else
+            const Icon(Icons.storefront, size: 40, color: AppTheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(branding?.businessName ?? 'Business',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textColor(context))),
+                Text('Welcome back, ${auth.user?.name ?? ''}!',
+                  style: TextStyle(
+                      color: AppTheme.secondaryText(context), fontSize: 14)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _wideLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
     final productCount = products;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
+        _brandingCard(),
+        const SizedBox(height: 16),
 
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,6 +241,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _brandingCard(),
+        const SizedBox(height: 12),
 
         _sectionCard(
           title: 'Sales Activity',
@@ -215,7 +257,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _activityStat(products, 'Products', Colors.purple, Icons.inventory_2)),
+                  Expanded(child: _activityStat(products, 'Stock', Colors.purple, Icons.inventory_2)),
                   Expanded(child: _activityStat(employees, 'Employees', Colors.orange, Icons.people)),
                 ],
               ),

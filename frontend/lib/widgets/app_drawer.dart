@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
 import '../services/api_service.dart';
@@ -390,6 +393,8 @@ class _SettingsMenu extends StatelessWidget {
           themeProvider.toggle();
         } else if (value == 'change_color') {
           _showColorPicker(context, themeProvider);
+        } else if (value == 'update_branding') {
+          _showBrandingDialog(context, auth);
         } else if (value == 'logout') {
           auth.logout();
         }
@@ -447,6 +452,22 @@ class _SettingsMenu extends StatelessWidget {
             ],
           ),
         ),
+        if (auth.user?.role == 'admin')
+          PopupMenuItem<String>(
+            value: 'update_branding',
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.storefront_outlined, size: 16, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                Text('Business Branding',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 13),
+                    fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
         const PopupMenuDivider(height: 1),
         PopupMenuItem<String>(
           value: 'logout',
@@ -485,6 +506,129 @@ class _SettingsMenu extends StatelessWidget {
     Colors.brown,
     Colors.blueGrey,
   ];
+
+  void _showBrandingDialog(BuildContext context, AuthProvider auth) {
+    final branding = auth.branding;
+    Uint8List? pickedBytes;
+    String? pickedName;
+    bool saving = false;
+    final nameCtrl = TextEditingController(text: branding?.businessName ?? '');
+    final phoneCtrl = TextEditingController(text: branding?.phoneNumber ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Business Branding'),
+          content: SizedBox(
+            width: 320,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await ImagePicker().pickImage(
+                          source: ImageSource.gallery,
+                          maxWidth: 512,
+                          maxHeight: 512);
+                      if (picked == null) return;
+                      final bytes = await picked.readAsBytes();
+                      setDialogState(() {
+                        pickedBytes = bytes;
+                        pickedName = picked.name;
+                      });
+                    },
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: pickedBytes != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child:
+                                  Image.memory(pickedBytes!, fit: BoxFit.cover))
+                          : (branding?.businessLogo != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    ApiService.fileUrl(branding!.businessLogo),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.add_a_photo_outlined,
+                                        size: 28,
+                                        color: AppTheme.primary),
+                                  ),
+                                )
+                              : const Icon(Icons.add_a_photo_outlined,
+                                  size: 28, color: AppTheme.primary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text('Tap logo to change',
+                    style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 12),
+                        color: AppTheme.secondaryText(context))),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                    controller: nameCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Business Name')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: phoneCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Phone Number')),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      setDialogState(() => saving = true);
+                      try {
+                        await ApiService.updateMyBrandingWithLogo({
+                          'businessName': nameCtrl.text.trim(),
+                          'phoneNumber': phoneCtrl.text.trim(),
+                        }, pickedBytes, pickedName);
+                        await auth.refreshBranding();
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text('Branding updated.'),
+                            backgroundColor: AppTheme.success));
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) setDialogState(() => saving = false);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Failed to update branding: $e'),
+                          backgroundColor: AppTheme.danger));
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Save')),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showColorPicker(BuildContext context, ThemeProvider themeProvider) {
     Color selected = themeProvider.accentColor;

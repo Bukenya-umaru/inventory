@@ -15,10 +15,36 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' } // allow frontend to load /uploads images
 }));
-// CORS is fully open: the API authenticates with bearer tokens (no cookies),
-// so any origin is safe to allow. If you ever switch to cookie-based auth,
-// lock this down to a whitelist of known origins again.
-app.use(cors({ origin: true, credentials: false }));
+// CORS whitelist comes from .env only — nothing hardcoded in code.
+//   - ALLOWED_ORIGINS      : origins used when NODE_ENV=production
+//   - ALLOWED_ORIGINS_DEV  : origins used in development
+// Both are comma-separated lists of full origins (scheme + domain, no trailing slash).
+// Requests with no Origin header (curl, Postman, Flutter mobile apps) are always allowed.
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = (isProduction
+  ? process.env.ALLOWED_ORIGINS
+  : (process.env.ALLOWED_ORIGINS_DEV || process.env.ALLOWED_ORIGINS)) || '';
+const whitelist = allowedOrigins
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  credentials: false, // the API uses bearer tokens, no cookies
+  origin(origin, callback) {
+    if (!origin || whitelist.includes(origin)) {
+      return callback(null, true);
+    }
+    const err = new Error(`Origin not allowed by CORS: ${origin}`);
+    err.status = 403;
+    return callback(err);
+  }
+}));
+
+console.log(`🔒 CORS mode: ${isProduction ? 'production' : 'development'} — allowed origins: ${whitelist.length ? whitelist.join(', ') : '(none)'}`);
+if (!isProduction && !whitelist.length) {
+  console.warn('⚠️ No CORS origins set. Set ALLOWED_ORIGINS_DEV (dev) or ALLOWED_ORIGINS (prod) in .env.');
+}
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
