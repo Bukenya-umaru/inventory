@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab;
+import '../../widgets/download_app_fab.dart' show DownloadAppFab;
 
 const _allPermissions = [
   'manage_categories',
@@ -105,6 +106,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const ThemeToggleFab(mini: true),
+          const SizedBox(height: 12),
+          const DownloadAppFab(mini: true),
           const SizedBox(height: 12),
           FloatingActionButton(
             onPressed: () => _showCreate(),

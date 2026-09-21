@@ -8,7 +8,7 @@ import '../services/activity_watcher.dart';
 import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 import '../screens/shared/activity_notifications_screen.dart';
-import 'download_app_fab.dart' show showAppDownloadSheet;
+import 'download_app_fab.dart' show DownloadAppFab;
 
 const double kWideScreenBreakpoint = 900;
 
@@ -258,7 +258,18 @@ class ResponsiveNavWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth >= kWideScreenBreakpoint;
-    final fab = showThemeFab ? const ThemeToggleFab() : null;
+    // Theme toggle + download app button stacked bottom-right. Tabs with
+    // showThemeFab=false manage their own corner (e.g. the Employees tab).
+    final fab = showThemeFab
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              ThemeToggleFab(),
+              SizedBox(height: 12),
+              DownloadAppFab(),
+            ],
+          )
+        : null;
 
     if (isWide) {
 
@@ -432,8 +443,6 @@ class _SettingsMenu extends StatelessWidget {
       onSelected: (value) {
         if (value == 'toggle_theme') {
           themeProvider.toggle();
-        } else if (value == 'get_app') {
-          showAppDownloadSheet(context);
         } else if (value == 'logout') {
           auth.logout();
         }
@@ -464,21 +473,6 @@ class _SettingsMenu extends StatelessWidget {
                 size: 16,
                 color: themeProvider.isDark ? Colors.amber : AppTheme.success,
               ),
-            ],
-          ),
-        ),
-        PopupMenuDivider(height: 1),
-        PopupMenuItem<String>(
-          value: 'get_app',
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(
-            children: [
-              const Icon(Icons.download_rounded, size: 16, color: AppTheme.primary),
-              const SizedBox(width: 8),
-              Text('Get the mobile app',
-                style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 13),
-                  fontWeight: FontWeight.w500)),
             ],
           ),
         ),
