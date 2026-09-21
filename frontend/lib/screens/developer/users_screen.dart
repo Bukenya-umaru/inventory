@@ -89,10 +89,20 @@ class _UsersScreenState extends State<UsersScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _users.isEmpty
-                  ? const Center(child: Text('No users found'))
+                  ? RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 220),
+                          Center(child: Text('No users found')),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
                         itemCount: _users.length,
                         itemBuilder: (ctx, i) {

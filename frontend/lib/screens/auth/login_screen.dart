@@ -267,6 +267,7 @@ class _LoginFormView extends StatelessWidget {
     }
 
     // Phones & small screens: full white page, footer pinned at the bottom.
+    final isSmall = size.height < 600;
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -277,7 +278,9 @@ class _LoginFormView extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                // Top padding keeps the wordmark's dots clear of the
+                // status bar / top edge on phones.
+                padding: EdgeInsets.fromLTRB(28, isSmall ? 20 : 32, 28, 0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

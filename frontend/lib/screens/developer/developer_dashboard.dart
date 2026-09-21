@@ -40,6 +40,7 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
 
   Widget _wideLayout(dynamic s) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       children: [
 
@@ -121,6 +122,7 @@ class _DeveloperDashboardState extends State<DeveloperDashboard> {
 
   Widget _mobileLayout(dynamic s) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         _sectionCard(

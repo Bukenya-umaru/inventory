@@ -527,6 +527,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _wideLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       children: [
         _brandingCard(),
@@ -584,6 +585,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _mobileLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         _brandingCard(),

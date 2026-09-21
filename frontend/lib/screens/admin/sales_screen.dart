@@ -267,6 +267,7 @@ class _SalesScreenState extends State<SalesScreen> {
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         AppTheme.pad(context, 16), 0,
         AppTheme.pad(context, 16), 80),

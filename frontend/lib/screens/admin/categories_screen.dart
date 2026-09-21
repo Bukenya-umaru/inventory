@@ -112,7 +112,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _categories.isEmpty
-                  ? _emptyState()
+                  ? RefreshIndicator(
+                      onRefresh: _load,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(height: constraints.maxHeight * 0.35),
+                            _emptyState(),
+                          ],
+                        ),
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: Padding(
@@ -160,6 +171,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 5,
         mainAxisSpacing: 10,
@@ -174,6 +186,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget _mobileGrid(bool isSmall) {
     final crossCount = isSmall ? 3 : 2;
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossCount,
         mainAxisSpacing: 8,

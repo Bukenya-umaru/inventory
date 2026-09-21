@@ -169,7 +169,18 @@ class _StoreScreenState extends State<StoreScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _filtered.isEmpty
-                  ? _emptyState()
+                  ? RefreshIndicator(
+                      onRefresh: _load,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(height: constraints.maxHeight * 0.35),
+                            _emptyState(),
+                          ],
+                        ),
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: isWide ? _wideGrid(isSmall) : _listView(isSmall),
@@ -235,6 +246,7 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(AppTheme.pad(context, 12)),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -249,6 +261,7 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Widget _listView(bool isSmall) {
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
           isSmall ? 8 : AppTheme.pad(context, 12),
           isSmall ? 4 : AppTheme.pad(context, 8),

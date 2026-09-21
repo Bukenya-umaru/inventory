@@ -295,6 +295,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     }
 
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
           AppTheme.pad(context, 16), 0, AppTheme.pad(context, 16), 80),
       itemCount: items.length,

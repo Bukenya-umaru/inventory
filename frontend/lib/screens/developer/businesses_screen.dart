@@ -96,10 +96,20 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _tenants.isEmpty
-                  ? const Center(child: Text('No businesses found'))
+                  ? RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 220),
+                          Center(child: Text('No businesses found')),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: _tenants.length,
                         itemBuilder: (ctx, i) => _TenantCard(

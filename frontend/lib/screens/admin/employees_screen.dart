@@ -115,10 +115,20 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _employees.isEmpty
-              ? const Center(child: Text('No employees found'))
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 220),
+                      Center(child: Text('No employees found')),
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.all(AppTheme.pad(context, 16)),
                     itemCount: _employees.length,
                     itemBuilder: (ctx, i) {

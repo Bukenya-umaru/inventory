@@ -87,6 +87,7 @@ class EmployeeDashboard extends StatelessWidget {
 
   Widget _mobileLayout(BuildContext context, dynamic auth, dynamic branding) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         _sectionCard(context,

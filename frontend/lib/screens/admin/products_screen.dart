@@ -217,7 +217,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _products.isEmpty
-                  ? _emptyState()
+                  ? RefreshIndicator(
+                      onRefresh: _load,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(height: constraints.maxHeight * 0.35),
+                            _emptyState(),
+                          ],
+                        ),
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: isWide
@@ -284,6 +295,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _wideGrid(bool isSmall) {
     return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.all(AppTheme.pad(context, 12)),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -298,6 +310,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _listView(bool isSmall) {
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
           isSmall ? 8 : AppTheme.pad(context, 12),
           isSmall ? 4 : AppTheme.pad(context, 8),

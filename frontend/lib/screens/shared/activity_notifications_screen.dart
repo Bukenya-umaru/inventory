@@ -194,18 +194,29 @@ class _ActivityNotificationsScreenState
                                 onPressed: _load, child: const Text('Retry')),
                           ],
                         ),
-                      )
-                    : _logs.isEmpty
-                        ? Center(
-                            child: Text(_selectedFilters.isEmpty
-                                ? 'No activity yet'
-                                : 'No activity for the selected filters'),
-                          )
-                        : RefreshIndicator(
+                      )                        : _logs.isEmpty
+                            ? RefreshIndicator(
+                                onRefresh: () async {
+                                  await _load(silent: true);
+                                },
+                                child: ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(height: MediaQuery.of(context).size.height * 0.35),
+                                    Center(
+                                      child: Text(_selectedFilters.isEmpty
+                                          ? 'No activity yet'
+                                          : 'No activity for the selected filters'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
                             onRefresh: () async {
                               await _load(silent: true);
                             },
                             child: ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.all(8),
                               itemCount: _logs.length,
                               itemBuilder: (ctx, i) {
