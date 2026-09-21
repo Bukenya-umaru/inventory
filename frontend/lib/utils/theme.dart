@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
 
+  // Splash / login accent (blue).
+  static const Color splashBlue = Color(0xFF1565C0);
+  static const Color splashBlueDark = Color(0xFF0D47A1);
+
   static const Color primary = Color(0xFFE53935);
   static const Color primaryDark = Color(0xFFC62828);
   static const Color sidebarBg = Color(0xFF2D2D2D);

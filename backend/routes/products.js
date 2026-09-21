@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Purchase = require('../models/Purchase');
 const Category = require('../models/Category');
 const { createAuditLog } = require('../utils/audit');
+const { notifyLowStock } = require('../utils/notifications');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
@@ -271,6 +272,10 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('edit_pr
 
     Object.assign(product, updates);
     await product.save();
+
+    // Notification: warn the whole business (admin + employees) if the updated
+    // product is now at/below its minimum stock level.
+    await notifyLowStock(product, { userId: req.userId, userRole: req.user.role }, { reason: 'product-edit' });
 
     if (priceChanged) {
       product.priceHistory.push({

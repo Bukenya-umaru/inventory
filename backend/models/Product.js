@@ -86,6 +86,13 @@ const productSchema = new mongoose.Schema({
     changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     changedAt: { type: Date, default: Date.now }
   }],
+  // Set to true while currentStock is at/below minimumStock so the low-stock
+  // notification is created only once per crossing (not on every sale).
+  lowStockAlerted: {
+    type: Boolean,
+    default: false
+  },
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

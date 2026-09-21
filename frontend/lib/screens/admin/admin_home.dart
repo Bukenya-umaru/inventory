@@ -52,6 +52,8 @@ class _AdminHomeState extends State<AdminHome> {
       onItemTap: (i) => setState(() => _currentIndex = i),
       items: _items,
       title: 'Business Dashboard',
+      // Employees tab hosts its own FAB that already includes the toggle.
+      showThemeFab: _currentIndex != 8,
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,

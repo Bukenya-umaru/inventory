@@ -6,6 +6,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 
 const INVENTORY_EVENT_TYPES = [
   'sale_recorded', 'damage_recorded', 'purchase_recorded', 'stock_merged',
+  'low_stock_alert',
   'product_created', 'product_updated', 'product_deleted',
   'category_created', 'category_updated', 'category_deleted'
 ];

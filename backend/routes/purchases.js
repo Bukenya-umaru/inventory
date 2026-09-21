@@ -77,6 +77,11 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     } else {
       product.currentStock += quantity;
     }
+    // Restocked above minimum — reset the alert flag so a future drop
+    // triggers a fresh low-stock notification.
+    if ((product.currentStock || 0) + (product.stockBoxes || 0) * (product.unitsPerBox || 1) > (product.minimumStock ?? 0)) {
+      product.lowStockAlerted = false;
+    }
     await product.save();
 
     await createAuditLog({

@@ -3,6 +3,7 @@ const router = express.Router();
 const Damage = require('../models/Damage');
 const Product = require('../models/Product');
 const { createAuditLog } = require('../utils/audit');
+const { notifyLowStock } = require('../utils/notifications');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
@@ -106,6 +107,10 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_da
       }
     }
     await product.save();
+
+    // Notification: warn the whole business (admin + employees) if the product
+    // just dropped to/below its minimum stock level.
+    await notifyLowStock(product, { userId: req.userId, userRole: req.user.role }, { reason: 'damage' });
 
     await createAuditLog({
       tenantId,

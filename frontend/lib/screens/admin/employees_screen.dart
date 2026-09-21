@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
+import '../../widgets/app_drawer.dart' show ThemeToggleFab;
 
 const _allPermissions = [
   'manage_categories',
@@ -98,9 +99,18 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreate(),
-        child: const Icon(Icons.person_add),
+      // Compose the shared dark-mode toggle with this tab's own action so
+      // both float in the bottom-right corner without overlapping.
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const ThemeToggleFab(mini: true),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            onPressed: () => _showCreate(),
+            child: const Icon(Icons.person_add),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

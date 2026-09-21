@@ -25,6 +25,7 @@ class _ActivityNotificationsScreenState
     'Sales': ['sale_recorded'],
     'Purchases': ['purchase_recorded', 'stock_merged'],
     'Damages': ['damage_recorded'],
+    'Low Stock': ['low_stock_alert'],
     'Stock': ['product_created', 'product_updated', 'product_deleted'],
     'Categories': ['category_created', 'category_updated', 'category_deleted'],
   };
@@ -47,6 +48,9 @@ class _ActivityNotificationsScreenState
   void _onEvent(String event) {
     if (!mounted) return;
     if (['sales', 'purchases', 'damages', 'products', 'categories'].contains(event)) {
+      _load(silent: true);
+    }
+    if (event == 'low_stock') {
       _load(silent: true);
     }
   }
@@ -335,6 +339,7 @@ class _ActivityNotificationsScreenState
       'sale_recorded' => Icons.shopping_cart,
       'purchase_recorded' => Icons.local_shipping,
       'damage_recorded' => Icons.warning_amber,
+      'low_stock_alert' => Icons.production_quantity_limits,
       'stock_merged' => Icons.inventory,
       'product_created' => Icons.add_box,
       'product_updated' => Icons.edit,
@@ -362,6 +367,7 @@ class _ActivityNotificationsScreenState
       'sale_recorded' => 'Sale recorded',
       'purchase_recorded' => 'Purchase recorded',
       'damage_recorded' => 'Damage reported',
+      'low_stock_alert' => 'Low stock alert',
       'stock_merged' => 'Stock merged',
       'product_created' => 'Product added',
       'product_updated' => 'Product updated',
