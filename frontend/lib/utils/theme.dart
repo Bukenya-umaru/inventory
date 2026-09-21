@@ -8,8 +8,15 @@ class AppTheme {
 
   static const Color primary = Color(0xFFE53935);
   static const Color primaryDark = Color(0xFFC62828);
-  static const Color sidebarBg = Color(0xFF2D2D2D);
-  static const Color sidebarActive = Color(0xFFE53935);
+
+  // Dashboard design language: white rounded cards on a light gray canvas,
+  // pill accents and outlined status chips (see dashboard mock).
+  static const Color canvas = Color(0xFFEFF2F6);
+  static const Color panelBg = Color(0xFFF1F4F8);
+  static const Color sidebarBg = Color(0xFFFFFFFF);
+  static const Color sidebarActive = Color(0xFF123F57);
+  static const Color dashNavy = Color(0xFF123F57);
+  static const Color dashOrange = Color(0xFFF97316);
   static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFD97706);
   static const Color danger = Color(0xFFDC2626);
@@ -23,6 +30,11 @@ class AppTheme {
   static const Color darkCard = Color(0xFF1E1E1E);
   static const Color darkTextPrimary = Color(0xFFE0E0E0);
   static const Color darkTextSecondary = Color(0xFF9E9E9E);
+
+  // Dark-mode counterparts for the light design-system constants.
+  static const Color darkCanvas = Color(0xFF0D0D0D);
+  static const Color darkPanelBg = Color(0xFF181818);
+  static const Color darkSidebarBg = Color(0xFF161616);
 
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
@@ -38,6 +50,24 @@ class AppTheme {
 
   static Color cardColor(BuildContext context) =>
       _isDark(context) ? darkCard : card;
+
+  static Color panelColor(BuildContext context) =>
+      _isDark(context) ? darkPanelBg : panelBg;
+
+  static Color canvasColor(BuildContext context) =>
+      _isDark(context) ? darkCanvas : canvas;
+
+  static Color sidebarColor(BuildContext context) =>
+      _isDark(context) ? darkSidebarBg : sidebarBg;
+
+  static Color dashNavyColor(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF7EB6D9) : dashNavy;
+
+  static Color dividerColor(BuildContext context) =>
+      _isDark(context) ? Colors.grey.shade800 : Colors.grey.shade200;
+
+  static Color borderColor(BuildContext context) =>
+      _isDark(context) ? Colors.grey.shade800 : Colors.grey.shade300;
 
   static Color appBarColor(BuildContext context) =>
       _isDark(context) ? darkSurface : Colors.white;
@@ -87,6 +117,7 @@ class AppTheme {
     primarySwatch: Colors.red,
     primaryColor: primary,
     scaffoldBackgroundColor: surface,
+    dividerColor: Colors.grey.shade200,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: Colors.black87,
@@ -101,7 +132,7 @@ class AppTheme {
       color: card,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.grey.shade200),
       ),
     ),
@@ -135,6 +166,7 @@ class AppTheme {
     primarySwatch: Colors.red,
     primaryColor: primary,
     scaffoldBackgroundColor: darkSurface,
+    dividerColor: Colors.grey.shade800,
     appBarTheme: const AppBarTheme(
       backgroundColor: darkSurface,
       foregroundColor: darkTextPrimary,
@@ -149,7 +181,7 @@ class AppTheme {
       color: darkCard,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Colors.grey.shade800),
       ),
     ),

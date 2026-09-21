@@ -30,7 +30,7 @@ class AppDrawer extends StatelessWidget {
 
     return Drawer(
       width: size.width < 400 ? size.width * 0.82 : 260,
-      backgroundColor: AppTheme.sidebarBg,
+      backgroundColor: AppTheme.sidebarColor(context),
       child: _DrawerContent(
         selectedIndex: selectedIndex,
         onItemTap: (i) {
@@ -58,8 +58,13 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppTheme.sidebarBg,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.sidebarColor(context),
+        border: Border(
+          right: BorderSide(color: AppTheme.dividerColor(context)),
+        ),
+      ),
       child: SizedBox(
         width: 240,
         child: Material(
@@ -92,7 +97,6 @@ class _DrawerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
     final branding = auth.branding;
 
     return SafeArea(
@@ -102,9 +106,6 @@ class _DrawerContent extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(isSmall ? 14 : 20),
-            decoration: const BoxDecoration(
-              color: AppTheme.sidebarBg,
-            ),
             child: Row(
               children: [
                 if (branding?.businessLogo != null)
@@ -113,12 +114,15 @@ class _DrawerContent extends StatelessWidget {
                     child: Image.network(
                       ApiService.fileUrl(branding!.businessLogo),
                       height: isSmall ? 28 : 32,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.storefront, size: 28, color: Colors.white),
+                      errorBuilder: (_, _, _) => Icon(
+                          Icons.storefront,
+                          size: 28,
+                          color: AppTheme.dashNavyColor(context)),
                     ),
                   )
                 else
-                  const Icon(Icons.storefront, size: 28, color: Colors.white),
+                  Icon(Icons.storefront,
+                      size: 28, color: AppTheme.dashNavyColor(context)),
                 SizedBox(width: isSmall ? 8 : 10),
                 Expanded(
                   child: Text(
@@ -127,7 +131,7 @@ class _DrawerContent extends StatelessWidget {
                     style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
                         fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                        color: AppTheme.dashNavyColor(context)),
                   ),
                 ),
               ],
@@ -136,7 +140,7 @@ class _DrawerContent extends StatelessWidget {
 
           Expanded(
             child: Container(
-              color: AppTheme.sidebarBg,
+              color: AppTheme.sidebarColor(context),
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 itemCount: items.length,
@@ -157,14 +161,18 @@ class _DrawerContent extends StatelessWidget {
                             vertical: isSmall ? 10 : 12,
                           ),
                           decoration: BoxDecoration(
-                            color: isActive ? AppTheme.sidebarActive : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
+                            color: isActive
+                                ? AppTheme.sidebarActive.withValues(alpha: 0.10)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 item.icon,
-                                color: isActive ? Colors.white : Colors.grey.shade400,
+                                color: isActive
+                                    ? AppTheme.dashNavyColor(context)
+                                    : AppTheme.mutedIcon(context),
                                 size: isSmall ? 18 : 20,
                               ),
                               SizedBox(width: isSmall ? 10 : 12),
@@ -172,9 +180,14 @@ class _DrawerContent extends StatelessWidget {
                                 child: Text(
                                   item.label,
                                   style: TextStyle(
-                                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                                    color: isActive ? Colors.white : Colors.grey.shade400,
-                                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
+                                    fontWeight: isActive
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: isActive
+                                        ? AppTheme.dashNavyColor(context)
+                                        : AppTheme.secondaryText(context),
+                                    fontSize: AppTheme.fontSize(
+                                        context, isSmall ? 13 : 14),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -249,7 +262,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
     if (isWide) {
 
       return Scaffold(
-        backgroundColor: AppTheme.surfaceColor(context),
+        backgroundColor: AppTheme.canvasColor(context),
         body: Row(
           children: [
             AppSidebar(
@@ -259,7 +272,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
             ),
             Expanded(
               child: Scaffold(
-                backgroundColor: AppTheme.surfaceColor(context),
+                backgroundColor: AppTheme.canvasColor(context),
                 floatingActionButton: fab,
                 appBar: appBar ?? AppBar(
                   backgroundColor: AppTheme.appBarColor(context),
