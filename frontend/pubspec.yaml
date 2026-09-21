@@ -21,6 +21,7 @@ dependencies:
   pdf: ^3.11.2
   audioplayers: ^6.1.0
   flutter_dotenv: ^5.2.1
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

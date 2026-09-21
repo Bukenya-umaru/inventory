@@ -58,6 +58,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// App download: static APK hosting + release metadata API.
+// Drop the built APK in backend/downloads (optionally with release.json).
+app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
@@ -73,6 +77,7 @@ app.use('/api/purchases', require('./routes/purchases'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/passwords', require('./routes/passwords'));
+app.use('/api/app', require('./routes/app_download'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

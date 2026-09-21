@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab, kWideScreenBreakpoint;
+import '../../widgets/download_app_fab.dart';
 import '../../utils/theme.dart';
 
 /// Duration the blue splash is shown before revealing the login page.
@@ -369,8 +370,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       // Floating dark/light mode toggle — bottom right corner (unchanged,
-      // on both splash and login, phone and desktop).
-      floatingActionButton: const ThemeToggleFab(),
+      // on both splash and login, phone and desktop) + download app button
+      // next to it.
+      floatingActionButton: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ThemeToggleFab(),
+          SizedBox(height: 12),
+          DownloadAppFab(),
+        ],
+      ),
       body: _showSplash
           ? _buildSplash(context)
           : _LoginFormView(

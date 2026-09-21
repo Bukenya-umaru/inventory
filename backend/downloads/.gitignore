@@ -1,0 +1,5 @@
+# Folder where the Android APK release is placed for download.
+# Drop your built APK here (e.g. app-release.apk) and optionally a
+# release.json with version metadata.
+*
+!.gitignore

@@ -76,6 +76,35 @@ flutter run             # Run on connected device/emulator
 
 > **Security:** `.env` files are gitignored — never commit them. `.env.example` files are committed templates.
 
+### Mobile App Download & Install
+
+Users on phones can download and install the Android app directly from your server:
+
+1. **Build the APK**:
+   ```bash
+   cd frontend
+   flutter build apk --release
+   # Output: frontend/build/app/outputs/flutter-apk/app-release.apk
+   ```
+
+2. **Publish it** — copy the APK to the backend's downloads folder:
+   ```bash
+   cp frontend/build/app/outputs/flutter-apk/app-release.apk backend/downloads/app-release.apk
+   ```
+   Optionally add `backend/downloads/release.json` for version metadata:
+   ```json
+   {
+     "versionName": "1.0.0",
+     "versionCode": 1,
+     "apkFile": "app-release.apk",
+     "notes": "First release"
+   }
+   ```
+3. **How users get the app** — the server hosts it at `/downloads/app-release.apk` with metadata at `GET /api/app/release`. In the app/site:
+   - Login screen: the **download icon button** (bottom-right, next to the theme toggle) opens a "Get the mobile app" sheet.
+   - Inside the app: **Settings menu → Get the mobile app**.
+   - On web browsers the APK downloads via the browser; on Android it's saved and handed to the system installer; on iOS the sheet shows your `IOS_APP_URL` (App Store/TestFlight link) from `frontend/.env`.
+
 ### Login
 **All roles use the SAME login form.** After login, the app automatically routes to the correct dashboard based on role.
 
