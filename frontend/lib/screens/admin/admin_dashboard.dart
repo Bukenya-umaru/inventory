@@ -15,6 +15,8 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, dynamic>? _data;
   bool _loading = true;
+  String _salesRange = 'Today'; // Sales Activity filter: Today | Weekly | Monthly
+  List<bool> _salesMetrics = [true, true, true, true]; // Revenue, Profit, Stock, Employees
 
   @override
   void initState() {
@@ -117,7 +119,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  /// Small circular icon button in the card header (like "..."/filter).
+  /// Small circular icon button in the card header (like "..." / filter).
   Widget _headerIcon(IconData icon) {
     return Container(
       width: 34,
@@ -132,17 +134,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   /// Muted label + bold value, the mock's stat style.
-  Widget _statTile(String label, String value, Color valueColor) {
+  Widget _statTile(String label, String value, Color valueColor, IconData icon) {
     return _card(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 11),
-              color: AppTheme.secondaryText(context))),
+          Row(
+            children: [
+              Icon(icon, size: 14, color: valueColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 11),
+                    color: AppTheme.secondaryText(context))),
+              ),
+            ],
+          ),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -205,33 +216,215 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _salesActivityCard(String revenue, String profit, String products, String employees, {required bool twoColumn}) {
-    final stats = [
-      (revenue, 'Revenue', AppTheme.dashNavyColor(context), Icons.payments_outlined),
-      (profit, 'Profit', AppTheme.success, Icons.trending_up),
-      (products, 'Stock', AppTheme.dashOrange, Icons.inventory_2_outlined),
-      (employees, 'Employees', AppTheme.blueBright(context), Icons.people_outline),
-    ];
+  /// Sales Activity filter bottom sheet.
+  Future<void> _showSalesActivityFilter() async {
+    var range = _salesRange;
+    var metrics = List<bool>.from(_salesMetrics);
+    const labels = ['Revenue', 'Profit', 'Stock', 'Employees'];
 
-    final rows = <Widget>[];
-    for (var i = 0; i < stats.length; i += twoColumn ? 2 : 4) {
-      final take = twoColumn ? 2 : 4;
-      final end = (i + take) < stats.length ? (i + take) : stats.length;
-      final chunk = stats.sublist(i, end);
-      rows.add(
-        Row(
-          children: [
-            for (var j = 0; j < chunk.length; j++) ...[
-              if (j > 0) const SizedBox(width: 10),
-              Expanded(child: _statTile(chunk[j].$2, chunk[j].$1, chunk[j].$3)),
-            ],
-            // Keep row heights even when the last row has fewer tiles.
-            if (chunk.length < take)
-              Expanded(child: const SizedBox()),
-          ],
+    final applied = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppTheme.cardColor(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Filter Sales Activity',
+                        style: TextStyle(
+                          fontSize: AppTheme.fontSize(sheetContext, 16),
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textColor(sheetContext))),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      icon: Icon(Icons.close,
+                        color: AppTheme.secondaryText(sheetContext))),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('PERIOD',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(sheetContext, 11),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: AppTheme.secondaryText(sheetContext))),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final r in const ['Today', 'Weekly', 'Monthly'])
+                      ChoiceChip(
+                        label: Text(r),
+                        selected: range == r,
+                        selectedColor:
+                            AppTheme.dashNavyColor(sheetContext).withValues(alpha: 0.15),
+                        labelStyle: TextStyle(
+                          color: range == r
+                              ? AppTheme.dashNavyColor(sheetContext)
+                              : AppTheme.secondaryText(sheetContext),
+                          fontWeight: range == r ? FontWeight.bold : FontWeight.w500),
+                        onSelected: (_) => setSheetState(() => range = r),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text('METRICS SHOWN',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(sheetContext, 11),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                    color: AppTheme.secondaryText(sheetContext))),
+                const SizedBox(height: 4),
+                ...List.generate(4, (i) => CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  activeColor: AppTheme.dashNavyColor(sheetContext),
+                  title: Text(labels[i],
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSize(sheetContext, 14),
+                      color: AppTheme.textColor(sheetContext))),
+                  value: metrics[i],
+                  onChanged: (v) => setSheetState(() => metrics[i] = v ?? false),
+                )),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setSheetState(() {
+                          range = 'Today';
+                          metrics = [true, true, true, true];
+                        }),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppTheme.borderColor(sheetContext))),
+                        child: Text('Reset',
+                          style: TextStyle(
+                            color: AppTheme.secondaryText(sheetContext))),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.dashNavyColor(sheetContext),
+                          foregroundColor: Colors.white),
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
         ),
-      );
-      rows.add(const SizedBox(height: 10));
+      ),
+    );
+
+    if (applied == true && mounted) {
+      setState(() {
+        _salesRange = range;
+        _salesMetrics = metrics;
+      });
+    }
+  }
+
+  /// Values for the Sales Activity tiles according to the current filter.
+  ({List<String> values, String subtitle}) _salesActivityValues(
+    String revenue, String profit, String products, String employees,
+    String mRevenue, String mProfit, String sales,
+  ) {
+    switch (_salesRange) {
+      case 'Weekly':
+        final week = _lastWeekTotals();
+        return (
+          values: [
+            Currency.formatWhole(week.revenue),
+            Currency.formatWhole(week.profit),
+            products,
+            employees,
+          ],
+          subtitle: 'Last 7 days · ${week.salesCount} sales',
+        );
+      case 'Monthly':
+        return (
+          values: [mRevenue, mProfit, products, employees],
+          subtitle: 'This month · $sales sales',
+        );
+      default:
+        return (
+          values: [revenue, profit, products, employees],
+          subtitle: 'Today · ${_todaySalesCount()} sales',
+        );
+    }
+  }
+
+  ({num revenue, num profit, int salesCount}) _lastWeekTotals() {
+    final trend = _data?['trend'] as List<dynamic>?;
+    if (trend == null || trend.length < 7) {
+      final m = _data?['monthly'];
+      return (revenue: m?['revenue'] ?? 0, profit: m?['profit'] ?? 0, salesCount: m?['salesCount'] ?? 0);
+    }
+    num revenue = 0, profit = 0;
+    var salesCount = 0;
+    for (final t in trend.skip(trend.length - 7)) {
+      revenue += (t['revenue'] ?? 0) as num;
+      profit += (t['profit'] ?? 0) as num;
+      salesCount += (t['salesCount'] ?? 0) as int;
+    }
+    return (revenue: revenue, profit: profit, salesCount: salesCount);
+  }
+
+  int _todaySalesCount() {
+    final trend = _data?['trend'] as List<dynamic>?;
+    if (trend != null && trend.isNotEmpty) {
+      return (trend.last['salesCount'] ?? 0) as int;
+    }
+    return (_data?['today']?['salesCount'] ?? 0) as int;
+  }
+
+  Widget _salesActivityCard(String revenue, String profit, String products, String employees,
+      {required bool twoColumn, String mRevenue = '', String mProfit = '', String sales = '0'}) {
+    final allIcons = [
+      Icons.payments_outlined,
+      Icons.trending_up,
+      Icons.inventory_2_outlined,
+      Icons.people_outline,
+    ];
+    final data = _salesActivityValues(revenue, profit, products, employees, mRevenue, mProfit, sales);
+    final visible = <int>[];
+    for (var i = 0; i < _salesMetrics.length; i++) {
+      if (_salesMetrics[i]) visible.add(i);
+    }
+
+    final tiles = <Widget>[];
+    for (final i in visible) {
+      final colors = [
+        AppTheme.dashNavyColor(context),
+        AppTheme.success,
+        AppTheme.dashOrange,
+        AppTheme.blueBright(context),
+      ];
+      tiles.add(SizedBox(
+        width: twoColumn ? 160 : 150,
+        child: _statTile(
+          const ['Revenue', 'Profit', 'Stock', 'Employees'][i],
+          data.values[i],
+          colors[i],
+          allIcons[i],
+        ),
+      ));
     }
 
     return _card(
@@ -239,19 +432,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _cardHeader('Sales Activity', action: _headerIcon(Icons.filter_list)),
+          _cardHeader('Sales Activity',
+            action: GestureDetector(
+              onTap: _showSalesActivityFilter,
+              child: _headerIcon(Icons.filter_list))),
+          const SizedBox(height: 4),
+          Text(data.subtitle,
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 11),
+              color: AppTheme.secondaryText(context))),
           const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                for (final r in rows)
-                  if (r is SizedBox)
-                    r
-                else
-                  r,
-              ],
+          if (tiles.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text('All metrics hidden — use the filter to show some.',
+                style: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 12),
+                  color: AppTheme.secondaryText(context))),
+            )
+          else
+            SizedBox(
+              height: twoColumn ? 84 : 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: tiles.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => tiles[i],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -411,6 +620,355 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // ---- Statistics section ----
+
+  List<({String date, num revenue, num profit, int salesCount})> _trendData() {
+    final trend = _data?['trend'] as List<dynamic>?;
+    return (trend ?? [])
+        .map((t) => (
+              date: (t['date'] ?? '') as String,
+              revenue: (t['revenue'] ?? 0) as num,
+              profit: (t['profit'] ?? 0) as num,
+              salesCount: (t['salesCount'] ?? 0) as int,
+            ))
+        .toList();
+  }
+
+  /// Custom bar chart (no chart library): one bar per day, last 7/14/30 days.
+  Widget _trendChart(int days) {
+    final trend = _trendData();
+    if (trend.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: Text('No sales data for the last 30 days',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 13),
+              color: AppTheme.secondaryText(context))),
+        ),
+      );
+    }
+
+    final data = trend.length > days ? trend.sublist(trend.length - days) : trend;
+    final maxRevenue = data
+        .map((e) => e.revenue.toDouble())
+        .reduce((a, b) => a > b ? a : b);
+    final maxValue = maxRevenue <= 0 ? 1.0 : maxRevenue;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _legendDot(AppTheme.dashNavyColor(context), 'Revenue'),
+            const SizedBox(width: 14),
+            _legendDot(AppTheme.success, 'Profit'),
+            const Spacer(),
+            Text('Peak: ${Currency.formatWhole(maxRevenue)}',
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 11),
+                color: AppTheme.secondaryText(context))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 150,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < data.length; i++)
+                Expanded(
+                  child: Tooltip(
+                    message:
+                        '${data[i].date}\nRevenue: ${Currency.formatWhole(data[i].revenue)}\nProfit: ${Currency.formatWhole(data[i].profit)}\nSales: ${data[i].salesCount}',
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        final h = constraints.maxHeight;
+                        final revenueH = (data[i].revenue / maxValue) * (h - 4);
+                        final profitH = (data[i].profit / maxValue) * (h - 4);
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: revenueH < 2 ? 2 : revenueH,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.dashNavyColor(context),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(3))),
+                                ),
+                                const SizedBox(width: 2),
+                                Container(
+                                  width: 5,
+                                  height: profitH < 2 ? 2 : profitH,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.success,
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(3))),
+                                ),
+                              ],
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(_shortDay(data.first.date),
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 10),
+                color: AppTheme.secondaryText(context))),
+            Text(_shortDay(data.last.date),
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 10),
+                color: AppTheme.secondaryText(context))),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _shortDay(String isoDate) {
+    final parts = isoDate.split('-');
+    if (parts.length < 3) return isoDate;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final month = months[(int.tryParse(parts[1]) ?? 1) - 1];
+    final day = int.parse(parts[2]);
+    return '$month $day';
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 5),
+        Text(label,
+          style: TextStyle(
+            fontSize: AppTheme.fontSize(context, 11),
+            color: AppTheme.secondaryText(context))),
+      ],
+    );
+  }
+
+  Widget _statisticsCard() {
+    final trend = _trendData();
+    final totalRevenue = trend.fold<num>(0, (s, e) => s + e.revenue);
+    final totalProfit = trend.fold<num>(0, (s, e) => s + e.profit);
+    final totalSales = trend.fold<int>(0, (s, e) => s + e.salesCount);
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _cardHeader('Statistics',
+            action: _headerIcon(Icons.insights)),
+          const SizedBox(height: 4),
+          Text('Last 30 days',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 11),
+              color: AppTheme.secondaryText(context))),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _statTile('30d Revenue',
+                  Currency.formatWhole(totalRevenue),
+                  AppTheme.dashNavyColor(context), Icons.payments_outlined)),
+              const SizedBox(width: 10),
+              Expanded(child: _statTile('30d Profit',
+                  Currency.formatWhole(totalProfit),
+                  AppTheme.success, Icons.trending_up)),
+              const SizedBox(width: 10),
+              Expanded(child: _statTile('30d Sales', '$totalSales',
+                  AppTheme.dashOrange, Icons.receipt_long_outlined)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text('Revenue & Profit Trend',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 13),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textColor(context))),
+          const SizedBox(height: 10),
+          _trendChart(14),
+          const SizedBox(height: 16),
+          _panel(child: _topProductsChart()),
+          const SizedBox(height: 12),
+          _panel(child: _paymentBreakdownChart()),
+        ],
+      ),
+    );
+  }
+
+  Widget _topProductsChart() {
+    final products = (_data?['topProducts'] as List<dynamic>? ?? []);
+    if (products.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text('No product sales in the last 30 days',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 12),
+              color: AppTheme.secondaryText(context))),
+        ),
+      );
+    }
+
+    final maxRevenue = products
+        .map((p) => (p['revenue'] ?? 0) as num)
+        .fold<num>(0, (a, b) => a > b ? a : b);
+    final maxValue = maxRevenue <= 0 ? 1 : maxRevenue;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Top Selling Products',
+          style: TextStyle(
+            fontSize: AppTheme.fontSize(context, 13),
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textColor(context))),
+        const SizedBox(height: 10),
+        for (var i = 0; i < products.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 90,
+                  child: Text('${products[i]['name'] ?? 'Unknown'}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSize(context, 11),
+                      color: AppTheme.secondaryText(context))),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (products[i]['revenue'] ?? 0) / maxValue,
+                      minHeight: 10,
+                      backgroundColor: AppTheme.dividerColor(context),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          AppTheme.dashNavyColor(context))),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(Currency.formatWhole(products[i]['revenue'] ?? 0),
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 11),
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textColor(context))),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _paymentBreakdownChart() {
+    final breakdown = (_data?['paymentBreakdown'] as Map<dynamic, dynamic>? ?? {});
+    final entries = breakdown.entries
+        .map((e) => MapEntry(e.key.toString(), (e.value ?? 0) as num))
+        .where((e) => e.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final total = entries.fold<num>(0, (s, e) => s + e.value);
+
+    final colors = {
+      'cash': AppTheme.success,
+      'card': AppTheme.blueBright(context),
+      'transfer': AppTheme.dashNavyColor(context),
+      'credit': AppTheme.warning,
+    };
+    const icons = {
+      'cash': Icons.payments_outlined,
+      'card': Icons.credit_card,
+      'transfer': Icons.swap_horiz,
+      'credit': Icons.receipt_long_outlined,
+    };
+
+    if (entries.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Text('No payment data in the last 30 days',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 12),
+              color: AppTheme.secondaryText(context))),
+        ),
+      );
+    }
+
+    Widget segment(double fraction, Color color) {
+      return Expanded(
+        flex: (fraction * 100).round().clamp(1, 100).toInt(),
+        child: Container(height: 12, color: color),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Payments (30 days)',
+          style: TextStyle(
+            fontSize: AppTheme.fontSize(context, 13),
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textColor(context))),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (final e in entries)
+              segment(e.value / total, colors[e.key]!),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 14,
+          runSpacing: 6,
+          children: [
+            for (final e in entries)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icons[e.key] ?? Icons.circle_outlined,
+                    size: 13, color: colors[e.key]!),
+                  const SizedBox(width: 4),
+                  Text('${e.key[0].toUpperCase()}${e.key.substring(1)}',
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSize(context, 11),
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textColor(context))),
+                  const SizedBox(width: 4),
+                  Text('${(e.value / total * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSize(context, 11),
+                      color: AppTheme.secondaryText(context))),
+                ],
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   // ---- Rows ----
 
   Widget _summaryRow(String label, String value, IconData icon) {
@@ -446,8 +1004,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Text(label,
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 13),
-              color: AppTheme.secondaryText(context))),
-        ),
+              color: AppTheme.secondaryText(context)))),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
@@ -499,13 +1056,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _orderRow(List<String> cells, {bool isHeader = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      decoration: isHeader
-          ? BoxDecoration(
-              color: AppTheme.cardColor(context),
-              borderRadius: BorderRadius.circular(10))
-          : BoxDecoration(
-              color: AppTheme.cardColor(context),
-              borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(10)),
       child: Row(
         children: cells.asMap().entries.map((e) => Expanded(
           flex: e.key == 0 ? 2 : 1,
@@ -538,7 +1091,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Expanded(
               flex: 3,
-              child: _salesActivityCard(revenue, profit, products, employees, twoColumn: false),
+              child: _salesActivityCard(revenue, profit, products, employees,
+                  twoColumn: false, mRevenue: mRevenue, mProfit: mProfit, sales: sales),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -547,6 +1101,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+
+        _statisticsCard(),
         const SizedBox(height: 16),
 
         Row(
@@ -584,6 +1141,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _mobileLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
+    final otherCards = <Widget>[
+      _inventorySummaryCard(products, lowStock, totalStock),
+      _productDetailsCard(d, products, lowStock, totalStock),
+      _topSellingCard(revenue, mRevenue, mProfit),
+      _purchaseOrderCard(totalStock, products),
+      _salesOrderCard(revenue, profit, sales, mRevenue, mProfit),
+    ];
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
@@ -591,22 +1156,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _brandingCard(),
         const SizedBox(height: 12),
 
-        _salesActivityCard(revenue, profit, products, employees, twoColumn: true),
+        _salesActivityCard(revenue, profit, products, employees,
+            twoColumn: true, mRevenue: mRevenue, mProfit: mProfit, sales: sales),
         const SizedBox(height: 12),
 
-        _inventorySummaryCard(products, lowStock, totalStock),
+        // Statistics: graphs (trend chart + top products + payments).
+        _statisticsCard(),
         const SizedBox(height: 12),
 
-        _productDetailsCard(d, products, lowStock, totalStock),
-        const SizedBox(height: 12),
-
-        _topSellingCard(revenue, mRevenue, mProfit),
-        const SizedBox(height: 12),
-
-        _purchaseOrderCard(totalStock, products),
-        const SizedBox(height: 12),
-
-        _salesOrderCard(revenue, profit, sales, mRevenue, mProfit),
+        // All other sections side-by-side in one horizontally scrollable strip.
+        SizedBox(
+          height: 380,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: otherCards.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => SizedBox(width: 280, child: otherCards[i]),
+          ),
+        ),
       ],
     );
   }

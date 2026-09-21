@@ -298,6 +298,52 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.totalAmount, 0);
     const monthlyProfit = monthlySales.reduce((sum, s) => sum + s.profit, 0);
 
+    // Statistics section: 30-day trend, top products and payment mix.
+    const trendStart = new Date(today);
+    trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+
+    const trendSales = await Sale.find({
+      tenantId,
+      saleDate: { $gte: trendStart }
+    }).select('totalAmount profit saleDate productId quantity paymentMethod');
+
+    const trendMap = new Map();
+    for (let i = 0; i < 30; i++) {
+      const day = new Date(trendStart);
+      day.setDate(day.getDate() + i);
+      const key = day.toISOString().slice(0, 10);
+      trendMap.set(key, { date: key, revenue: 0, profit: 0, salesCount: 0 });
+    }
+    const productAgg = new Map();
+    const paymentAgg = { cash: 0, card: 0, transfer: 0, credit: 0 };
+    for (const s of trendSales) {
+      const key = new Date(s.saleDate).toISOString().slice(0, 10);
+      const bucket = trendMap.get(key);
+      if (bucket) {
+        bucket.revenue += s.totalAmount;
+        bucket.profit += s.profit;
+        bucket.salesCount += 1;
+      }
+      const pid = s.productId ? s.productId.toString() : 'unknown';
+      const entry = productAgg.get(pid) || { productId: pid, quantity: 0, revenue: 0, profit: 0, salesCount: 0 };
+      entry.quantity += s.quantity;
+      entry.revenue += s.totalAmount;
+      entry.profit += s.profit;
+      entry.salesCount += 1;
+      productAgg.set(pid, entry);
+      if (paymentAgg[s.paymentMethod] !== undefined) {
+        paymentAgg[s.paymentMethod] += s.totalAmount;
+      }
+    }
+
+    const productIds = [...productAgg.keys()].filter((id) => id !== 'unknown');
+    const productDocs = await Product.find({ _id: { $in: productIds } }).select('name');
+    const productNames = new Map(productDocs.map((p) => [p._id.toString(), p.name]));
+    const topProducts = [...productAgg.values()]
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((e) => ({ ...e, name: productNames.get(e.productId) || 'Unknown product' }));
+
     const categoryCount = await Category.countDocuments({ tenantId, isActive: true });
     const totalStockValue = products.reduce((sum, p) => {
       const pieceValue = p.costPrice * p.currentStock;
@@ -315,7 +361,10 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
         lowStockProducts,
         lowStockCount: lowStockProducts,
         categoryCount,
-        totalStockValue
+        totalStockValue,
+        trend: [...trendMap.values()],
+        topProducts,
+        paymentBreakdown: paymentAgg
       }
     });
   } catch (error) {

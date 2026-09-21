@@ -423,6 +423,16 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
+  /// Dashboard summary for any tenant member (admins and employees):
+  /// today/monthly totals plus 30-day trend, top products and payments.
+  static Future<Map<String, dynamic>> getReportSummary() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/reports/summary'),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
   static Future<Map<String, dynamic>> getInventoryReport() async {
     final response = await http.get(
       Uri.parse('$baseUrl/reports/inventory'),

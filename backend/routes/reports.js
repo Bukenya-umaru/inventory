@@ -78,6 +78,86 @@ router.get('/profit', authenticate, requireActiveTenant, requirePermission('view
   }
 });
 
+// Lightweight dashboard summary for any authenticated tenant member
+// (admins and employees): today/monthly totals, 30-day trend, top
+// products and payment breakdown for the dashboard graphs.
+router.get('/summary', authenticate, requireActiveTenant, async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const trendStart = new Date(today);
+    trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+
+    const trendSales = await Sale.find({
+      tenantId,
+      saleDate: { $gte: trendStart }
+    }).select('totalAmount profit saleDate productId quantity paymentMethod');
+
+    const todaySales = trendSales.filter((s) => new Date(s.saleDate) >= today);
+    const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const todayProfit = todaySales.reduce((sum, s) => sum + s.profit, 0);
+
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthSales = trendSales.filter((s) => new Date(s.saleDate) >= monthStart);
+    const monthlyRevenue = monthSales.reduce((sum, s) => sum + s.totalAmount, 0);
+    const monthlyProfit = monthSales.reduce((sum, s) => sum + s.profit, 0);
+
+    const trendMap = new Map();
+    for (let i = 0; i < 30; i++) {
+      const day = new Date(trendStart);
+      day.setDate(day.getDate() + i);
+      const key = day.toISOString().slice(0, 10);
+      trendMap.set(key, { date: key, revenue: 0, profit: 0, salesCount: 0 });
+    }
+    const productAgg = new Map();
+    const paymentAgg = { cash: 0, card: 0, transfer: 0, credit: 0 };
+    for (const s of trendSales) {
+      const key = new Date(s.saleDate).toISOString().slice(0, 10);
+      const bucket = trendMap.get(key);
+      if (bucket) {
+        bucket.revenue += s.totalAmount;
+        bucket.profit += s.profit;
+        bucket.salesCount += 1;
+      }
+      const pid = s.productId ? s.productId.toString() : 'unknown';
+      const entry = productAgg.get(pid) || { productId: pid, quantity: 0, revenue: 0, profit: 0, salesCount: 0 };
+      entry.quantity += s.quantity;
+      entry.revenue += s.totalAmount;
+      entry.profit += s.profit;
+      entry.salesCount += 1;
+      productAgg.set(pid, entry);
+      if (paymentAgg[s.paymentMethod] !== undefined) {
+        paymentAgg[s.paymentMethod] += s.totalAmount;
+      }
+    }
+
+    const productIds = [...productAgg.keys()].filter((id) => id !== 'unknown');
+    const productDocs = await Product.find({ _id: { $in: productIds } }).select('name');
+    const productNames = new Map(productDocs.map((p) => [p._id.toString(), p.name]));
+    const topProducts = [...productAgg.values()]
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((e) => ({ ...e, name: productNames.get(e.productId) || 'Unknown product' }));
+
+    res.json({
+      success: true,
+      summary: {
+        today: { revenue: todayRevenue, profit: todayProfit, salesCount: todaySales.length },
+        monthly: { revenue: monthlyRevenue, profit: monthlyProfit, salesCount: monthSales.length },
+        trend: [...trendMap.values()],
+        topProducts,
+        paymentBreakdown: paymentAgg
+      }
+    });
+  } catch (error) {
+    console.error('Summary report error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
