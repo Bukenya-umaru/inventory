@@ -17,6 +17,7 @@ const auditLogSchema = new mongoose.Schema({
       'product_created', 'product_updated', 'product_deleted',
       'sale_recorded', 'damage_recorded', 'purchase_recorded', 'purchase_edited', 'purchase_approved', 'stock_merged',
       'low_stock_alert',
+      'supplier_created', 'supplier_updated', 'supplier_deleted',
       'login_success', 'login_failed'
     ],
     required: true

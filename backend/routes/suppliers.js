@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Supplier = require('../models/Supplier');
 const Purchase = require('../models/Purchase');
 const { createAuditLog } = require('../utils/audit');
@@ -28,11 +29,11 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
     // Total approved spend per supplier so the Companies section can show
     // "supplied X times / total cost" next to each supplier.
     const stats = await Purchase.aggregate([
-      { $match: { tenantId: Supplier.db.Types.ObjectId.createFromHexString(tenantId), status: 'approved' } },
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'approved' } },
       { $group: { _id: '$supplierId', count: { $sum: 1 }, totalCost: { $sum: '$totalCost' } } }
     ]);
     const statsByName = await Purchase.aggregate([
-      { $match: { tenantId: Supplier.db.Types.ObjectId.createFromHexString(tenantId), status: 'approved' } },
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'approved' } },
       { $group: { _id: '$supplier', count: { $sum: 1 }, totalCost: { $sum: '$totalCost' } } }
     ]);
     const byId = new Map(stats.map((s) => [String(s._id), s]));

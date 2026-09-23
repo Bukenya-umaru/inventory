@@ -21,7 +21,7 @@ class _AdminHomeState extends State<AdminHome> {
   int _currentIndex = 0;
 
   /// Which branch under the Transactions tree is open.
-  /// Index 0 = Sales, index 1 = History.
+  /// Index 0 = Sales, index 1 = History, index 2 = Damages.
   int _transactionsChild = 1;
   bool _transactionsExpanded = false;
 
@@ -32,7 +32,7 @@ class _AdminHomeState extends State<AdminHome> {
 
   // Drawer item order:
   // 0 Dashboard | 1 Company | 2 Stock | 3 Categories | 4 Transactions
-  // 5 Damages | 6 Store | 7 Reports
+  // 5 Store | 6 Reports
   static const int _companyIndex = 1;
   static const int _transactionsIndex = 4;
 
@@ -43,6 +43,8 @@ class _AdminHomeState extends State<AdminHome> {
         children: const [
           DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
           DrawerChildItem(icon: Icons.history, label: 'History'),
+          DrawerChildItem(
+              icon: Icons.warning_amber_outlined, label: 'Damages'),
         ],
         activeChildIndex: _transactionsChild,
         initiallyExpanded: _transactionsExpanded,
@@ -70,8 +72,6 @@ class _AdminHomeState extends State<AdminHome> {
         const DrawerItem(
             icon: Icons.category_outlined, label: 'Categories', builder: _empty),
         _transactionsItem(),
-        const DrawerItem(
-            icon: Icons.warning_amber_outlined, label: 'Damages', builder: _empty),
         const DrawerItem(
             icon: Icons.storefront_outlined, label: 'Store', builder: _empty),
         const DrawerItem(
@@ -110,12 +110,14 @@ class _AdminHomeState extends State<AdminHome> {
       case 3:
         return 4; // Categories
       case _transactionsIndex:
-        return _transactionsChild == 0 ? 5 : 6; // Sales / History
+        return _transactionsChild == 0
+            ? 5
+            : _transactionsChild == 1
+                ? 6 // History
+                : 7; // Damages
       case 5:
-        return 7; // Damages
-      case 6:
         return 8; // Store
-      case 7:
+      case 6:
         return 9; // Reports
       default:
         return 0;

@@ -20,7 +20,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
   int _currentIndex = 0;
 
   /// Which branch under the Transactions tree is open.
-  /// Index 0 = Sales, index 1 = History.
+  /// Index 0 = Sales, index 1 = History, index 2 = Damages.
   int _transactionsChild = 1;
   bool _transactionsExpanded = false;
 
@@ -31,7 +31,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
 
   // Drawer item order:
   // 0 Dashboard | 1 Company | 2 Stock | 3 Categories | 4 Transactions
-  // 5 Damages | 6 Store | 7 Reports
+  // 5 Store | 6 Reports
   static const int _companyIndex = 1;
   static const int _transactionsIndex = 4;
 
@@ -42,6 +42,8 @@ class _EmployeeHomeState extends State<EmployeeHome> {
         children: const [
           DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
           DrawerChildItem(icon: Icons.history, label: 'History'),
+          DrawerChildItem(
+              icon: Icons.warning_amber_outlined, label: 'Damages'),
         ],
         activeChildIndex: _transactionsChild,
         initiallyExpanded: _transactionsExpanded,
@@ -68,8 +70,6 @@ class _EmployeeHomeState extends State<EmployeeHome> {
         const DrawerItem(
             icon: Icons.category_outlined, label: 'Categories', builder: _empty),
         _transactionsItem(),
-        const DrawerItem(
-            icon: Icons.warning_amber_outlined, label: 'Damages', builder: _empty),
         const DrawerItem(
             icon: Icons.storefront_outlined, label: 'Store', builder: _empty),
         const DrawerItem(
@@ -107,12 +107,14 @@ class _EmployeeHomeState extends State<EmployeeHome> {
       case 3:
         return 3; // Categories
       case _transactionsIndex:
-        return _transactionsChild == 0 ? 4 : 5; // Sales / History
+        return _transactionsChild == 0
+            ? 4
+            : _transactionsChild == 1
+                ? 5 // History
+                : 6; // Damages
       case 5:
-        return 6; // Damages
-      case 6:
         return 7; // Store
-      case 7:
+      case 6:
         return 8; // Reports
       default:
         return 0;
