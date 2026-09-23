@@ -6,6 +6,28 @@ const purchaseSchema = new mongoose.Schema({
     ref: 'Tenant',
     required: true
   },
+  // Pending = awaiting business-owner approval (stock not yet applied to the
+  // product). Approved = owner accepted the record and stock has been added.
+  status: {
+    type: String,
+    enum: ['pending', 'approved'],
+    default: 'pending'
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
+  // Edit trail while the record is still pending (before owner approval).
+  editHistory: [{
+    editedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    editedAt: { type: Date, default: Date.now },
+    changes: { type: mongoose.Schema.Types.Mixed }
+  }],
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
@@ -34,8 +56,15 @@ const purchaseSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // Free-text snapshot kept for old records; new records link to a
+  // Supplier document via supplierId.
   supplier: {
     type: String
+  },
+  supplierId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier',
+    default: null
   },
   supplierPhone: {
     type: String
@@ -70,5 +99,6 @@ const purchaseSchema = new mongoose.Schema({
 });
 
 purchaseSchema.index({ tenantId: 1, purchaseDate: -1 });
+purchaseSchema.index({ tenantId: 1, status: 1 });
 
 module.exports = mongoose.model('Purchase', purchaseSchema);

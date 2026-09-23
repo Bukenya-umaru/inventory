@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/app_events.dart';
+import '../../services/auth_provider.dart';
 import '../../models/purchase.dart';
+import '../../models/supplier.dart';
+import '../../widgets/supplier_picker.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -16,6 +20,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   List<Purchase> _purchases = [];
   bool _loading = true;
   bool _showAll = false;
+  bool _showPendingOnly = false;
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -150,12 +155,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Purchases',
+                        Text('Stock History',
                             style: TextStyle(
                                 fontSize: AppTheme.fontSize(context, 20),
                                 fontWeight: FontWeight.bold)),
                         Text(
-                            'Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
+                            '$_pendingCount pending • Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
                             style: TextStyle(
                                 fontSize: AppTheme.fontSize(context, 13),
                                 color: AppTheme.secondaryText(context))),
@@ -177,6 +182,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
+                _filterBtn(
+                  label: 'Pending${_pendingCount > 0 ? ' ($_pendingCount)' : ''}',
+                  icon: Icons.hourglass_top,
+                  isActive: _showPendingOnly,
+                  onTap: () => setState(() => _showPendingOnly = !_showPendingOnly),
+                ),
+                const SizedBox(width: 6),
                 _filterBtn(
                   label: 'Today',
                   icon: Icons.today,
@@ -229,7 +241,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _purchases.isEmpty
+              : _filteredPurchases().isEmpty
                   ? _emptyState()
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -239,6 +251,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       ],
     );
   }
+
+  List<Purchase> _filteredPurchases() {
+    if (!_showPendingOnly) return _purchases;
+    return _purchases.where((p) => p.isPending).toList();
+  }
+
+  int get _pendingCount => _purchases.where((p) => p.isPending).length;
 
   Widget _emptyState() {
     return Center(
@@ -272,8 +291,9 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   }
 
   Widget _buildGroupedList() {
+    final purchases = _filteredPurchases();
     final Map<String, List<Purchase>> grouped = {};
-    for (final purchase in _purchases) {
+    for (final purchase in purchases) {
       final dateKey =
           DateFormat('yyyy-MM-dd').format(purchase.purchaseDate.toLocal());
       grouped.putIfAbsent(dateKey, () => []).add(purchase);
@@ -283,7 +303,8 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     final List<Widget> items = [];
     for (final dateKey in sortedDates) {
       final dayPurchases = grouped[dateKey]!;
-      final dayCost = dayPurchases.fold(0.0, (s, p) => s + p.totalCost);
+      final dayCost =
+          dayPurchases.where((p) => p.isApproved).fold(0.0, (s, p) => s + p.totalCost);
       final date = DateTime.parse(dateKey);
 
       if (sortedDates.length > 1) {
@@ -292,6 +313,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       for (final p in dayPurchases) {
         items.add(_purchaseCard(p));
       }
+    }
+    if (items.isEmpty) {
+      items.add(Padding(
+        padding: const EdgeInsets.only(top: 40),
+        child: _emptyState(),
+      ));
     }
 
     return ListView.builder(
@@ -357,43 +384,348 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   }
 
   Widget _purchaseCard(Purchase p) {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
+    final canApprove = user != null && (user.isAdmin || user.isDeveloper || user.hasPermission('record_purchases'));
+    final canEdit = p.isPending &&
+        user != null &&
+        (user.isAdmin || user.isDeveloper || user.hasPermission('create_products'));
+
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
+      color: p.isPending ? AppTheme.warning.withValues(alpha: 0.05) : null,
       child: ListTile(
-        title: Text(p.productName ?? 'Unknown',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTheme.fontSize(context, 14))),
+        onTap: p.editHistory.isNotEmpty ? () => _showEditHistory(p) : null,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(p.productName ?? 'Unknown',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: AppTheme.fontSize(context, 14))),
+            ),
+            _statusChip(p),
+          ],
+        ),
         subtitle: Text(
           'Qty: ${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'} • ${Currency.format(p.unitCost)} each'
           '${p.supplier != null && p.supplier!.isNotEmpty ? ' • ${p.supplier!}' : ''}'
-          '${p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty ? ' • INV: ${p.invoiceNumber}' : ''}',
+          '${p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty ? ' • INV: ${p.invoiceNumber}' : ''}'
+          '${p.recordedByName != null ? ' • by ${p.recordedByName}' : ''}'
+          '${p.editHistory.isNotEmpty ? ' • edited ×${p.editHistory.length}' : ''}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
-        leading:
-            Icon(Icons.local_shipping, size: 20, color: AppTheme.primary),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        leading: Icon(
+            p.isPending ? Icons.hourglass_top : Icons.local_shipping,
+            size: 20,
+            color: p.isPending ? AppTheme.warning : AppTheme.primary),
+        trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(Currency.formatWhole(p.totalCost),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppTheme.fontSize(context, 13))),
-            Text(_paymentLabel(p.paymentMethod),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, 11),
-                    color: AppTheme.secondaryText(context))),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(Currency.formatWhole(p.totalCost),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppTheme.fontSize(context, 13))),
+                Text(_paymentLabel(p.paymentMethod),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 11),
+                        color: AppTheme.secondaryText(context))),
+              ],
+            ),
+            if (canEdit) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.edit_outlined,
+                    size: 18, color: AppTheme.blueBright(context)),
+                tooltip: 'Edit before approval',
+                onPressed: () => _showEditDialog(p),
+              ),
+            ],
+            if (canApprove && p.isPending) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.check_circle_outline,
+                    size: 18, color: AppTheme.successBright(context)),
+                tooltip: 'Approve & apply stock',
+                onPressed: () => _approvePurchase(p),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _statusChip(Purchase p) {
+    final isPending = p.isPending;
+    final color = isPending ? AppTheme.warning : AppTheme.success;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        isPending ? 'Pending' : 'Approved',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approvePurchase(Purchase p) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Approve Stock Entry'),
+        content: Text(
+            'Approve ${p.quantity} ${p.purchaseUnit == 'box' ? 'box(es)' : 'piece(s)'} of "${p.productName ?? 'product'}"?\n\nStock will be added to the product and the record will be locked from editing.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.success),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Approve')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      final res = await ApiService.approvePurchase(p.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(res['message'] ?? 'Stock entry approved.'),
+          backgroundColor: AppTheme.success));
+      AppEvents.instance.emit('purchases');
+      AppEvents.instance.emit('products');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString()), backgroundColor: AppTheme.danger));
+    }
+  }
+
+  void _showEditDialog(Purchase p) {
+    final qtyCtrl = TextEditingController(text: p.quantity.toString());
+    final unitCostCtrl = TextEditingController(text: p.unitCost % 1 == 0 ? p.unitCost.toInt().toString() : p.unitCost.toString());
+    Supplier? selectedSupplier =
+        (p.supplierId != null && p.supplierId!.isNotEmpty)
+            ? Supplier(id: p.supplierId!, name: p.supplier ?? '', phone: p.supplierPhone, email: p.supplierEmail)
+            : null;
+    final invoiceCtrl = TextEditingController(text: p.invoiceNumber ?? '');
+    final notesCtrl = TextEditingController(text: p.notes ?? '');
+    String unit = p.purchaseUnit;
+    String paymentMethod = p.paymentMethod ?? 'cash';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Edit Stock Record',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(
+                  '${p.productName ?? 'Product'} — pending approval, changes are logged for the owner',
+                  style: TextStyle(
+                      fontSize: 12, color: AppTheme.secondaryText(context))),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: qtyCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Quantity *', filled: true),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Boxes'),
+                        selected: unit == 'box',
+                        onSelected: (_) =>
+                            setDialogState(() => unit = 'box'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text('Pieces'),
+                        selected: unit == 'piece',
+                        onSelected: (_) =>
+                            setDialogState(() => unit = 'piece'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: unitCostCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                      labelText: 'Unit Cost *', filled: true),
+                ),
+                const SizedBox(height: 12),
+                SupplierPicker(
+                  selected: selectedSupplier,
+                  onChanged: (s) => setDialogState(() => selectedSupplier = s),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: invoiceCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Invoice Number', filled: true),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  decoration:
+                      const InputDecoration(labelText: 'Payment Method'),
+                  value: paymentMethod,
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                    DropdownMenuItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer')),
+                    DropdownMenuItem(
+                        value: 'mobile_money',
+                        child: Text('Mobile Money')),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (v) =>
+                      setDialogState(() => paymentMethod = v ?? 'cash'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Notes', filled: true),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                final qty = int.tryParse(qtyCtrl.text);
+                final cost = double.tryParse(unitCostCtrl.text);
+                if (qty == null || qty < 1) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Quantity must be at least 1.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                if (cost == null || cost < 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Enter a valid unit cost.'),
+                      backgroundColor: AppTheme.danger));
+                  return;
+                }
+                try {
+                  await ApiService.updatePurchase(p.id, {
+                    'quantity': qty,
+                    'purchaseUnit': unit,
+                    'unitCost': cost,
+                    'supplier': selectedSupplier?.name ?? '',
+                    'supplierId': selectedSupplier?.id,
+                    'supplierPhone': selectedSupplier?.phone ?? '',
+                    'supplierEmail': selectedSupplier?.email ?? '',
+                    'invoiceNumber': invoiceCtrl.text.trim(),
+                    'paymentMethod': paymentMethod,
+                    'notes': notesCtrl.text.trim(),
+                  });
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Record updated.'),
+                      backgroundColor: AppTheme.success));
+                  AppEvents.instance.emit('purchases');
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppTheme.danger));
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditHistory(Purchase p) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit History — ${p.productName ?? 'Product'}'),
+        content: SizedBox(
+          width: 360,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: p.editHistory.length,
+            itemBuilder: (ctx, i) {
+              final e = p.editHistory[i];
+              final changeLines = e.changes.entries
+                  .map((entry) {
+                    final from = entry.value['from'];
+                    final to = entry.value['to'];
+                    return '• ${entry.key}: "$from" → "$to"';
+                  })
+                  .join('\n');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        '${e.editedByName ?? 'User'} — ${DateFormat('MMM d, yyyy HH:mm').format(e.editedAt.toLocal())}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    Text(changeLines,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.secondaryText(context))),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close')),
+        ],
       ),
     );
   }

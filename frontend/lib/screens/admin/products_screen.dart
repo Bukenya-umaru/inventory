@@ -5,6 +5,8 @@ import '../../services/api_service.dart';
 import '../../services/app_events.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
+import '../../models/supplier.dart';
+import '../../widgets/supplier_picker.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -613,9 +615,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   void _showRestockDialog(Product p) {
     final qtyCtrl = TextEditingController();
-    final supplierCtrl = TextEditingController();
-    final supplierPhoneCtrl = TextEditingController();
-    final supplierEmailCtrl = TextEditingController();
+    Supplier? selectedSupplier;
     final invoiceCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
     String unit = p.sellsAsBox ? 'box' : 'piece';
@@ -749,11 +749,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _field(supplierCtrl, 'Supplier Company *'),
-              const SizedBox(height: 12),
-              _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
-              const SizedBox(height: 12),
-              _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
+              SupplierPicker(
+                selected: selectedSupplier,
+                onChanged: (s) => setDialogState(() => selectedSupplier = s),
+                onAddNewRequested: () => _showSupplierForm(),
+              ),
               const SizedBox(height: 12),
               _field(costCtrl,
                   unit == 'box' ? 'Buying Price (per box) *' : 'Buying Price (per piece) *',
@@ -790,9 +790,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   p,
                   qtyCtrl,
                   unit,
-                  supplierCtrl: supplierCtrl,
-                  supplierPhoneCtrl: supplierPhoneCtrl,
-                  supplierEmailCtrl: supplierEmailCtrl,
+                  selectedSupplier: selectedSupplier,
                   invoiceCtrl: invoiceCtrl,
                   notesCtrl: notesCtrl,
                   costCtrl: costCtrl,
@@ -811,9 +809,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     Product p,
     TextEditingController qtyCtrl,
     String unit, {
-    required TextEditingController supplierCtrl,
-    required TextEditingController supplierPhoneCtrl,
-    required TextEditingController supplierEmailCtrl,
+    required Supplier? selectedSupplier,
     required TextEditingController invoiceCtrl,
     required TextEditingController notesCtrl,
     required TextEditingController costCtrl,
@@ -828,9 +824,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
       return;
     }
 
-    if (supplierCtrl.text.trim().isEmpty) {
+    if (selectedSupplier == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Supplier company is required.'),
+          content: Text('Search and select a supplier first.'),
           backgroundColor: AppTheme.danger));
       return;
     }
@@ -864,12 +860,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
         'sellingPrice': sellPrice,
         'batchCostPrice': buyPrice,
         'batchSellingPrice': sellPrice,
-        'supplier': supplierCtrl.text.trim(),
-        'supplierPhone': supplierPhoneCtrl.text.trim().isNotEmpty
-            ? supplierPhoneCtrl.text.trim()
+        'supplier': selectedSupplier.name,
+        'supplierId': selectedSupplier.id,
+        'supplierPhone': (selectedSupplier.phone != null && selectedSupplier.phone!.isNotEmpty)
+            ? selectedSupplier.phone
             : null,
-        'supplierEmail': supplierEmailCtrl.text.trim().isNotEmpty
-            ? supplierEmailCtrl.text.trim()
+        'supplierEmail': (selectedSupplier.email != null && selectedSupplier.email!.isNotEmpty)
+            ? selectedSupplier.email
             : null,
         'invoiceNumber': invoiceCtrl.text.trim().isNotEmpty ? invoiceCtrl.text.trim() : null,
         'paymentMethod': paymentMethod,
@@ -879,7 +876,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         Navigator.pop(ctx);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(
-                'Stock updated: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — purchase recorded'),
+                'Stock entry recorded: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — pending approval'),
             backgroundColor: AppTheme.success));
       }
 
@@ -905,9 +902,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final boxCostCtrl = TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
     final boxPriceCtrl = TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
 
-    final supplierCtrl = TextEditingController();
-    final supplierPhoneCtrl = TextEditingController();
-    final supplierEmailCtrl = TextEditingController();
+    Supplier? selectedSupplier;
     final invoiceCtrl = TextEditingController();
     final purchaseNotesCtrl = TextEditingController();
     String paymentMethod = 'cash';
@@ -1014,11 +1009,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
                   ),
                   const SizedBox(height: 12),
-                  _field(supplierCtrl, 'Supplier Company'),
-                  const SizedBox(height: 12),
-                  _field(supplierPhoneCtrl, 'Supplier Phone', keyboardType: TextInputType.phone),
-                  const SizedBox(height: 12),
-                  _field(supplierEmailCtrl, 'Supplier Email', keyboardType: TextInputType.emailAddress),
+                  SupplierPicker(
+                    selected: selectedSupplier,
+                    onChanged: (s) => setDialogState(() => selectedSupplier = s),
+                    onAddNewRequested: () => _showSupplierForm(),
+                  ),
                   const SizedBox(height: 12),
                   _field(invoiceCtrl, 'Invoice Number'),
                   const SizedBox(height: 12),
@@ -1084,51 +1079,34 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   } else {
 
                     final sendData = Map<String, dynamic>.from(data);
-                    sendData['supplier'] = supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null;
-                    sendData['supplierPhone'] = supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null;
-                    sendData['supplierEmail'] = supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null;
+                    final sup = selectedSupplier;
+                    if (sup != null) {
+                      sendData['supplier'] = sup.name;
+                      sendData['supplierId'] = sup.id;
+                      sendData['supplierPhone'] = (sup.phone != null && sup.phone!.isNotEmpty)
+                          ? sup.phone
+                          : null;
+                      sendData['supplierEmail'] = (sup.email != null && sup.email!.isNotEmpty)
+                          ? sup.email
+                          : null;
+                    } else {
+                      sendData['supplier'] = null;
+                      sendData['supplierId'] = null;
+                    }
                     sendData['invoiceNumber'] = invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null;
                     sendData['paymentMethod'] = paymentMethod;
                     sendData['notes'] = purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null;
 
+                    // The backend now creates the pending purchase record for
+                    // the opening stock itself — no separate purchase call.
                     final res = await ApiService.createProduct(sendData);
                     merged = res['merged'] == true;
-
-                    if (!merged) {
-                      final newProduct = res['product'];
-                      final qty = sellingUnit == 'box'
-                          ? (int.tryParse(stockBoxesCtrl.text) ?? 0)
-                          : (int.tryParse(stockCtrl.text) ?? 0);
-
-                      if (qty > 0 && newProduct != null) {
-                        final unitCost = sellingUnit == 'box'
-                            ? (double.tryParse(boxCostCtrl.text) ?? 0)
-                            : (double.tryParse(costCtrl.text) ?? 0);
-                        try {
-                          await ApiService.createPurchase({
-                            'productId': newProduct['_id'],
-                            'quantity': qty,
-                            'purchaseUnit': sellingUnit,
-                            'unitCost': unitCost,
-                            'supplier': supplierCtrl.text.isNotEmpty ? supplierCtrl.text : null,
-                            'supplierPhone': supplierPhoneCtrl.text.isNotEmpty ? supplierPhoneCtrl.text : null,
-                            'supplierEmail': supplierEmailCtrl.text.isNotEmpty ? supplierEmailCtrl.text : null,
-                            'invoiceNumber': invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null,
-                            'paymentMethod': paymentMethod,
-                            'notes': purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null,
-                          });
-                        } catch (pErr) {
-
-                          debugPrint('Purchase record failed: $pErr');
-                        }
-                      }
-                    }
                   }
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
                     final msg = merged
-                        ? 'Stock updated — product already exists.'
-                        : 'Product created.';
+                        ? 'Stock entry pending approval — product already exists.'
+                        : 'Product created — opening stock pending approval.';
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(msg), backgroundColor: AppTheme.success));
                   }
@@ -1161,6 +1139,84 @@ class _ProductsScreenState extends State<ProductsScreen> {
         labelText: label,
         filled: true,
         fillColor: Theme.of(context).scaffoldBackgroundColor,
+      ),
+    );
+  }
+
+  /// Opens the supplier add form (same as Company > Suppliers) from the
+  /// picker's "Supplier not in the list? Add it" action.
+  void _showSupplierForm() {
+    final nameCtrl = TextEditingController();
+    final contactCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Supplier',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _field(nameCtrl, 'Supplier Name *'),
+              const SizedBox(height: 12),
+              _field(contactCtrl, 'Contact Person'),
+              const SizedBox(height: 12),
+              _field(phoneCtrl, 'Phone', keyboardType: TextInputType.phone),
+              const SizedBox(height: 12),
+              _field(emailCtrl, 'Email', keyboardType: TextInputType.emailAddress),
+              const SizedBox(height: 12),
+              _field(addressCtrl, 'Address'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Supplier name is required.'),
+                    backgroundColor: AppTheme.danger));
+                return;
+              }
+              try {
+                await ApiService.createSupplier({
+                  'name': nameCtrl.text.trim(),
+                  'contactPerson': contactCtrl.text.trim().isNotEmpty
+                      ? contactCtrl.text.trim()
+                      : null,
+                  'phone': phoneCtrl.text.trim().isNotEmpty
+                      ? phoneCtrl.text.trim()
+                      : null,
+                  'email': emailCtrl.text.trim().isNotEmpty
+                      ? emailCtrl.text.trim()
+                      : null,
+                  'address': addressCtrl.text.trim().isNotEmpty
+                      ? addressCtrl.text.trim()
+                      : null,
+                });
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Supplier added — now search and select it.'),
+                    backgroundColor: AppTheme.success));
+                AppEvents.instance.emit('suppliers');
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppTheme.danger));
+                }
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
   }

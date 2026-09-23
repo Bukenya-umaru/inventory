@@ -7,6 +7,24 @@ const { createAuditLog } = require('../utils/audit');
 const { notifyLowStock } = require('../utils/notifications');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
+// Resolves the supplier for a purchase record: validates supplierId against
+// the tenant when provided, falling back to the free-text supplier name.
+async function resolveSupplier(tenantId, body) {
+  if (body.supplierId) {
+    const Supplier = require('../models/Supplier');
+    const doc = await Supplier.findOne({ _id: body.supplierId, tenantId });
+    if (doc) {
+      return {
+        supplier: doc.name,
+        supplierId: doc._id,
+        supplierPhone: body.supplierPhone ?? doc.phone ?? undefined,
+        supplierEmail: body.supplierEmail ?? doc.email ?? undefined
+      };
+    }
+  }
+  return { supplier: body.supplier || undefined, supplierId: undefined, supplierPhone: body.supplierPhone, supplierEmail: body.supplierEmail };
+}
+
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
@@ -118,12 +136,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       }
 
       if (qtyToAdd > 0) {
-        if (purchaseUnit === 'box') {
-          existingProduct.stockBoxes += qtyToAdd;
-        } else {
-          existingProduct.currentStock += qtyToAdd;
-        }
-        await existingProduct.save();
+        // Stock is NOT applied here anymore — it is applied only when the
+        // pending purchase record is approved by the business owner.
       }
 
       if (pricesUpdated) {
@@ -150,8 +164,9 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
           : (batchCostPrice ?? costPrice ?? existingProduct.costPrice);
       const totalCost = unitCost * (qtyToAdd || 0);
 
+      const resolved = await resolveSupplier(tenantId, req.body);
       let purchase = null;
-      if (qtyToAdd > 0 || supplier) {
+      if (qtyToAdd > 0 || supplier || resolved.supplierId) {
         purchase = new Purchase({
           tenantId,
           productId: existingProduct._id,
@@ -160,34 +175,34 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
           unitCost,
           unitSellingPrice: batchSellingPrice ?? undefined,
           totalCost,
-          supplier,
-          supplierPhone,
-          supplierEmail,
+          supplier: resolved.supplier,
+          supplierId: resolved.supplierId,
+          supplierPhone: resolved.supplierPhone,
+          supplierEmail: resolved.supplierEmail,
           invoiceNumber,
           paymentMethod,
           notes,
-          recordedBy: req.userId
+          recordedBy: req.userId,
+          status: 'pending'
         });
         await purchase.save();
       }
 
       const priceChange = pricesUpdated
         ? `buy ${existingProduct.costPrice}, sell ${existingProduct.sellingPrice}`
-        : null;
-
-        await createAuditLog({
+        : null;        await createAuditLog({
           tenantId,
           eventType: 'purchase_recorded',
           userId: req.userId,
           userRole: req.user.role,
-          action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — product already existed${priceChange ? ` — prices updated (${priceChange})` : ''}`,
-          details: { productName: existingProduct.name, quantity: qtyToAdd, purchaseUnit, supplier, merged: true, unitCost, unitSellingPrice: batchSellingPrice ?? null },
+          action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — pending approval${priceChange ? ` — prices updated (${priceChange})` : ''}`,
+          details: { productName: existingProduct.name, quantity: qtyToAdd, purchaseUnit, supplier, merged: true, unitCost, unitSellingPrice: batchSellingPrice ?? null, status: 'pending' },
           ipAddress: req.ip
         });
 
       return res.status(200).json({
         success: true,
-        message: `Product "${existingProduct.name}" already exists. Stock updated (+${qtyToAdd} ${purchaseUnit}s).`,
+        message: `Product "${existingProduct.name}" already exists. Stock entry pending approval (+${qtyToAdd} ${purchaseUnit}s).`,
         product: existingProduct,
         merged: true,
         pricesUpdated,
@@ -196,6 +211,12 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
     }
 
     // ── No duplicate — create new product ──
+    // Opening stock goes through the same approval flow: the product starts
+    // at zero and a pending purchase record carries the opening quantity.
+    // Stock is applied only when the business owner approves it.
+    const initialQtyUnit = sellingUnit === 'box' ? 'box' : 'piece';
+    const initialQty = initialQtyUnit === 'box' ? (stockBoxes || 0) : (currentStock || 0);
+
     const product = new Product({
       name,
       description,
@@ -204,12 +225,12 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       tenantId,
       costPrice,
       sellingPrice,
-      currentStock: currentStock || 0,
+      currentStock: 0,
       minimumStock: minimumStock || 5,
       unit: unit || 'piece',
       sellingUnit: sellingUnit || 'piece',
       unitsPerBox: unitsPerBox || 1,
-      stockBoxes: stockBoxes || 0,
+      stockBoxes: 0,
       boxSellingPrice: boxSellingPrice,
       boxCostPrice: boxCostPrice,
       createdBy: req.userId
@@ -234,17 +255,49 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       console.error('Price history seed error:', histErr);
     }
 
+    // Pending purchase record for the opening stock (approved later by owner)
+    const resolved = await resolveSupplier(tenantId, req.body);
+    let purchase = null;
+    if (initialQty > 0) {
+      const openingUnitCost = initialQtyUnit === 'box'
+        ? (boxCostPrice ?? costPrice * (unitsPerBox || 1))
+        : costPrice;
+      purchase = new Purchase({
+        tenantId,
+        productId: product._id,
+        quantity: initialQty,
+        purchaseUnit: initialQtyUnit,
+        unitCost: openingUnitCost,
+        unitSellingPrice: batchSellingPrice ?? sellingPrice,
+        totalCost: openingUnitCost * initialQty,
+        supplier: resolved.supplier,
+        supplierId: resolved.supplierId,
+        supplierPhone: resolved.supplierPhone,
+        supplierEmail: resolved.supplierEmail,
+        invoiceNumber,
+        paymentMethod,
+        notes,
+        recordedBy: req.userId,
+        status: 'pending'
+      });
+      try {
+        await purchase.save();
+      } catch (pErr) {
+        console.error('Opening purchase record error:', pErr);
+      }
+    }
+
     await createAuditLog({
       tenantId,
       eventType: 'product_created',
       userId: req.userId,
       userRole: req.user.role,
-      action: `Created product: ${name}`,
-      details: { name, sku, costPrice, sellingPrice },
+      action: `Created product: ${name}${initialQty > 0 ? ` — opening stock ${initialQty} ${initialQtyUnit}(s) pending approval` : ''}`,
+      details: { name, sku, costPrice, sellingPrice, openingQty: initialQty, openingUnit: initialQtyUnit },
       ipAddress: req.ip
     });
 
-    res.status(201).json({ success: true, message: 'Product created.', product });
+    res.status(201).json({ success: true, message: 'Product created.', product, purchase });
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });

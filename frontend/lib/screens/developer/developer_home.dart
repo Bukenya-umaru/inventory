@@ -37,7 +37,7 @@ class _DeveloperHomeState extends State<DeveloperHome> {
   Widget build(BuildContext context) {
     return ResponsiveNavWrapper(
       selectedIndex: _currentIndex,
-      onItemTap: (i) => setState(() => _currentIndex = i),
+      onItemTap: (i, {int? childIndex}) => setState(() => _currentIndex = i),
       items: _items,
       title: 'Developer Dashboard',
       body: IndexedStack(

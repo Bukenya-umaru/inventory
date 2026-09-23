@@ -63,7 +63,54 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    // Backfill: purchases created before the approval workflow existed were
+    // already applied to stock, so mark them as approved.
+    const Purchase = require('./models/Purchase');
+    return Purchase.updateMany(
+      { status: { $exists: false } },
+      { $set: { status: 'approved' } }
+    ).then((r) => {
+      if (r.modifiedCount > 0) console.log(`✅ Backfilled ${r.modifiedCount} legacy purchase(s) as approved.`);
+    }).then(() => {
+      // Seed the Supplier registry from historical purchase records so the
+      // new Companies > Suppliers section starts populated. Suppliers are
+      // keyed per tenant by name; purchases get linked via supplierId.
+      const Supplier = require('./models/Supplier');
+      return Purchase.aggregate([
+        { $match: { supplier: { $type: 'string', $ne: '' }, supplierId: null } },
+        { $group: { _id: { tenantId: '$tenantId', name: '$supplier' }, phone: { $first: '$supplierPhone' }, email: { $first: '$supplierEmail' } } }
+      ]).then(async (groups) => {
+        if (!groups.length) return;
+        for (const g of groups) {
+          try {
+            const found = await Supplier.findOne({ tenantId: g._id.tenantId, name: g._id.name });
+            if (found) {
+              await Purchase.updateMany(
+                { tenantId: g._id.tenantId, supplier: g._id.name, supplierId: null },
+                { $set: { supplierId: found._id } }
+              );
+            } else {
+              const created = await Supplier.create({
+                tenantId: g._id.tenantId,
+                name: g._id.name,
+                phone: g.phone || undefined,
+                email: g.email || undefined
+              });
+              await Purchase.updateMany(
+                { tenantId: g._id.tenantId, supplier: g._id.name, supplierId: null },
+                { $set: { supplierId: created._id } }
+              );
+            }
+          } catch (e) {
+            console.warn(`⚠️ Supplier seed skipped for "${g._id.name}":`, e.message);
+          }
+        }
+        console.log(`✅ Seeded ${groups.length} supplier(s) from purchase history.`);
+      });
+    });
+  })
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
 app.use('/api/auth', require('./routes/auth'));
@@ -74,6 +121,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/sales', require('./routes/sales'));
 app.use('/api/damages', require('./routes/damages'));
 app.use('/api/purchases', require('./routes/purchases'));
+app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/passwords', require('./routes/passwords'));

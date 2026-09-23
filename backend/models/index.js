@@ -7,6 +7,7 @@ const Damage = require('./Damage');
 const Purchase = require('./Purchase');
 const AuditLog = require('./AuditLog');
 const PasswordViewLog = require('./PasswordViewLog');
+const Supplier = require('./Supplier');
 
 module.exports = {
   Tenant,
@@ -17,5 +18,6 @@ module.exports = {
   Damage,
   Purchase,
   AuditLog,
-  PasswordViewLog
+  PasswordViewLog,
+  Supplier
 };

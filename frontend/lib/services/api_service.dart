@@ -317,6 +317,41 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
+  // ── Suppliers ────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> getSuppliers({String? search}) async {
+    final params = <String, String>{};
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    final uri = Uri.parse('$baseUrl/suppliers').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> createSupplier(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/suppliers'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateSupplier(String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/suppliers/$id'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteSupplier(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/suppliers/$id'),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
   static Future<Map<String, dynamic>> getCategories() async {
     final response = await http.get(
       Uri.parse('$baseUrl/categories'),
@@ -401,6 +436,26 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
       Uri.parse('$baseUrl/purchases'),
       headers: _headers(),
       body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  /// Edit a still-pending stock record (before owner approval).
+  static Future<Map<String, dynamic>> updatePurchase(String id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/purchases/$id'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  /// Business-owner action: approve a pending stock record, applying its
+  /// quantity to the product stock and locking it from further edits.
+  static Future<Map<String, dynamic>> approvePurchase(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/purchases/$id/approve'),
+      headers: _headers(),
     );
     return _handleResponse(response);
   }

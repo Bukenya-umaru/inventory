@@ -12,9 +12,16 @@ import 'download_app_fab.dart' show DownloadAppFab;
 
 const double kWideScreenBreakpoint = 900;
 
+/// A child entry under a parent [DrawerItem] (e.g. Transactions > History).
+class DrawerChildItem {
+  final IconData icon;
+  final String label;
+  const DrawerChildItem({required this.icon, required this.label});
+}
+
 class AppDrawer extends StatelessWidget {
   final int selectedIndex;
-  final Function(int) onItemTap;
+  final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
 
   const AppDrawer({
@@ -34,9 +41,14 @@ class AppDrawer extends StatelessWidget {
       backgroundColor: AppTheme.sidebarColor(context),
       child: _DrawerContent(
         selectedIndex: selectedIndex,
-        onItemTap: (i) {
-          onItemTap(i);
-          Navigator.pop(context);
+        // Parent taps only toggle the branch open/closed (drawer stays open
+        // so the user sees the tree expand); child and leaf taps navigate
+        // and close the drawer.
+        onItemTap: (i, {int? childIndex}) {
+          onItemTap(i, childIndex: childIndex);
+          if (childIndex != null || !items[i].hasChildren) {
+            Navigator.pop(context);
+          }
         },
         items: items,
         isSmall: isSmall,
@@ -47,7 +59,7 @@ class AppDrawer extends StatelessWidget {
 
 class AppSidebar extends StatelessWidget {
   final int selectedIndex;
-  final Function(int) onItemTap;
+  final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
 
   const AppSidebar({
@@ -82,9 +94,192 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
+/// Expandable tree row used for parents that have children
+/// (e.g. Transactions with a History branch underneath).
+class _ExpandableNavItem extends StatelessWidget {
+  final DrawerItem item;
+  final bool isActive;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final int? activeChildIndex;
+  final ValueChanged<int> onChildTap;
+  final bool isSmall;
+
+  const _ExpandableNavItem({
+    required this.item,
+    required this.isActive,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.activeChildIndex,
+    required this.onChildTap,
+    required this.isSmall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onToggle,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmall ? 12 : 14,
+                vertical: isSmall ? 10 : 12,
+              ),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppTheme.sidebarActive.withValues(alpha: 0.10)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    item.icon,
+                    color: isActive
+                        ? AppTheme.dashNavyColor(context)
+                        : AppTheme.mutedIcon(context),
+                    size: isSmall ? 18 : 20,
+                  ),
+                  SizedBox(width: isSmall ? 10 : 12),
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      style: TextStyle(
+                        fontWeight: isActive
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isActive
+                            ? AppTheme.dashNavyColor(context)
+                            : AppTheme.secondaryText(context),
+                        fontSize: AppTheme.fontSize(
+                            context, isSmall ? 13 : 14),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Icon(
+                      Icons.expand_more,
+                      size: isSmall ? 16 : 18,
+                      color: isActive
+                          ? AppTheme.dashNavyColor(context)
+                          : AppTheme.mutedIcon(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Branch children, indented under the parent.
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity, height: 0),
+          secondChild: Padding(
+            padding: EdgeInsets.only(left: isSmall ? 18 : 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var ci = 0; ci < item.children!.length; ci++)
+                  _BranchChild(
+                    child: item.children![ci],
+                    isActive: activeChildIndex == ci && isActive,
+                    onTap: () => onChildTap(ci),
+                    isSmall: isSmall,
+                  ),
+              ],
+            ),
+          ),
+          crossFadeState:
+              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 150),
+          sizeCurve: Curves.easeOut,
+        ),
+      ],
+    );
+  }
+}
+
+/// Single tree branch row (the nested "History" entry).
+class _BranchChild extends StatelessWidget {
+  final DrawerChildItem child;
+  final bool isActive;
+  final VoidCallback onTap;
+  final bool isSmall;
+
+  const _BranchChild({
+    required this.child,
+    required this.isActive,
+    required this.onTap,
+    required this.isSmall,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive
+        ? AppTheme.dashNavyColor(context)
+        : AppTheme.secondaryText(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmall ? 10 : 12,
+            vertical: isSmall ? 8 : 9,
+          ),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppTheme.sidebarActive.withValues(alpha: 0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              // Tree branch line connecting the child to its parent.
+              Container(
+                width: 10,
+                height: 1,
+                color: AppTheme.borderColor(context),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                child.icon,
+                size: isSmall ? 15 : 16,
+                color: color,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  child.label,
+                  style: TextStyle(
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: color,
+                    fontSize: AppTheme.fontSize(context, isSmall ? 12 : 13),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DrawerContent extends StatelessWidget {
   final int selectedIndex;
-  final Function(int) onItemTap;
+  final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
   final bool isSmall;
 
@@ -148,6 +343,24 @@ class _DrawerContent extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = items[index];
                   final isActive = selectedIndex == index;
+
+                  // Parents with children render as an expandable tree
+                  // branch instead of a plain nav row.
+                  if (item.hasChildren) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: _ExpandableNavItem(
+                        item: item,
+                        isActive: isActive,
+                        isExpanded: item.initiallyExpanded ?? isActive,
+                        onToggle: () => onItemTap(index),
+                        activeChildIndex: item.activeChildIndex,
+                        onChildTap: (ci) => onItemTap(index, childIndex: ci),
+                        isSmall: isSmall,
+                      ),
+                    );
+                  }
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 2),
                     child: Material(
@@ -232,7 +445,7 @@ class ThemeToggleFab extends StatelessWidget {
 
 class ResponsiveNavWrapper extends StatelessWidget {
   final int selectedIndex;
-  final Function(int) onItemTap;
+  final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
   final Widget body;
   final PreferredSizeWidget? appBar;
@@ -502,6 +715,19 @@ class DrawerItem {
   final String label;
   final Widget Function() builder;
 
+  /// Nested branches shown under this item in a tree (e.g. Transactions
+  /// > History). When set, the row renders as an expandable parent.
+  final List<DrawerChildItem>? children;
+
+  /// Which child branch is currently selected (highlighted), if any.
+  final int? activeChildIndex;
+
+  /// Whether the branch starts expanded. Defaults to expanded when active.
+  final bool? initiallyExpanded;
+
   const DrawerItem(
-      {required this.icon, required this.label, required this.builder});
+      {required this.icon, required this.label, required this.builder,
+       this.children, this.activeChildIndex, this.initiallyExpanded});
+
+  bool get hasChildren => children != null && children!.isNotEmpty;
 }
