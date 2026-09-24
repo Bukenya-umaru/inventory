@@ -299,17 +299,30 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.totalAmount, 0);
     const monthlyProfit = monthlySales.reduce((sum, s) => sum + s.profit, 0);
 
-    // Statistics section: 30-day trend, top products and payment mix.
-    const trendStart = new Date(today);
-    trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+    // Statistics section: selected trend, top products and payment mix.
+    const requestedStart = req.query.startDate ? new Date(req.query.startDate) : null;
+    const requestedEnd = req.query.endDate ? new Date(req.query.endDate) : null;
+    const hasValidRange = requestedStart &&
+      requestedEnd &&
+      !Number.isNaN(requestedStart.getTime()) &&
+      !Number.isNaN(requestedEnd.getTime()) &&
+      requestedStart <= requestedEnd;
+    const trendStart = hasValidRange ? requestedStart : new Date(today);
+    const trendEnd = hasValidRange ? requestedEnd : new Date(today);
+    if (!hasValidRange) trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+    trendEnd.setHours(23, 59, 59, 999);
 
     const trendSales = await Sale.find({
       tenantId,
-      saleDate: { $gte: trendStart }
+      saleDate: { $gte: trendStart, $lte: trendEnd }
     }).select('totalAmount profit saleDate productId quantity paymentMethod');
 
     const trendMap = new Map();
-    for (let i = 0; i < 30; i++) {
+    const trendDays = Math.max(
+      1,
+      Math.ceil((trendEnd - trendStart) / (24 * 60 * 60 * 1000)) + 1
+    );
+    for (let i = 0; i < trendDays; i++) {
       const day = new Date(trendStart);
       day.setDate(day.getDate() + i);
       const key = day.toISOString().slice(0, 10);

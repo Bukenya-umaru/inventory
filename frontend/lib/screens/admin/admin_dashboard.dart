@@ -40,6 +40,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, dynamic>? _data;
   bool _loading = true;
   String _range = 'This Month'; // Stock Overview filter
+  DateTime? _overviewStart;
+  DateTime? _overviewEnd;
 
   @override
   void initState() {
@@ -66,9 +68,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final tenantId = auth.user?.tenantId;
     if (tenantId == null) return;
     try {
-      final res = await ApiService.getTenantDashboard(tenantId);
-      setState(() { _data = res['dashboard']; _loading = false; });
-    } catch (e) { setState(() => _loading = false); }
+      final res = await ApiService.getTenantDashboard(
+        tenantId,
+        startDate: _overviewStart,
+        endDate: _overviewEnd,
+      );
+      setState(() {
+        _data = res['dashboard'];
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -79,13 +90,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wifi_off_outlined,
-                size: 40, color: AppTheme.secondaryText(context)),
+            Icon(
+              Icons.wifi_off_outlined,
+              size: 40,
+              color: AppTheme.secondaryText(context),
+            ),
             const SizedBox(height: 12),
-            Text('Failed to load dashboard',
+            Text(
+              'Failed to load dashboard',
               style: TextStyle(
                 fontSize: AppTheme.fontSize(context, 14),
-                color: AppTheme.secondaryText(context))),
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _load, child: const Text('Retry')),
           ],
@@ -93,10 +110,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: _buildContent(),
-    );
+    return RefreshIndicator(onRefresh: _load, child: _buildContent());
   }
 
   // ---- Data accessors ----
@@ -104,22 +118,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<({String date, num revenue, num profit, int salesCount})> _trendData() {
     final trend = _data?['trend'] as List<dynamic>?;
     return (trend ?? [])
-        .map((t) => (
-              date: (t['date'] ?? '') as String,
-              revenue: (t['revenue'] ?? 0) as num,
-              profit: (t['profit'] ?? 0) as num,
-              salesCount: (t['salesCount'] ?? 0) as int,
-            ))
+        .map(
+          (t) => (
+            date: (t['date'] ?? '') as String,
+            revenue: (t['revenue'] ?? 0) as num,
+            profit: (t['profit'] ?? 0) as num,
+            salesCount: (t['salesCount'] ?? 0) as int,
+          ),
+        )
         .toList();
   }
 
   List<({String name, num value})> _categoryData() {
     final raw = _data?['stockByCategory'] as List<dynamic>? ?? [];
     return raw
-        .map((e) => (
-              name: (e['name'] ?? 'Uncategorized') as String,
-              value: (e['value'] ?? 0) as num,
-            ))
+        .map(
+          (e) => (
+            name: (e['name'] ?? 'Uncategorized') as String,
+            value: (e['value'] ?? 0) as num,
+          ),
+        )
         .where((e) => e.value > 0)
         .toList();
   }
@@ -127,26 +145,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<({String name, String sku, num stock})> _lowStockItems() {
     final raw = _data?['lowStockItems'] as List<dynamic>? ?? [];
     return raw
-        .map((e) => (
-              name: (e['name'] ?? 'Unknown') as String,
-              sku: (e['sku'] ?? '-') as String,
-              stock: (e['stock'] ?? 0) as num,
-            ))
+        .map(
+          (e) => (
+            name: (e['name'] ?? 'Unknown') as String,
+            sku: (e['sku'] ?? '-') as String,
+            stock: (e['stock'] ?? 0) as num,
+          ),
+        )
         .toList();
   }
 
-  List<({String date, String type, String reference, String party, num amount, String status})>
-      _recentTransactions() {
+  List<
+    ({
+      String date,
+      String type,
+      String reference,
+      String party,
+      num amount,
+      String status,
+    })
+  >
+  _recentTransactions() {
     final raw = _data?['recentTransactions'] as List<dynamic>? ?? [];
     return raw
-        .map((e) => (
-              date: (e['date'] ?? '') as String,
-              type: (e['type'] ?? 'Sale') as String,
-              reference: (e['reference'] ?? '-') as String,
-              party: (e['party'] ?? '-') as String,
-              amount: (e['amount'] ?? 0) as num,
-              status: (e['status'] ?? 'Completed') as String,
-            ))
+        .map(
+          (e) => (
+            date: (e['date'] ?? '') as String,
+            type: (e['type'] ?? 'Sale') as String,
+            reference: (e['reference'] ?? '-') as String,
+            party: (e['party'] ?? '-') as String,
+            amount: (e['amount'] ?? 0) as num,
+            status: (e['status'] ?? 'Completed') as String,
+          ),
+        )
         .toList();
   }
 
@@ -221,11 +252,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Row(
       children: [
         Expanded(
-          child: Text(title,
+          child: Text(
+            title,
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 16),
               fontWeight: FontWeight.bold,
-              color: AppTheme.textColor(context))),
+              color: AppTheme.textColor(context),
+            ),
+          ),
         ),
         ?action,
       ],
@@ -235,40 +269,71 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _viewAll(int target) {
     return GestureDetector(
       onTap: () => widget.onSeeAll?.call(target),
-      child: Text('View All',
+      child: Text(
+        'View All',
         style: TextStyle(
           fontSize: AppTheme.fontSize(context, 12),
           fontWeight: FontWeight.w600,
-          color: _kChartBlue)),
+          color: _kChartBlue,
+        ),
+      ),
     );
   }
 
   // ---- Section 1: stat cards ----
 
-  Widget _statsRow(String products, String stock, String lowStock, String value) {
+  Widget _statsRow(
+    String products,
+    String stock,
+    String lowStock,
+    String value,
+  ) {
     final cards = [
-      _statCard('Total Products', products, 'Active Products',
-          _kChartBlue, Icons.inventory_2_outlined),
+      _statCard(
+        'Total Products',
+        products,
+        'Active Products',
+        _kChartBlue,
+        Icons.inventory_2_outlined,
+      ),
       _statCard('Total Stock', stock, 'In Hand', _kGreen, Icons.circle),
-      _statCard('Low Stock', lowStock, 'Products', _kOrange,
-          Icons.warning_amber_outlined),
-      _statCard('Total Value', value, 'Stock Value', _kPurple,
-          Icons.attach_money),
+      _statCard(
+        'Low Stock',
+        lowStock,
+        'Products',
+        _kOrange,
+        Icons.warning_amber_outlined,
+      ),
+      _statCard(
+        'Total Value',
+        value,
+        'Stock Value',
+        _kPurple,
+        Icons.attach_money,
+      ),
     ];
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final w = constraints.maxWidth;
-      final cols = w >= 720 ? 4 : 2;
-      final cw = (w - 16 * (cols - 1)) / cols;
-      return Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        children: [for (final c in cards) SizedBox(width: cw, child: c)],
-      );
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final cols = w >= 720 ? 4 : 2;
+        final cw = (w - 16 * (cols - 1)) / cols;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [for (final c in cards) SizedBox(width: cw, child: c)],
+        );
+      },
+    );
   }
 
-  Widget _statCard(String label, String value, String sub, Color color, IconData icon) {
+  Widget _statCard(
+    String label,
+    String value,
+    String sub,
+    Color color,
+    IconData icon,
+  ) {
     return _card(
       child: Row(
         children: [
@@ -277,24 +342,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
+                Text(
+                  label,
                   style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 13),
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textColor(context))),
+                    color: AppTheme.textColor(context),
+                  ),
+                ),
                 const SizedBox(height: 6),
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(value,
+                  child: Text(
+                    value,
                     style: TextStyle(
                       fontSize: AppTheme.fontSize(context, 22),
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textColor(context)))),
+                      color: AppTheme.textColor(context),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(sub,
+                Text(
+                  sub,
                   style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 11),
-                    color: AppTheme.secondaryText(context))),
+                    color: AppTheme.secondaryText(context),
+                  ),
+                ),
               ],
             ),
           ),
@@ -328,10 +403,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _rangeSelector() {
     return PopupMenuButton<String>(
-      onSelected: (v) => setState(() => _range = v),
+      onSelected: (v) {
+        if (v == 'Custom Range') {
+          _pickOverviewRange();
+          return;
+        }
+        final now = DateTime.now();
+        final start = v == 'Last 7 Days'
+            ? DateTime(now.year, now.month, now.day - 6)
+            : DateTime(now.year, now.month, 1);
+        final end = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+        setState(() {
+          _range = v;
+          _overviewStart = start;
+          _overviewEnd = end;
+        });
+        _load();
+      },
       itemBuilder: (_) => const [
         PopupMenuItem(value: 'Last 7 Days', child: Text('Last 7 Days')),
         PopupMenuItem(value: 'This Month', child: Text('This Month')),
+        PopupMenuItem(value: 'Custom Range', child: Text('Select Date Range')),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -342,17 +434,59 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_range,
+            Text(
+              _range,
               style: TextStyle(
                 fontSize: AppTheme.fontSize(context, 12),
-                color: AppTheme.textColor(context))),
+                color: AppTheme.textColor(context),
+              ),
+            ),
             const SizedBox(width: 4),
-            Icon(Icons.expand_more,
-                size: 16, color: AppTheme.secondaryText(context)),
+            Icon(
+              Icons.expand_more,
+              size: 16,
+              color: AppTheme.secondaryText(context),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickOverviewRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now,
+      initialDateRange: _overviewStart != null && _overviewEnd != null
+          ? DateTimeRange(start: _overviewStart!, end: _overviewEnd!)
+          : DateTimeRange(
+              start: DateTime(now.year, now.month, 1),
+              end: DateTime(now.year, now.month, now.day),
+            ),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _range =
+          '${DateFormat('MMM d').format(picked.start)} - ${DateFormat('MMM d, yyyy').format(picked.end)}';
+      _overviewStart = DateTime(
+        picked.start.year,
+        picked.start.month,
+        picked.start.day,
+      );
+      _overviewEnd = DateTime(
+        picked.end.year,
+        picked.end.month,
+        picked.end.day,
+        23,
+        59,
+        59,
+        999,
+      );
+    });
+    _load();
   }
 
   Widget _overviewChart() {
@@ -361,17 +495,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(
-          child: Text('No sales data yet',
+          child: Text(
+            'No sales data yet',
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 13),
-              color: AppTheme.secondaryText(context))),
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
         ),
       );
     }
-    if (_range == 'Last 7 Days' && trend.length > 7) {
-      trend = trend.sublist(trend.length - 7);
-    }
-
     final values = trend.map((t) => t.revenue.toDouble()).toList();
     if (values.length == 1) values.add(values.first);
     final maxV = values.reduce(math.max);
@@ -414,10 +547,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     for (final l in yLabels.reversed)
                       Padding(
                         padding: const EdgeInsets.only(right: 6, bottom: 2),
-                        child: Text(l,
+                        child: Text(
+                          l,
                           style: TextStyle(
                             fontSize: AppTheme.fontSize(context, 10),
-                            color: AppTheme.secondaryText(context))),
+                            color: AppTheme.secondaryText(context),
+                          ),
+                        ),
                       ),
                   ],
                 ),
@@ -445,16 +581,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   for (final l in xLabels)
-                    Text(l,
+                    Text(
+                      l,
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, 10),
-                        color: AppTheme.secondaryText(context))),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                 ],
               ),
             ),
           ],
         ),
-        SizedBox(height: 2, child: Text('', style: TextStyle(color: chartColor, fontSize: 1))),
+        SizedBox(
+          height: 2,
+          child: Text('', style: TextStyle(color: chartColor, fontSize: 1)),
+        ),
       ],
     );
   }
@@ -466,12 +608,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final nice = n <= 1
         ? 1.0
         : n <= 2
-            ? 2.0
-            : n <= 2.5
-                ? 2.5
-                : n <= 5
-                    ? 5.0
-                    : 10.0;
+        ? 2.0
+        : n <= 2.5
+        ? 2.5
+        : n <= 5
+        ? 5.0
+        : 10.0;
     return nice * mag;
   }
 
@@ -513,10 +655,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Center(
-                child: Text('No stock recorded yet',
+                child: Text(
+                  'No stock recorded yet',
                   style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 13),
-                    color: AppTheme.secondaryText(context))),
+                    color: AppTheme.secondaryText(context),
+                  ),
+                ),
               ),
             )
           else ...[
@@ -553,18 +698,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(data[i].name,
+                      child: Text(
+                        data[i].name,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, 13),
-                          color: AppTheme.textColor(context))),
+                          color: AppTheme.textColor(context),
+                        ),
+                      ),
                     ),
                     Text(
                       '${(data[i].value / total * 100).toStringAsFixed(0)}%',
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, 13),
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.secondaryText(context))),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -590,10 +740,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
-                child: Text('No transactions yet',
+                child: Text(
+                  'No transactions yet',
                   style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 13),
-                    color: AppTheme.secondaryText(context))),
+                    color: AppTheme.secondaryText(context),
+                  ),
+                ),
               ),
             )
           else
@@ -609,16 +762,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     width: tableWidth,
                     child: Column(
                       children: [
-                        _txRow(['Date', 'Type', 'Reference', 'Party', 'Amount', 'Status'],
-                            isHeader: true),
-                        for (final t in txs) _txRow([
-                          _fmtTxDate(t.date),
-                          t.type,
-                          t.reference,
-                          t.party,
-                          Currency.formatWhole(t.amount),
-                          t.status,
-                        ]),
+                        _txRow([
+                          'Date',
+                          'Type',
+                          'Reference',
+                          'Party',
+                          'Amount',
+                          'Status',
+                        ], isHeader: true),
+                        for (final t in txs)
+                          _txRow([
+                            _fmtTxDate(t.date),
+                            t.type,
+                            t.reference,
+                            t.party,
+                            Currency.formatWhole(t.amount),
+                            t.status,
+                          ]),
                       ],
                     ),
                   ),
@@ -647,10 +807,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Row(
         children: [
           for (var i = 0; i < cells.length; i++)
-            Expanded(
-              flex: flexes[i],
-              child: _txCell(cells[i], i, isHeader),
-            ),
+            Expanded(flex: flexes[i], child: _txCell(cells[i], i, isHeader)),
         ],
       ),
     );
@@ -658,20 +815,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _txCell(String text, int col, bool isHeader) {
     if (isHeader) {
-      return Text(text,
+      return Text(
+        text,
         style: TextStyle(
           fontSize: AppTheme.fontSize(context, 12),
           fontWeight: FontWeight.w600,
-          color: AppTheme.secondaryText(context)));
+          color: AppTheme.secondaryText(context),
+        ),
+      );
     }
     switch (col) {
       case 2: // Reference — blue accent
-        return Text(text,
+        return Text(
+          text,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: AppTheme.fontSize(context, 12),
             fontWeight: FontWeight.w600,
-            color: _kChartBlue));
+            color: _kChartBlue,
+          ),
+        );
       case 5: // Status chip
         return Align(
           alignment: Alignment.centerLeft,
@@ -681,19 +844,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
               color: _kGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(text,
+            child: Text(
+              text,
               style: TextStyle(
                 fontSize: AppTheme.fontSize(context, 11),
                 fontWeight: FontWeight.w600,
-                color: _kGreen)),
+                color: _kGreen,
+              ),
+            ),
           ),
         );
       default:
-        return Text(text,
+        return Text(
+          text,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: AppTheme.fontSize(context, 12),
-            color: AppTheme.textColor(context)));
+            color: AppTheme.textColor(context),
+          ),
+        );
     }
   }
 
@@ -723,13 +892,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_outline,
-                        color: _kGreen, size: 18),
+                    Icon(Icons.check_circle_outline, color: _kGreen, size: 18),
                     const SizedBox(width: 6),
-                    Text('All products are well stocked',
+                    Text(
+                      'All products are well stocked',
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, 13),
-                        color: AppTheme.secondaryText(context))),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -753,34 +924,45 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           color: AppTheme.panelColor(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(icons[i % icons.length],
+                        child: Icon(
+                          icons[i % icons.length],
                           size: 22,
-                          color: AppTheme.secondaryText(context)),
+                          color: AppTheme.secondaryText(context),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(items[i].name,
+                            Text(
+                              items[i].name,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: AppTheme.fontSize(context, 13),
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textColor(context))),
+                                color: AppTheme.textColor(context),
+                              ),
+                            ),
                             const SizedBox(height: 2),
-                            Text('SKU: ${items[i].sku}',
+                            Text(
+                              'SKU: ${items[i].sku}',
                               style: TextStyle(
                                 fontSize: AppTheme.fontSize(context, 11),
-                                color: AppTheme.secondaryText(context))),
+                                color: AppTheme.secondaryText(context),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Text('Stock: ${items[i].stock}',
+                      Text(
+                        'Stock: ${items[i].stock}',
                         style: TextStyle(
                           fontSize: AppTheme.fontSize(context, 12),
                           fontWeight: FontWeight.w600,
-                          color: _kRed)),
+                          color: _kRed,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -814,19 +996,20 @@ class _LineChartPainter extends CustomPainter {
     if (values.length < 2) return;
 
     Offset p(int i) => Offset(
-          size.width * i / (values.length - 1),
-          size.height -
-              (values[i].clamp(0, yMax) / yMax) * (size.height - 4) -
-              2,
-        );
+      size.width * i / (values.length - 1),
+      size.height - (values[i].clamp(0, yMax) / yMax) * (size.height - 4) - 2,
+    );
 
     // Horizontal grid lines.
     final grid = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
     for (final f in [0.0, 0.25, 0.5, 0.75, 1.0]) {
-      canvas.drawLine(Offset(0, size.height * f),
-          Offset(size.width, size.height * f), grid);
+      canvas.drawLine(
+        Offset(0, size.height * f),
+        Offset(size.width, size.height * f),
+        grid,
+      );
     }
 
     // Smooth curve through midpoints.

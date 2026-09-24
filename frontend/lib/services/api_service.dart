@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';class ApiService {
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ApiService {
   /// API base URL, normalized to always end with `/api` and have no
   /// trailing slash, so misconfigured values like `https://host/` or
   /// `https://host` still resolve to `https://host/api/...`.
@@ -76,26 +78,40 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     };
   }
 
-  static Future<Map<String, dynamic>> _handleResponse(http.Response response) async {
+  static Future<Map<String, dynamic>> _handleResponse(
+    http.Response response,
+  ) async {
     final body = json.decode(response.body);
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     }
-    throw ApiException(body['message'] ?? 'Request failed', response.statusCode);
+    throw ApiException(
+      body['message'] ?? 'Request failed',
+      response.statusCode,
+    );
   }
 
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } on SocketException {
-      throw ApiException('Cannot connect to server. Make sure the backend is running on port 5000.');
+      throw ApiException(
+        'Cannot connect to server. Make sure the backend is running on port 5000.',
+      );
     } on TimeoutException {
-      throw ApiException('Connection timed out. The server may be down or unreachable.');
+      throw ApiException(
+        'Connection timed out. The server may be down or unreachable.',
+      );
     } on http.ClientException {
       throw ApiException('Network error. Check your internet connection.');
     }
@@ -103,10 +119,9 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
 
   static Future<Map<String, dynamic>> getMe() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/auth/me'),
-        headers: _headers(),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(Uri.parse('$baseUrl/auth/me'), headers: _headers())
+          .timeout(const Duration(seconds: 10));
       return _handleResponse(response);
     } on SocketException {
       throw ApiException('Cannot connect to server.');
@@ -115,16 +130,25 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> changePassword(String current, String newPassword) async {
+  static Future<Map<String, dynamic>> changePassword(
+    String current,
+    String newPassword,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/change-password'),
       headers: _headers(),
-      body: json.encode({'currentPassword': current, 'newPassword': newPassword}),
+      body: json.encode({
+        'currentPassword': current,
+        'newPassword': newPassword,
+      }),
     );
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getTenants({String? status, String? search}) async {
+  static Future<Map<String, dynamic>> getTenants({
+    String? status,
+    String? search,
+  }) async {
     final params = <String, String>{};
     if (status != null && status.isNotEmpty) params['status'] = status;
     if (search != null && search.isNotEmpty) params['search'] = search;
@@ -141,7 +165,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> suspendTenant(String id, String reason) async {
+  static Future<Map<String, dynamic>> suspendTenant(
+    String id,
+    String reason,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/tenants/$id/suspend'),
       headers: _headers(),
@@ -167,7 +194,9 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createTenant(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createTenant(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/tenants'),
       headers: _headers(),
@@ -194,26 +223,44 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
       }
     });
     if (logoBytes != null) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'businessLogo',
-        logoBytes,
-        filename: logoName ?? 'logo.png',
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'businessLogo',
+          logoBytes,
+          filename: logoName ?? 'logo.png',
+        ),
+      );
     }
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getTenantDashboard(String id) async {
+  static Future<Map<String, dynamic>> getTenantDashboard(
+    String id, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final params = <String, String>{};
+    if (startDate != null) {
+      params['startDate'] = startDate.toIso8601String();
+    }
+    if (endDate != null) {
+      params['endDate'] = endDate.toIso8601String();
+    }
     final response = await http.get(
-      Uri.parse('$baseUrl/tenants/$id/dashboard'),
+      Uri.parse(
+        '$baseUrl/tenants/$id/dashboard',
+      ).replace(queryParameters: params.isEmpty ? null : params),
       headers: _headers(),
     );
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updateBranding(String tenantId, Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> updateBranding(
+    String tenantId,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/tenants/$tenantId/branding'),
       headers: _headers(),
@@ -235,18 +282,23 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
       request.fields[key] = value?.toString() ?? '';
     });
     if (logoBytes != null) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'businessLogo',
-        logoBytes,
-        filename: logoName ?? 'logo.png',
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'businessLogo',
+          logoBytes,
+          filename: logoName ?? 'logo.png',
+        ),
+      );
     }
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getUsers({String? role, String? search}) async {
+  static Future<Map<String, dynamic>> getUsers({
+    String? role,
+    String? search,
+  }) async {
     final params = <String, String>{};
     if (role != null && role.isNotEmpty) params['role'] = role;
     if (search != null && search.isNotEmpty) params['search'] = search;
@@ -255,7 +307,9 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createUser(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users'),
       headers: _headers(),
@@ -264,7 +318,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updatePermissions(String userId, List<String> permissions) async {
+  static Future<Map<String, dynamic>> updatePermissions(
+    String userId,
+    List<String> permissions,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/users/$userId/permissions'),
       headers: _headers(),
@@ -273,7 +330,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> deleteUser(String userId, {String? reason}) async {
+  static Future<Map<String, dynamic>> deleteUser(
+    String userId, {
+    String? reason,
+  }) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers(),
@@ -282,7 +342,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getProducts({String? search, bool? lowStock}) async {
+  static Future<Map<String, dynamic>> getProducts({
+    String? search,
+    bool? lowStock,
+  }) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (lowStock == true) params['lowStock'] = 'true';
@@ -291,7 +354,9 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createProduct(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createProduct(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/products'),
       headers: _headers(),
@@ -300,7 +365,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> updateProduct(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/products/$id'),
       headers: _headers(),
@@ -321,12 +389,16 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
   static Future<Map<String, dynamic>> getSuppliers({String? search}) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
-    final uri = Uri.parse('$baseUrl/suppliers').replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$baseUrl/suppliers',
+    ).replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createSupplier(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createSupplier(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/suppliers'),
       headers: _headers(),
@@ -335,7 +407,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updateSupplier(String id, Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> updateSupplier(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/suppliers/$id'),
       headers: _headers(),
@@ -360,7 +435,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createCategory(String name, {String? description}) async {
+  static Future<Map<String, dynamic>> createCategory(
+    String name, {
+    String? description,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/categories'),
       headers: _headers(),
@@ -369,7 +447,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updateCategory(String id, String name) async {
+  static Future<Map<String, dynamic>> updateCategory(
+    String id,
+    String name,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/categories/$id'),
       headers: _headers(),
@@ -386,16 +467,22 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getSales({String? startDate, String? endDate}) async {
+  static Future<Map<String, dynamic>> getSales({
+    String? startDate,
+    String? endDate,
+  }) async {
     final params = <String, String>{};
-    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
     final uri = Uri.parse('$baseUrl/sales').replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createSale(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createSale(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/sales'),
       headers: _headers(),
@@ -404,16 +491,22 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getDamages({String? startDate, String? endDate}) async {
+  static Future<Map<String, dynamic>> getDamages({
+    String? startDate,
+    String? endDate,
+  }) async {
     final params = <String, String>{};
-    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
     final uri = Uri.parse('$baseUrl/damages').replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createDamage(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createDamage(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/damages'),
       headers: _headers(),
@@ -422,16 +515,24 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getPurchases({String? startDate, String? endDate}) async {
+  static Future<Map<String, dynamic>> getPurchases({
+    String? startDate,
+    String? endDate,
+  }) async {
     final params = <String, String>{};
-    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
-    final uri = Uri.parse('$baseUrl/purchases').replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$baseUrl/purchases',
+    ).replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createPurchase(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createPurchase(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/purchases'),
       headers: _headers(),
@@ -441,7 +542,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
   }
 
   /// Edit a still-pending stock record (before owner approval).
-  static Future<Map<String, dynamic>> updatePurchase(String id, Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> updatePurchase(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/purchases/$id'),
       headers: _headers(),
@@ -460,20 +564,34 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getProfitReport({String period = 'daily', String? startDate, String? endDate}) async {
+  static Future<Map<String, dynamic>> getProfitReport({
+    String period = 'daily',
+    String? startDate,
+    String? endDate,
+  }) async {
     final params = <String, String>{'period': period};
-    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
-    final uri = Uri.parse('$baseUrl/reports/profit').replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$baseUrl/reports/profit',
+    ).replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getDetailedReport({String period = 'daily', String? startDate, String? endDate}) async {
+  static Future<Map<String, dynamic>> getDetailedReport({
+    String period = 'daily',
+    String? startDate,
+    String? endDate,
+  }) async {
     final params = <String, String>{'period': period};
-    if (startDate != null && startDate.isNotEmpty) params['startDate'] = startDate;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
-    final uri = Uri.parse('$baseUrl/reports/detailed').replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$baseUrl/reports/detailed',
+    ).replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
@@ -496,7 +614,9 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> createAdminAccount(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> createAdminAccount(
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/admin'),
       headers: _headers(),
@@ -505,7 +625,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getActivity({int limit = 50, List<String>? types}) async {
+  static Future<Map<String, dynamic>> getActivity({
+    int limit = 50,
+    List<String>? types,
+  }) async {
     final params = <String, String>{'limit': '$limit'};
     if (types != null && types.isNotEmpty) params['types'] = types.join(',');
     final response = await http.get(
@@ -523,9 +646,13 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     await _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getAuditLogs({String? eventType, String? severity}) async {
+  static Future<Map<String, dynamic>> getAuditLogs({
+    String? eventType,
+    String? severity,
+  }) async {
     final params = <String, String>{};
-    if (eventType != null && eventType.isNotEmpty) params['eventType'] = eventType;
+    if (eventType != null && eventType.isNotEmpty)
+      params['eventType'] = eventType;
     if (severity != null && severity.isNotEmpty) params['severity'] = severity;
     final uri = Uri.parse('$baseUrl/audit').replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
@@ -540,7 +667,10 @@ import 'package:shared_preferences/shared_preferences.dart';class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> resetPassword(String userId, String newPassword) async {
+  static Future<Map<String, dynamic>> resetPassword(
+    String userId,
+    String newPassword,
+  ) async {
     final response = await http.put(
       Uri.parse('$baseUrl/passwords/reset/$userId'),
       headers: _headers(),
@@ -565,4 +695,4 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
-}
+}
