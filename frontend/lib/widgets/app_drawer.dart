@@ -8,6 +8,7 @@ import '../services/activity_watcher.dart';
 import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 import '../screens/shared/activity_notifications_screen.dart';
+import '../screens/shared/profile_screen.dart';
 import 'download_app_fab.dart' show DownloadAppFab;
 
 const double kWideScreenBreakpoint = 900;
@@ -651,44 +652,37 @@ class _SettingsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
 
     return PopupMenuButton<String>(
       offset: const Offset(0, 36),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       icon: Icon(Icons.settings_outlined, color: AppTheme.mutedIcon(context), size: 22),
       onSelected: (value) {
-        if (value == 'toggle_theme') {
-          themeProvider.toggle();
+        if (value == 'profile') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
         } else if (value == 'logout') {
           auth.logout();
         }
       },
       itemBuilder: (_) => [
         PopupMenuItem<String>(
-          value: 'toggle_theme',
+          value: 'profile',
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
-                size: 16,
-                color: themeProvider.isDark ? Colors.amber : Colors.orange,
-              ),
+              const Icon(Icons.account_circle_outlined,
+                  size: 16, color: AppTheme.dashNavy),
               const SizedBox(width: 8),
               Text(
-                themeProvider.isDark ? 'Dark Mode' : 'Light Mode',
+                'My Profile',
                 style: TextStyle(
                   fontSize: AppTheme.fontSize(context, 13),
                   fontWeight: FontWeight.w600,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                themeProvider.isDark ? Icons.check_circle : Icons.check_circle_outline,
-                size: 16,
-                color: themeProvider.isDark ? Colors.amber : AppTheme.success,
               ),
             ],
           ),
