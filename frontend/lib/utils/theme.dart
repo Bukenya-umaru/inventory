@@ -39,6 +39,14 @@ class AppTheme {
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
 
+  /// True on phone-sized screens (including phones held sideways), false on
+  /// tablets, laptops and desktops. Used to gate mobile-only affordances such
+  /// as the download-app button.
+  static bool isPhoneScreen(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.shortestSide < 600;
+  }
+
   static Color textColor(BuildContext context) =>
       _isDark(context) ? darkTextPrimary : textPrimary;
 

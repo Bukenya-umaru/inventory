@@ -30,11 +30,17 @@ class _AdminHomeState extends State<AdminHome> {
   int _companyChild = 0;
   bool _companyExpanded = false;
 
+  /// Which branch under the Reports tree is open.
+  /// Index 0 = Sales Performance.
+  int _reportsChild = 0;
+  bool _reportsExpanded = false;
+
   // Drawer item order:
   // 0 Dashboard | 1 Company | 2 Stock | 3 Categories | 4 Transactions
   // 5 Store | 6 Reports
   static const int _companyIndex = 1;
   static const int _transactionsIndex = 4;
+  static const int _reportsIndex = 6;
 
   DrawerItem _transactionsItem() => DrawerItem(
         icon: Icons.receipt_long_outlined,
@@ -63,6 +69,17 @@ class _AdminHomeState extends State<AdminHome> {
         initiallyExpanded: _companyExpanded,
       );
 
+  DrawerItem _reportsItem() => DrawerItem(
+        icon: Icons.bar_chart_outlined,
+        label: 'Reports',
+        builder: _empty,
+        children: const [
+          DrawerChildItem(icon: Icons.insights, label: 'Sales Performance'),
+        ],
+        activeChildIndex: _reportsChild,
+        initiallyExpanded: _reportsExpanded,
+      );
+
   List<DrawerItem> get _items => [
         const DrawerItem(
             icon: Icons.dashboard_outlined, label: 'Dashboard', builder: _empty),
@@ -74,8 +91,7 @@ class _AdminHomeState extends State<AdminHome> {
         _transactionsItem(),
         const DrawerItem(
             icon: Icons.storefront_outlined, label: 'Store', builder: _empty),
-        const DrawerItem(
-            icon: Icons.bar_chart_outlined, label: 'Reports', builder: _empty),
+        _reportsItem(),
       ];
 
   static Widget _empty() => const SizedBox();
@@ -117,8 +133,8 @@ class _AdminHomeState extends State<AdminHome> {
                 : 7; // Damages
       case 5:
         return 8; // Store
-      case 6:
-        return 9; // Reports
+      case _reportsIndex:
+        return 9; // Reports (Sales Performance)
       default:
         return 0;
     }
@@ -151,10 +167,19 @@ class _AdminHomeState extends State<AdminHome> {
             } else {
               _companyExpanded = !_companyExpanded;
             }
+          } else if (i == _reportsIndex) {
+            if (childIndex != null) {
+              _reportsChild = childIndex;
+              _reportsExpanded = true;
+              _currentIndex = i;
+            } else {
+              _reportsExpanded = !_reportsExpanded;
+            }
           } else {
             _currentIndex = i;
             _transactionsExpanded = false;
             _companyExpanded = false;
+            _reportsExpanded = false;
           }
         });
       },

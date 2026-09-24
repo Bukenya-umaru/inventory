@@ -471,15 +471,19 @@ class ResponsiveNavWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth >= kWideScreenBreakpoint;
-    // Theme toggle + download app button stacked bottom-right. Tabs with
-    // showThemeFab=false manage their own corner (e.g. the Employees tab).
+    // Theme toggle bottom-right on every screen; the download app button is
+    // shown only on phone-sized screens. Tabs with showThemeFab=false manage
+    // their own corner (e.g. the Employees tab).
+    final isPhone = AppTheme.isPhoneScreen(context);
     final fab = showThemeFab
         ? Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              ThemeToggleFab(),
-              SizedBox(height: 12),
-              DownloadAppFab(),
+            children: [
+              const ThemeToggleFab(),
+              if (isPhone) ...[
+                const SizedBox(height: 12),
+                const DownloadAppFab(),
+              ],
             ],
           )
         : null;

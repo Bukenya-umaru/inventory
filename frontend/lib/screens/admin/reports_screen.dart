@@ -20,10 +20,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _loading = true;
-  bool _showAllSales = false;
-  bool _showAllDamages = false;
-  bool _showAllProducts = false;
-  String _expandedProduct = '';
+  bool _perfExpanded = true;
+  bool _perfShowAllSales = false;
+  bool _perfShowAllDamages = false;
 
   Map<String, dynamic>? _report;
   Map<String, dynamic>? _inventory;
@@ -165,25 +164,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final auth = context.watch<AuthProvider>();
     final branding = auth.branding;
     final r = _report ?? {};
-    final inv = _inventory ?? {};
     final sales = (r['sales'] as List?) ?? [];
     final damages = (r['damages'] as List?) ?? [];
-    final allProducts = (r['allProducts'] as Map?) ?? {};
-    final productBreakdown = (r['productBreakdown'] as Map?) ?? {};
-    final damageBreakdown = (r['damageBreakdown'] as Map?) ?? {};
-    final visibleSales = _showAllSales ? sales : sales.take(5).toList();
-    final visibleDamages = _showAllDamages ? damages : damages.take(5).toList();
-
-    final sortedProductKeys = allProducts.keys.toList()..sort((a, b) {
-      final pa = allProducts[a] as Map;
-      final pb = allProducts[b] as Map;
-      final aActive = (pa['quantitySold'] ?? 0) > 0 || (pa['quantityDamaged'] ?? 0) > 0;
-      final bActive = (pb['quantitySold'] ?? 0) > 0 || (pb['quantityDamaged'] ?? 0) > 0;
-      if (aActive && !bActive) return -1;
-      if (!aActive && bActive) return 1;
-      return a.compareTo(b);
-    });
-    final visibleProducts = _showAllProducts ? sortedProductKeys : sortedProductKeys.take(10).toList();
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -245,256 +227,108 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           SizedBox(height: AppTheme.pad(context, 16)),
 
-          Row(
-            children: [
-              Expanded(child: _summaryCard('Revenue', Currency.formatWhole((r['totalRevenue'] ?? 0)), AppTheme.success, Icons.trending_up)),
-              const SizedBox(width: 8),
-              Expanded(child: _summaryCard('Profit', Currency.formatWhole((r['totalProfit'] ?? 0)), AppTheme.primary, Icons.monetization_on)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _summaryCard('Damage Loss', '-${Currency.formatWhole((r['totalDamageLoss'] ?? 0))}', AppTheme.danger, Icons.warning_amber)),
-              const SizedBox(width: 8),
-              Expanded(child: _summaryCard('Net Profit', Currency.formatWhole((r['netProfit'] ?? 0)), Colors.purple, Icons.account_balance_wallet)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: _summaryCard('Sales Count', '${r['totalSales'] ?? 0}', AppTheme.blueBright(context), Icons.shopping_cart)),
-              const SizedBox(width: 8),
-              Expanded(child: _summaryCard('Damage Reports', '${r['totalDamageReports'] ?? 0}', AppTheme.warning, Icons.broken_image)),
-            ],
-          ),
-          SizedBox(height: AppTheme.pad(context, 20)),
-
-          if (allProducts.isNotEmpty) ...[
-            _sectionHeader('Product Details (${allProducts.length})'),
-            const SizedBox(height: 8),
-            ...visibleProducts.map((name) => _productDetailCard(name, allProducts[name] as Map)),
-            if (sortedProductKeys.length > 10 && !_showAllProducts)
-              _showMoreBtn('Show all ${sortedProductKeys.length} products', () => setState(() => _showAllProducts = true)),
-            if (_showAllProducts && sortedProductKeys.length > 10)
-              _showMoreBtn('Show less', () => setState(() => _showAllProducts = false)),
-            SizedBox(height: AppTheme.pad(context, 20)),
-          ],
-
-          if (productBreakdown.isNotEmpty) ...[
-            _sectionHeader('Sales by Product'),
-            const SizedBox(height: 8),
-            _buildProductBreakdown(productBreakdown),
-            SizedBox(height: AppTheme.pad(context, 20)),
-          ],
-
-          if (damageBreakdown.isNotEmpty) ...[
-            _sectionHeader('Damages by Product'),
-            const SizedBox(height: 8),
-            _buildDamageBreakdown(damageBreakdown),
-            SizedBox(height: AppTheme.pad(context, 20)),
-          ],
-
-          if (sales.isNotEmpty) ...[
-            _sectionHeader('All Sales (${sales.length})'),
-            const SizedBox(height: 8),
-            ...visibleSales.map((s) => _saleItem(s)),
-            if (sales.length > 5 && !_showAllSales)
-              _showMoreBtn('Show all ${sales.length} sales', () => setState(() => _showAllSales = true)),
-            if (_showAllSales && sales.length > 5)
-              _showMoreBtn('Show less', () => setState(() => _showAllSales = false)),
-            SizedBox(height: AppTheme.pad(context, 20)),
-          ],
-
-          if (damages.isNotEmpty) ...[
-            _sectionHeader('All Damages (${damages.length})'),
-            const SizedBox(height: 8),
-            ...visibleDamages.map((d) => _damageItem(d)),
-            if (damages.length > 5 && !_showAllDamages)
-              _showMoreBtn('Show all ${damages.length} damages', () => setState(() => _showAllDamages = true)),
-            if (_showAllDamages && damages.length > 5)
-              _showMoreBtn('Show less', () => setState(() => _showAllDamages = false)),
-            SizedBox(height: AppTheme.pad(context, 20)),
-          ],
-
-          _sectionHeader('Inventory Overview'),
-          SizedBox(height: AppTheme.pad(context, 8)),
-          Row(
-            children: [
-              Expanded(child: _miniCard('Stock', '${inv['totalProducts'] ?? 0}')),
-              const SizedBox(width: 8),
-              Expanded(child: _miniCard('Stock Value', Currency.formatWhole((inv['totalStockValue'] ?? 0)))),
-              const SizedBox(width: 8),
-              Expanded(child: _miniCard('Low Stock', '${inv['lowStockCount'] ?? 0}', color: AppTheme.warning)),
-            ],
-          ),
+          _buildSalesPerformance(r, sales, damages),
           SizedBox(height: AppTheme.pad(context, 16)),
         ],
       ),
     );
   }
 
-  Widget _productDetailCard(String name, Map p) {
-    final isExpanded = _expandedProduct == name;
-    final qtySold = p['quantitySold'] ?? 0;
-    final qtyDamaged = p['quantityDamaged'] ?? 0;
-    final revenue = p['revenue'] ?? 0.0;
-    final profit = p['profit'] ?? 0.0;
-    final loss = p['loss'] ?? 0.0;
-    final stock = p['currentStock'] ?? 0;
-    final boxes = p['stockBoxes'] ?? 0;
-    final totalStock = p['totalStockPieces'] ?? 0;
-    final minStock = p['minimumStock'] ?? 0;
-    final costPrice = p['costPrice'] ?? 0.0;
-    final sellPrice = p['sellingPrice'] ?? 0.0;
-    final margin = revenue > 0 ? (profit / revenue * 100) : 0.0;
-    final category = p['category'] ?? '';
-    final hasActivity = qtySold > 0 || qtyDamaged > 0;
-    final isLowStock = totalStock <= minStock && totalStock > 0;
+  /// Tappable "Sales Performance" subsection. Shows, for the currently
+  /// selected period/date range, the products sold and the damages recorded.
+  Widget _buildSalesPerformance(Map r, List sales, List damages) {
+    final totalSold = sales.fold<num>(0, (sum, s) => sum + ((s['quantity'] ?? 0) as num)).toInt();
+    final totalDamaged = damages.fold<num>(0, (sum, d) => sum + ((d['quantity'] ?? 0) as num)).toInt();
 
-    Color statusColor;
-    IconData statusIcon;
-    if (totalStock == 0 && qtySold == 0 && qtyDamaged == 0) {
-      statusColor = AppTheme.secondaryText(context);
-      statusIcon = Icons.inventory_2_outlined;
-    } else if (isLowStock) {
-      statusColor = AppTheme.warning;
-      statusIcon = Icons.warning_amber;
-    } else {
-      statusColor = AppTheme.success;
-      statusIcon = Icons.check_circle_outline;
-    }
+    final visiblePerfSales = _perfShowAllSales ? sales : sales.take(5).toList();
+    final visiblePerfDamages = _perfShowAllDamages ? damages : damages.take(5).toList();
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 6),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => setState(() => _expandedProduct = isExpanded ? '' : name),
-        child: Padding(
-          padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-          child: Column(
-            children: [
-
-              Row(
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _perfExpanded = !_perfExpanded),
+            child: Padding(
+              padding: EdgeInsets.all(AppTheme.pad(context, 12)),
+              child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
+                      color: AppTheme.blueBright(context).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(statusIcon, color: statusColor, size: 20),
+                    child: Icon(Icons.insights, color: AppTheme.blueBright(context), size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        Text('Sales Performance',
                           style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
-                        if (category.isNotEmpty)
-                          Text(category, style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
+                        Text(
+                          '${_dateRangeLabel()} • $totalSold sold • $totalDamaged damaged',
+                          style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: AppTheme.secondaryText(context))),
                       ],
                     ),
                   ),
-                  if (hasActivity)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.primary)),
-                    ),
-                  const SizedBox(width: 8),
-                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppTheme.secondaryText(context)),
+                  Icon(_perfExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: AppTheme.secondaryText(context)),
                 ],
               ),
-
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _miniStat('Stock', '$totalStock', stock == 0 ? AppTheme.danger : isLowStock ? AppTheme.warning : AppTheme.success),
-                  _miniStat('Sold', '$qtySold', qtySold > 0 ? AppTheme.primary : AppTheme.secondaryText(context)),
-                  _miniStat('Damaged', '$qtyDamaged', qtyDamaged > 0 ? AppTheme.danger : AppTheme.secondaryText(context)),
-                  _miniStat('Revenue', Currency.formatWhole(revenue), revenue > 0 ? AppTheme.success : AppTheme.secondaryText(context)),
-                  _miniStat('Profit', Currency.formatWhole(profit), profit > 0 ? AppTheme.success : AppTheme.secondaryText(context)),
-                ],
-              ),
-
-              if (isExpanded) ...[
-                const Divider(height: 16),
-                _detailGrid(p),
-              ],
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
 
-  Widget _miniStat(String label, String value, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color)),
-          Text(label, style: TextStyle(fontSize: 9, color: AppTheme.secondaryText(context))),
-        ],
-      ),
-    );
-  }
+          if (_perfExpanded) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: EdgeInsets.all(AppTheme.pad(context, 12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _miniCard('Products Sold', '$totalSold', color: AppTheme.success)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _miniCard('Damaged Items', '$totalDamaged', color: AppTheme.danger)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
 
-  Widget _detailGrid(Map p) {
-    final costPrice = p['costPrice'] ?? 0.0;
-    final sellPrice = p['sellingPrice'] ?? 0.0;
-    final revenue = p['revenue'] ?? 0.0;
-    final profit = p['profit'] ?? 0.0;
-    final loss = p['loss'] ?? 0.0;
-    final costOfGoods = p['costOfGoodsSold'] ?? 0.0;
-    final margin = revenue > 0 ? (profit / revenue * 100) : 0.0;
-    final stock = p['currentStock'] ?? 0;
-    final boxes = p['stockBoxes'] ?? 0;
-    final upb = p['unitsPerBox'] ?? 1;
-    final unit = p['sellingUnit'] ?? 'piece';
-    final minStock = p['minimumStock'] ?? 0;
-    final totalStock = p['totalStockPieces'] ?? 0;
+                  Text('Products Sold (${sales.length})',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 13))),
+                  const SizedBox(height: 6),
+                  if (sales.isEmpty)
+                    Text('No products sold in this period.',
+                      style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.secondaryText(context)))
+                  else ...[
+                    ...visiblePerfSales.map((s) => _saleItem(s as Map)),
+                    if (sales.length > 5 && !_perfShowAllSales)
+                      _showMoreBtn('Show all ${sales.length} sales', () => setState(() => _perfShowAllSales = true)),
+                    if (_perfShowAllSales && sales.length > 5)
+                      _showMoreBtn('Show less', () => setState(() => _perfShowAllSales = false)),
+                  ],
+                  const SizedBox(height: 12),
 
-    return Column(
-      children: [
-
-        _detailRow('Cost Price', Currency.format(costPrice)),
-        _detailRow('Selling Price', Currency.format(sellPrice)),
-        if (unit == 'box') ...[
-          _detailRow('Unit Type', 'Box (${upb} pcs/box)'),
-          _detailRow('Boxes in Stock', '$boxes'),
-        ],
-        _detailRow('Pieces in Stock', '$stock'),
-        _detailRow('Total Stock (pcs)', '$totalStock'),
-        _detailRow('Minimum Stock', '$minStock'),
-        const Divider(height: 12),
-
-        _detailRow('Quantity Sold', '${p['quantitySold'] ?? 0}'),
-        _detailRow('Sales Revenue', Currency.formatWhole(revenue)),
-        _detailRow('Cost of Goods Sold', Currency.formatWhole(costOfGoods)),
-        _detailRow('Sales Profit', Currency.formatWhole(profit), color: AppTheme.success),
-        _detailRow('Profit Margin', '${margin.toStringAsFixed(1)}%', color: margin > 0 ? AppTheme.success : AppTheme.danger),
-        _detailRow('Sales Transactions', '${p['salesCount'] ?? 0}'),
-        const Divider(height: 12),
-
-        _detailRow('Quantity Damaged', '${p['quantityDamaged'] ?? 0}', color: (p['quantityDamaged'] ?? 0) > 0 ? AppTheme.danger : null),
-        _detailRow('Damage Loss', '-${Currency.formatWhole(loss)}', color: loss > 0 ? AppTheme.danger : null),
-        _detailRow('Damage Reports', '${p['damageCount'] ?? 0}'),
-      ],
-    );
-  }
-
-  Widget _detailRow(String label, String value, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 12, color: AppTheme.secondaryText(context)))),
-          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color ?? AppTheme.textColor(context))),
+                  Text('Damages Recorded (${damages.length})',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 13))),
+                  const SizedBox(height: 6),
+                  if (damages.isEmpty)
+                    Text('No damages recorded in this period.',
+                      style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.secondaryText(context)))
+                  else ...[
+                    ...visiblePerfDamages.map((d) => _damageItem(d as Map)),
+                    if (damages.length > 5 && !_perfShowAllDamages)
+                      _showMoreBtn('Show all ${damages.length} damages', () => setState(() => _perfShowAllDamages = true)),
+                    if (_perfShowAllDamages && damages.length > 5)
+                      _showMoreBtn('Show less', () => setState(() => _perfShowAllDamages = false)),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -534,117 +368,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               date != null ? DateFormat('MMM d, yyyy').format(date) : label,
               style: TextStyle(fontSize: 12, color: AppTheme.secondaryText(context)),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _summaryCard(String label, String value, Color color, IconData icon) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.pad(context, 14)),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
-                  const SizedBox(height: 2),
-                  Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionHeader(String title) {
-    return Text(title, style: TextStyle(fontSize: AppTheme.fontSize(context, 16), fontWeight: FontWeight.bold));
-  }
-
-  Widget _buildProductBreakdown(Map breakdown) {
-    final entries = breakdown.entries.toList()..sort((a, b) => (b.value['profit'] ?? 0).compareTo(a.value['profit'] ?? 0));
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(flex: 3, child: Text('Product', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                  Expanded(flex: 2, child: Text('Revenue', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                  Expanded(flex: 2, child: Text('Profit', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                  Expanded(flex: 1, child: Text('Qty', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            ...entries.map((e) {
-              final data = e.value as Map;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(flex: 3, child: Text(e.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-                    Expanded(flex: 2, child: Text(Currency.formatWhole(data['revenue'] ?? 0), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: AppTheme.primaryBright(context)))),
-                    Expanded(flex: 2, child: Text(Currency.formatWhole(data['profit'] ?? 0), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: AppTheme.success))),
-                    Expanded(flex: 1, child: Text('${data['quantity'] ?? 0}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12))),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDamageBreakdown(Map breakdown) {
-    final entries = breakdown.entries.toList()..sort((a, b) => (b.value['loss'] ?? 0).compareTo(a.value['loss'] ?? 0));
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(flex: 3, child: Text('Product', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                  Expanded(flex: 2, child: Text('Loss', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                  Expanded(flex: 1, child: Text('Qty', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context)))),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            ...entries.map((e) {
-              final data = e.value as Map;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Expanded(flex: 3, child: Text(e.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-                    Expanded(flex: 2, child: Text('-${Currency.formatWhole(data['loss'] ?? 0)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: AppTheme.danger))),
-                    Expanded(flex: 1, child: Text('${data['quantity'] ?? 0}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12))),
-                  ],
-                ),
-              );
-            }),
           ],
         ),
       ),

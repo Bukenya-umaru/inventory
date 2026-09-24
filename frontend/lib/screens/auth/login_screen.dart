@@ -368,19 +368,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Phones only: the blue flash screen and the download-app button.
+    // Tablets, laptops and desktops go straight to the login form and only
+    // keep the theme toggle.
+    final isPhone = AppTheme.isPhoneScreen(context);
     return Scaffold(
       // Floating dark/light mode toggle — bottom right corner (unchanged,
-      // on both splash and login, phone and desktop) + download app button
-      // next to it.
-      floatingActionButton: const Column(
+      // on both splash and login, phone and desktop). The download app button
+      // next to it is mobile-only.
+      floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ThemeToggleFab(),
-          SizedBox(height: 12),
-          DownloadAppFab(),
+          const ThemeToggleFab(),
+          if (isPhone) ...[
+            const SizedBox(height: 12),
+            const DownloadAppFab(),
+          ],
         ],
       ),
-      body: _showSplash
+      body: (isPhone && _showSplash)
           ? _buildSplash(context)
           : _LoginFormView(
               formKey: _formKey,

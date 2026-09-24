@@ -101,13 +101,16 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       // Compose the shared dark-mode toggle with this tab's own action so
-      // both float in the bottom-right corner without overlapping.
+      // both float in the bottom-right corner without overlapping. The
+      // download app button is phone-only.
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const ThemeToggleFab(mini: true),
-          const SizedBox(height: 12),
-          const DownloadAppFab(mini: true),
+          if (AppTheme.isPhoneScreen(context)) ...[
+            const SizedBox(height: 12),
+            const DownloadAppFab(mini: true),
+          ],
           const SizedBox(height: 12),
           FloatingActionButton(
             onPressed: () => _showCreate(),
