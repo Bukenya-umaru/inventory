@@ -7,7 +7,12 @@ const { authenticate, requireActiveTenant, requirePermission } = require('../mid
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
-    const categories = await Category.find({ tenantId, isActive: true }).sort({ name: 1 });
+    const type = req.query.type === 'expense' ? 'expense' : 'product';
+    const categories = await Category.find({
+      tenantId,
+      isActive: true,
+      type: type === 'product' ? { $in: ['product', null] } : type
+    }).sort({ name: 1 });
     res.json({ success: true, categories });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -17,13 +22,18 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 router.post('/', authenticate, requireActiveTenant, requirePermission('manage_categories'), async (req, res) => {
   try {
     const { name, description } = req.body;
+    const type = req.body.type === 'expense' ? 'expense' : 'product';
     if (!name) {
       return res.status(400).json({ success: false, message: 'Category name required.' });
     }
 
     const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
 
-    const existing = await Category.findOne({ name, tenantId });
+    const existing = await Category.findOne({
+      name,
+      tenantId,
+      type: type === 'product' ? { $in: ['product', null] } : type
+    });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Category already exists.' });
     }
@@ -31,6 +41,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('manage_ca
     const category = new Category({
       name,
       description,
+      type,
       tenantId,
       createdBy: req.userId
     });

@@ -6,7 +6,9 @@ import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  final String categoryType;
+
+  const CategoriesScreen({super.key, this.categoryType = 'product'});
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
@@ -24,9 +26,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getCategories();
+      final res = await ApiService.getCategories(type: widget.categoryType);
       final list = (res['categories'] as List)
           .map((c) => Category.fromJson(c))
+          .where((c) => c.type == widget.categoryType)
           .toList();
       setState(() {
         _categories = list;
@@ -107,14 +110,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Categories',
+                      widget.categoryType == 'expense'
+                          ? 'Expense Categories'
+                          : 'Product Categories',
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      '${_categories.length} product groups',
+                      '${_categories.length} ${widget.categoryType == 'expense' ? 'expense groups' : 'product groups'}',
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
                         color: AppTheme.secondaryText(context),
@@ -184,7 +189,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No categories yet',
+            widget.categoryType == 'expense'
+                ? 'No expense categories yet'
+                : 'No product categories yet',
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 18),
               fontWeight: FontWeight.w600,
@@ -193,7 +200,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Create categories to organize your products',
+            widget.categoryType == 'expense'
+                ? 'Create categories to organize your expenses'
+                : 'Create categories to organize your products',
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 13),
               color: AppTheme.secondaryText(context),
@@ -405,11 +414,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     description: descCtrl.text.isNotEmpty
                         ? descCtrl.text
                         : null,
+                    type: widget.categoryType,
                   );
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
 
                 AppEvents.instance.emit('products');
+                AppEvents.instance.emit('categories');
                 _load();
               } catch (e) {
                 if (ctx.mounted) {
@@ -451,6 +462,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     if (confirm == true) {
       await ApiService.deleteCategory(c.id);
       AppEvents.instance.emit('products');
+      AppEvents.instance.emit('categories');
       _load();
     }
   }

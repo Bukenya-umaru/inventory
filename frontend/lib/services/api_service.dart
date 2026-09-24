@@ -427,22 +427,29 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getCategories() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/categories'),
-      headers: _headers(),
-    );
+  static Future<Map<String, dynamic>> getCategories({
+    String type = 'product',
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/categories',
+    ).replace(queryParameters: {'type': type});
+    final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }
 
   static Future<Map<String, dynamic>> createCategory(
     String name, {
     String? description,
+    String type = 'product',
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/categories'),
       headers: _headers(),
-      body: json.encode({'name': name, 'description': description}),
+      body: json.encode({
+        'name': name,
+        'description': description,
+        'type': type,
+      }),
     );
     return _handleResponse(response);
   }
@@ -535,6 +542,30 @@ class ApiService {
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/purchases'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getExpenses({
+    String? startDate,
+    String? endDate,
+  }) async {
+    final params = <String, String>{};
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    final uri = Uri.parse('$baseUrl/expenses').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> createExpense(
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/expenses'),
       headers: _headers(),
       body: json.encode(data),
     );

@@ -6,6 +6,7 @@ import '../admin/products_screen.dart';
 import '../admin/categories_screen.dart';
 import '../admin/sales_screen.dart';
 import '../admin/purchases_screen.dart';
+import '../admin/expenses_screen.dart';
 import '../admin/damages_screen.dart';
 import '../admin/reports_screen.dart';
 import '../admin/suppliers_screen.dart';
@@ -20,14 +21,20 @@ class _EmployeeHomeState extends State<EmployeeHome> {
   int _currentIndex = 0;
 
   /// Which branch under the Transactions tree is open.
-  /// Index 0 = Sales, index 1 = History, index 2 = Damages.
-  int _transactionsChild = 1;
+  /// Index 0 = Sales, index 1 = Expenses, index 2 = History,
+  /// index 3 = Damages.
+  int _transactionsChild = 2;
   bool _transactionsExpanded = false;
 
   /// Which branch under the Company tree is open.
   /// Index 0 = Suppliers. (Employees is admin-only.)
   int _companyChild = 0;
   bool _companyExpanded = false;
+
+  /// Which branch under Categories is open.
+  /// Index 0 = Product, index 1 = Expense.
+  int _categoriesChild = 0;
+  bool _categoriesExpanded = false;
 
   /// Which branch under the Reports tree is open.
   /// Index 0 = Sales Performance.
@@ -42,67 +49,89 @@ class _EmployeeHomeState extends State<EmployeeHome> {
   static const int _reportsIndex = 6;
 
   DrawerItem _transactionsItem() => DrawerItem(
-        icon: Icons.receipt_long_outlined,
-        label: 'Transactions',
-        builder: _empty,
-        children: const [
-          DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
-          DrawerChildItem(icon: Icons.history, label: 'History'),
-          DrawerChildItem(
-              icon: Icons.warning_amber_outlined, label: 'Damages'),
-        ],
-        activeChildIndex: _transactionsChild,
-        initiallyExpanded: _transactionsExpanded,
-      );
+    icon: Icons.receipt_long_outlined,
+    label: 'Transactions',
+    builder: _empty,
+    children: const [
+      DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
+      DrawerChildItem(icon: Icons.payments_outlined, label: 'Expenses'),
+      DrawerChildItem(icon: Icons.history, label: 'History'),
+      DrawerChildItem(icon: Icons.warning_amber_outlined, label: 'Damages'),
+    ],
+    activeChildIndex: _transactionsChild,
+    initiallyExpanded: _transactionsExpanded,
+  );
 
   DrawerItem _companyItem() => DrawerItem(
-        icon: Icons.business_outlined,
-        label: 'Company',
-        builder: _empty,
-        children: const [
-          DrawerChildItem(
-              icon: Icons.local_shipping_outlined, label: 'Suppliers'),
-        ],
-        activeChildIndex: _companyChild,
-        initiallyExpanded: _companyExpanded,
-      );
+    icon: Icons.business_outlined,
+    label: 'Company',
+    builder: _empty,
+    children: const [
+      DrawerChildItem(icon: Icons.local_shipping_outlined, label: 'Suppliers'),
+    ],
+    activeChildIndex: _companyChild,
+    initiallyExpanded: _companyExpanded,
+  );
 
   DrawerItem _reportsItem() => DrawerItem(
-        icon: Icons.bar_chart_outlined,
-        label: 'Reports',
-        builder: _empty,
-        children: const [
-          DrawerChildItem(icon: Icons.insights, label: 'Sales Performance'),
-        ],
-        activeChildIndex: _reportsChild,
-        initiallyExpanded: _reportsExpanded,
-      );
+    icon: Icons.bar_chart_outlined,
+    label: 'Reports',
+    builder: _empty,
+    children: const [
+      DrawerChildItem(icon: Icons.insights, label: 'Sales Performance'),
+    ],
+    activeChildIndex: _reportsChild,
+    initiallyExpanded: _reportsExpanded,
+  );
+
+  DrawerItem _categoriesItem() => DrawerItem(
+    icon: Icons.category_outlined,
+    label: 'Categories',
+    builder: _empty,
+    children: const [
+      DrawerChildItem(icon: Icons.inventory_2_outlined, label: 'Product'),
+      DrawerChildItem(icon: Icons.payments_outlined, label: 'Expense'),
+    ],
+    activeChildIndex: _categoriesChild,
+    initiallyExpanded: _categoriesExpanded,
+  );
 
   List<DrawerItem> get _items => [
-        const DrawerItem(
-            icon: Icons.dashboard_outlined, label: 'Dashboard', builder: _empty),
-        _companyItem(),
-        const DrawerItem(
-            icon: Icons.inventory_2_outlined, label: 'Stock', builder: _empty),
-        const DrawerItem(
-            icon: Icons.category_outlined, label: 'Categories', builder: _empty),
-        _transactionsItem(),
-        const DrawerItem(
-            icon: Icons.storefront_outlined, label: 'Store', builder: _empty),
-        _reportsItem(),
-      ];
+    const DrawerItem(
+      icon: Icons.dashboard_outlined,
+      label: 'Dashboard',
+      builder: _empty,
+    ),
+    _companyItem(),
+    const DrawerItem(
+      icon: Icons.inventory_2_outlined,
+      label: 'Stock',
+      builder: _empty,
+    ),
+    _categoriesItem(),
+    _transactionsItem(),
+    const DrawerItem(
+      icon: Icons.storefront_outlined,
+      label: 'Store',
+      builder: _empty,
+    ),
+    _reportsItem(),
+  ];
 
   static Widget _empty() => const SizedBox();
 
   /// Page stack order matches the drawer:
-  /// 0 Dashboard | 1 Suppliers | 2 Stock | 3 Categories
-  /// 4 Sales | 5 History | 6 Damages | 7 Store | 8 Reports
+  /// 0 Dashboard | 1 Suppliers | 2 Stock | 3 Product Categories
+  /// 4 Expense Categories | 5 Sales | 6 History | 7 Damages
+  /// 6 Expenses | 7 History | 8 Damages | 9 Store | 10 Reports
   late final List<Widget> _pages = const [
     EmployeeDashboard(),
     SuppliersScreen(),
     ProductsScreen(),
-    CategoriesScreen(),
+    CategoriesScreen(categoryType: 'product'),
+    CategoriesScreen(categoryType: 'expense'),
     SalesScreen(),
+    ExpensesScreen(),
     PurchasesScreen(),
     DamagesScreen(),
     StoreScreen(),
@@ -121,17 +150,21 @@ class _EmployeeHomeState extends State<EmployeeHome> {
       case 2:
         return 2; // Stock
       case 3:
-        return 3; // Categories
+        return _categoriesChild == 0
+            ? 3 // Product Categories
+            : 4; // Expense Categories
       case _transactionsIndex:
         return _transactionsChild == 0
-            ? 4
+            ? 5
             : _transactionsChild == 1
-                ? 5 // History
-                : 6; // Damages
+            ? 6 // Expenses
+            : _transactionsChild == 2
+            ? 7 // History
+            : 8; // Damages
       case 5:
-        return 7; // Store
+        return 9; // Store
       case _reportsIndex:
-        return 8; // Reports (Sales Performance)
+        return 10; // Reports (Sales Performance)
       default:
         return 0;
     }
@@ -159,6 +192,14 @@ class _EmployeeHomeState extends State<EmployeeHome> {
             } else {
               _companyExpanded = !_companyExpanded;
             }
+          } else if (i == 3) {
+            if (childIndex != null) {
+              _categoriesChild = childIndex;
+              _categoriesExpanded = true;
+              _currentIndex = i;
+            } else {
+              _categoriesExpanded = !_categoriesExpanded;
+            }
           } else if (i == _reportsIndex) {
             if (childIndex != null) {
               _reportsChild = childIndex;
@@ -171,16 +212,14 @@ class _EmployeeHomeState extends State<EmployeeHome> {
             _currentIndex = i;
             _transactionsExpanded = false;
             _companyExpanded = false;
+            _categoriesExpanded = false;
             _reportsExpanded = false;
           }
         });
       },
       items: _items,
       title: 'Employee Dashboard',
-      body: IndexedStack(
-        index: _stackIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _stackIndex, children: _pages),
     );
   }
 }

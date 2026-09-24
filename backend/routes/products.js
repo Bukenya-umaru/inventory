@@ -73,7 +73,11 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
 
     const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
 
-    const category = await Category.findOne({ _id: categoryId, tenantId });
+    const category = await Category.findOne({
+      _id: categoryId,
+      tenantId,
+      type: { $in: ['product', null] }
+    });
     if (!category) {
       return res.status(400).json({ success: false, message: 'Invalid category.' });
     }

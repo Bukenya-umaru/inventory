@@ -9,6 +9,11 @@ const categorySchema = new mongoose.Schema({
   description: {
     type: String
   },
+  type: {
+    type: String,
+    enum: ['product', 'expense'],
+    default: 'product'
+  },
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Tenant',
@@ -28,6 +33,6 @@ const categorySchema = new mongoose.Schema({
   }
 });
 
-categorySchema.index({ tenantId: 1, name: 1 }, { unique: true });
+categorySchema.index({ tenantId: 1, name: 1, type: 1 }, { unique: true });
 
 module.exports = mongoose.model('Category', categorySchema);
