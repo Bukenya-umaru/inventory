@@ -5,6 +5,7 @@ import '../../services/app_events.dart';
 import '../../models/sale.dart';
 import '../../models/product.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -42,9 +43,9 @@ class _SalesScreenState extends State<SalesScreen> {
   void _onEvent(String event) {
     if (!mounted) return;
     if (event == 'products') {
-      _load(silent: true); 
+      _load(silent: true);
     } else if (event == 'sales') {
-      _load(silent: true); 
+      _load(silent: true);
     }
   }
 
@@ -60,9 +61,20 @@ class _SalesScreenState extends State<SalesScreen> {
       String? startStr;
       String? endStr;
       if (!_showAll) {
-
-        final startUtc = DateTime(_safeStart.year, _safeStart.month, _safeStart.day).toUtc();
-        final endUtc = DateTime(_safeEnd.year, _safeEnd.month, _safeEnd.day, 23, 59, 59, 999).toUtc();
+        final startUtc = DateTime(
+          _safeStart.year,
+          _safeStart.month,
+          _safeStart.day,
+        ).toUtc();
+        final endUtc = DateTime(
+          _safeEnd.year,
+          _safeEnd.month,
+          _safeEnd.day,
+          23,
+          59,
+          59,
+          999,
+        ).toUtc();
         startStr = startUtc.toIso8601String();
         endStr = endUtc.toIso8601String();
       }
@@ -73,11 +85,17 @@ class _SalesScreenState extends State<SalesScreen> {
       final salesRes = results[0];
       final prodRes = results[1];
       setState(() {
-        _sales = (salesRes['sales'] as List).map((s) => Sale.fromJson(s)).toList();
-        _products = (prodRes['products'] as List).map((p) => Product.fromJson(p)).toList();
+        _sales = (salesRes['sales'] as List)
+            .map((s) => Sale.fromJson(s))
+            .toList();
+        _products = (prodRes['products'] as List)
+            .map((p) => Product.fromJson(p))
+            .toList();
         _loading = false;
       });
-    } catch (e) { setState(() => _loading = false); }
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
   void _showToday() {
@@ -91,7 +109,9 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   void _showAllSales() {
-    setState(() { _showAll = true; });
+    setState(() {
+      _showAll = true;
+    });
     _load();
   }
 
@@ -139,40 +159,58 @@ class _SalesScreenState extends State<SalesScreen> {
         filterLabel = DateFormat('MMM d, yyyy').format(d);
       }
     } else {
-      filterLabel = '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
+      filterLabel =
+          '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
     return Column(
       children: [
-
-            Padding(
-              padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Sales', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
-                        Text('Revenue: ${Currency.formatWhole(totalRev)} • Profit: ${Currency.formatWhole(totalProfit)}',
-                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
-                      ],
+        Padding(
+          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sales',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 20),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showRecordSale(),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: Text('Record Sale', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
-                  ),
-                ],
+                    Text(
+                      'Revenue: ${Currency.formatWhole(totalRev)} • Profit: ${Currency.formatWhole(totalProfit)}',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              ElevatedButton.icon(
+                onPressed: () => _showRecordSale(),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(
+                  'Record Sale',
+                  style: TextStyle(fontSize: AppTheme.fontSize(context, 14)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.success,
+                ),
+              ),
+            ],
+          ),
+        ),
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-            AppTheme.pad(context, 16), 0,
-            AppTheme.pad(context, 16), 4,
+            AppTheme.pad(context, 16),
+            0,
+            AppTheme.pad(context, 16),
+            4,
           ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -181,7 +219,10 @@ class _SalesScreenState extends State<SalesScreen> {
                 _filterBtn(
                   label: 'Today',
                   icon: Icons.today,
-                  isActive: !_showAll && _safeStart == _safeEnd && _safeStart == _today(),
+                  isActive:
+                      !_showAll &&
+                      _safeStart == _safeEnd &&
+                      _safeStart == _today(),
                   onTap: _showToday,
                 ),
                 const SizedBox(width: 6),
@@ -198,7 +239,13 @@ class _SalesScreenState extends State<SalesScreen> {
                   onTap: () => _pickDate(isStart: true),
                 ),
                 const SizedBox(width: 4),
-                Text('—', style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 14)),
+                Text(
+                  '—',
+                  style: TextStyle(
+                    color: AppTheme.secondaryText(context),
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 _dateChip(
                   label: _formatDateLabel(_safeEnd),
@@ -211,11 +258,22 @@ class _SalesScreenState extends State<SalesScreen> {
         ),
 
         Padding(
-          padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.pad(context, 16),
+            4,
+            AppTheme.pad(context, 16),
+            8,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(filterLabel,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
+            child: Text(
+              filterLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ),
         ),
 
@@ -223,22 +281,29 @@ class _SalesScreenState extends State<SalesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _sales.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.shopping_cart_outlined, size: 48,
-                            color: AppTheme.secondaryText(context).withValues(alpha: 0.4)),
-                          const SizedBox(height: 12),
-                          Text('No sales for this date',
-                            style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 15)),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.shopping_cart_outlined,
+                        size: 48,
+                        color: AppTheme.secondaryText(
+                          context,
+                        ).withValues(alpha: 0.4),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: _salesTable(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No sales for this date',
+                        style: TextStyle(
+                          color: AppTheme.secondaryText(context),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _load, child: _salesTable()),
         ),
       ],
     );
@@ -249,17 +314,32 @@ class _SalesScreenState extends State<SalesScreen> {
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _sales.length; i++) {
       final s = _sales[i];
-      rows.add(CompactDataRow([
-        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(s.saleDate.toLocal())),
-        CompactDataTable.accent(context, s.productName ?? 'Unknown'),
-        CompactDataTable.cell(context, '${s.quantity} ${s.saleUnit == 'box' ? 'box' : 'pc'}'),
-        CompactDataTable.cell(context, Currency.format(s.unitPrice)),
-        CompactDataTable.cell(context, Currency.formatWhole(s.totalAmount), weight: FontWeight.w600),
-        CompactDataTable.cell(context, Currency.formatWhole(s.profit),
-            color: AppTheme.successBright(context)),
-        CompactDataTable.muted(context, s.customerName ?? 'Walk-in'),
-        CompactDataTable.muted(context, s.recordedByName ?? '—'),
-      ]));
+      rows.add(
+        CompactDataRow([
+          CompactDataTable.cell(
+            context,
+            DateFormat('d MMM yyyy').format(s.saleDate.toLocal()),
+          ),
+          CompactDataTable.accent(context, s.productName ?? 'Unknown'),
+          CompactDataTable.cell(
+            context,
+            '${s.quantity} ${s.saleUnit == 'box' ? 'box' : 'pc'}',
+          ),
+          CompactDataTable.cell(context, Currency.format(s.unitPrice)),
+          CompactDataTable.cell(
+            context,
+            Currency.formatWhole(s.totalAmount),
+            weight: FontWeight.w600,
+          ),
+          CompactDataTable.cell(
+            context,
+            Currency.formatWhole(s.profit),
+            color: AppTheme.successBright(context),
+          ),
+          CompactDataTable.muted(context, s.customerName ?? 'Walk-in'),
+          CompactDataTable.muted(context, s.recordedByName ?? '—'),
+        ]),
+      );
     }
 
     return Padding(
@@ -280,39 +360,56 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 
-  Widget _filterBtn({required String label, required IconData icon, required bool isActive, required VoidCallback onTap}) {
+  Widget _filterBtn({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: isActive
-              ? AppTheme.primary
-              : Theme.of(context).cardColor,
+          color: isActive ? AppTheme.primary : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? AppTheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+            color: isActive
+                ? AppTheme.primary
+                : Theme.of(context).dividerColor.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isActive ? Colors.white : AppTheme.secondaryText(context)),
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? Colors.white : AppTheme.secondaryText(context),
+            ),
             const SizedBox(width: 4),
-            Text(label,
+            Text(
+              label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? Colors.white : AppTheme.secondaryText(context),
-              )),
+                color: isActive
+                    ? Colors.white
+                    : AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _dateChip({required String label, required IconData icon, required VoidCallback onTap}) {
+  Widget _dateChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -330,8 +427,13 @@ class _SalesScreenState extends State<SalesScreen> {
           children: [
             Icon(icon, size: 14, color: AppTheme.secondaryText(context)),
             const SizedBox(width: 4),
-            Text(label,
-              style: TextStyle(fontSize: 12, color: AppTheme.secondaryText(context))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -360,8 +462,10 @@ class _SalesScreenState extends State<SalesScreen> {
                     String stockInfo = p.sellsAsBox
                         ? '${p.stockBoxes} bx, ${p.currentStock} pc'
                         : '${p.currentStock} pc';
-                    return DropdownMenuItem(value: p,
-                      child: Text('${p.name} ($stockInfo)'));
+                    return DropdownMenuItem(
+                      value: p,
+                      child: Text('${p.name} ($stockInfo)'),
+                    );
                   }).toList(),
                   onChanged: (v) {
                     setDialogState(() {
@@ -377,9 +481,16 @@ class _SalesScreenState extends State<SalesScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Sell As'),
-                    value: (selectedProduct != null && !selectedProduct!.sellsAsBox) ? 'piece' : saleUnit,
+                    value:
+                        (selectedProduct != null &&
+                            !selectedProduct!.sellsAsBox)
+                        ? 'piece'
+                        : saleUnit,
                     items: const [
-                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
+                      DropdownMenuItem(
+                        value: 'piece',
+                        child: Text('Individual Pieces'),
+                      ),
                       DropdownMenuItem(value: 'box', child: Text('Full Box')),
                     ],
                     onChanged: (v) {
@@ -387,9 +498,14 @@ class _SalesScreenState extends State<SalesScreen> {
                         saleUnit = v ?? 'piece';
                         if (selectedProduct != null) {
                           if (saleUnit == 'box') {
-                            priceCtrl.text = selectedProduct!.boxSellingPrice?.toString() ?? (selectedProduct!.sellingPrice * selectedProduct!.unitsPerBox).toString();
+                            priceCtrl.text =
+                                selectedProduct!.boxSellingPrice?.toString() ??
+                                (selectedProduct!.sellingPrice *
+                                        selectedProduct!.unitsPerBox)
+                                    .toString();
                           } else {
-                            priceCtrl.text = selectedProduct!.sellingPrice.toString();
+                            priceCtrl.text = selectedProduct!.sellingPrice
+                                .toString();
                           }
                         }
                       });
@@ -397,10 +513,14 @@ class _SalesScreenState extends State<SalesScreen> {
                   ),
                 ],
                 const SizedBox(height: 12),
-                TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'),
+                TextField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
                   keyboardType: TextInputType.number,
-                  onChanged: (_) => setDialogState(() {})),
-                if (saleUnit == 'piece' && selectedProduct != null &&
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                if (saleUnit == 'piece' &&
+                    selectedProduct != null &&
                     selectedProduct!.sellsAsBox &&
                     !selectedProduct!.hasLoosePieces &&
                     selectedProduct!.hasFullBoxes &&
@@ -411,16 +531,25 @@ class _SalesScreenState extends State<SalesScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppTheme.warning.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber, size: 16, color: AppTheme.warning),
+                        Icon(
+                          Icons.warning_amber,
+                          size: 16,
+                          color: AppTheme.warning,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'No loose pieces available. A box will be opened (${selectedProduct!.unitsPerBox} pc/box).',
-                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning),
+                            style: TextStyle(
+                              fontSize: AppTheme.fontSize(context, 12),
+                              color: AppTheme.warning,
+                            ),
                           ),
                         ),
                       ],
@@ -428,26 +557,42 @@ class _SalesScreenState extends State<SalesScreen> {
                   ),
                 ],
                 const SizedBox(height: 12),
-                TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Unit Price'),
-                  keyboardType: TextInputType.number),
+                TextField(
+                  controller: priceCtrl,
+                  decoration: const InputDecoration(labelText: 'Unit Price'),
+                  keyboardType: TextInputType.number,
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: customerCtrl, decoration: const InputDecoration(labelText: 'Customer Name')),
+                TextField(
+                  controller: customerCtrl,
+                  decoration: const InputDecoration(labelText: 'Customer Name'),
+                ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.success,
+              ),
+              loadingChild: const Text('Recording...'),
               onPressed: () async {
                 if (selectedProduct == null || qtyCtrl.text.isEmpty) return;
                 try {
                   await ApiService.createSale({
                     'productId': selectedProduct!.id,
                     'quantity': int.tryParse(qtyCtrl.text) ?? 0,
-                    'unitPrice': double.tryParse(priceCtrl.text) ?? selectedProduct!.sellingPrice,
+                    'unitPrice':
+                        double.tryParse(priceCtrl.text) ??
+                        selectedProduct!.sellingPrice,
                     'saleUnit': saleUnit,
-                    'customerName': customerCtrl.text.isNotEmpty ? customerCtrl.text : null,
+                    'customerName': customerCtrl.text.isNotEmpty
+                        ? customerCtrl.text
+                        : null,
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
 
@@ -457,7 +602,10 @@ class _SalesScreenState extends State<SalesScreen> {
                 } catch (e) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: AppTheme.danger,
+                      ),
                     );
                   }
                 }

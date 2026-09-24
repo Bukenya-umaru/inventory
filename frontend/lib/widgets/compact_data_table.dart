@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -124,23 +125,12 @@ class CompactDataTable extends StatefulWidget {
     required IconData icon,
     required Color color,
     required String tooltip,
-    VoidCallback? onTap,
-  }) => Tooltip(
-    message: tooltip,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 30,
-        height: 30,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, size: 16, color: color),
-      ),
-    ),
+    FutureOr<void> Function()? onTap,
+  }) => _LoadingActionIcon(
+    icon: icon,
+    color: color,
+    tooltip: tooltip,
+    onTap: onTap,
   );
 
   @override
@@ -449,6 +439,67 @@ class _HoverRowState extends State<_HoverRow> {
               ? AppTheme.blueBright(context).withValues(alpha: 0.06)
               : null,
           child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingActionIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final FutureOr<void> Function()? onTap;
+
+  const _LoadingActionIcon({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    this.onTap,
+  });
+
+  @override
+  State<_LoadingActionIcon> createState() => _LoadingActionIconState();
+}
+
+class _LoadingActionIconState extends State<_LoadingActionIcon> {
+  bool _loading = false;
+
+  Future<void> _run() async {
+    if (_loading || widget.onTap == null) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onTap!();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: InkWell(
+        onTap: _loading ? null : _run,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: widget.color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: _loading
+              ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: widget.color,
+                  ),
+                )
+              : Icon(widget.icon, size: 16, color: widget.color),
         ),
       ),
     );

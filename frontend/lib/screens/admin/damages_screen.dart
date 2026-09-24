@@ -5,6 +5,7 @@ import '../../services/app_events.dart';
 import '../../models/damage.dart';
 import '../../models/product.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -42,9 +43,9 @@ class _DamagesScreenState extends State<DamagesScreen> {
   void _onEvent(String event) {
     if (!mounted) return;
     if (event == 'products') {
-      _load(silent: true); 
+      _load(silent: true);
     } else if (event == 'damages') {
-      _load(silent: true); 
+      _load(silent: true);
     }
   }
 
@@ -60,9 +61,20 @@ class _DamagesScreenState extends State<DamagesScreen> {
       String? startStr;
       String? endStr;
       if (!_showAll) {
-
-        final startUtc = DateTime(_safeStart.year, _safeStart.month, _safeStart.day).toUtc();
-        final endUtc = DateTime(_safeEnd.year, _safeEnd.month, _safeEnd.day, 23, 59, 59, 999).toUtc();
+        final startUtc = DateTime(
+          _safeStart.year,
+          _safeStart.month,
+          _safeStart.day,
+        ).toUtc();
+        final endUtc = DateTime(
+          _safeEnd.year,
+          _safeEnd.month,
+          _safeEnd.day,
+          23,
+          59,
+          59,
+          999,
+        ).toUtc();
         startStr = startUtc.toIso8601String();
         endStr = endUtc.toIso8601String();
       }
@@ -73,11 +85,17 @@ class _DamagesScreenState extends State<DamagesScreen> {
       final dmgRes = results[0];
       final prodRes = results[1];
       setState(() {
-        _damages = (dmgRes['damages'] as List).map((d) => Damage.fromJson(d)).toList();
-        _products = (prodRes['products'] as List).map((p) => Product.fromJson(p)).toList();
+        _damages = (dmgRes['damages'] as List)
+            .map((d) => Damage.fromJson(d))
+            .toList();
+        _products = (prodRes['products'] as List)
+            .map((p) => Product.fromJson(p))
+            .toList();
         _loading = false;
       });
-    } catch (e) { setState(() => _loading = false); }
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
   void _showToday() {
@@ -91,7 +109,9 @@ class _DamagesScreenState extends State<DamagesScreen> {
   }
 
   void _showAllDamages() {
-    setState(() { _showAll = true; });
+    setState(() {
+      _showAll = true;
+    });
     _load();
   }
 
@@ -138,12 +158,12 @@ class _DamagesScreenState extends State<DamagesScreen> {
         filterLabel = DateFormat('MMM d, yyyy').format(d);
       }
     } else {
-      filterLabel = '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
+      filterLabel =
+          '${DateFormat('MMM d').format(_safeStart)} — ${DateFormat('MMM d, yyyy').format(_safeEnd)}';
     }
 
     return Column(
       children: [
-
         Padding(
           padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
@@ -152,16 +172,33 @@ class _DamagesScreenState extends State<DamagesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Damage Reports', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold)),
-                    Text('Total loss: ${Currency.formatWhole(totalLoss)}', style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
+                    Text(
+                      'Damage Reports',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 20),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Total loss: ${Currency.formatWhole(totalLoss)}',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showReport(),
                 icon: const Icon(Icons.add, size: 18),
-                label: Text('Report', style: TextStyle(fontSize: AppTheme.fontSize(context, 14))),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+                label: Text(
+                  'Report',
+                  style: TextStyle(fontSize: AppTheme.fontSize(context, 14)),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.danger,
+                ),
               ),
             ],
           ),
@@ -169,8 +206,10 @@ class _DamagesScreenState extends State<DamagesScreen> {
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-            AppTheme.pad(context, 16), 0,
-            AppTheme.pad(context, 16), 4,
+            AppTheme.pad(context, 16),
+            0,
+            AppTheme.pad(context, 16),
+            4,
           ),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -179,7 +218,10 @@ class _DamagesScreenState extends State<DamagesScreen> {
                 _filterBtn(
                   label: 'Today',
                   icon: Icons.today,
-                  isActive: !_showAll && _safeStart == _safeEnd && _safeStart == _today(),
+                  isActive:
+                      !_showAll &&
+                      _safeStart == _safeEnd &&
+                      _safeStart == _today(),
                   onTap: _showToday,
                 ),
                 const SizedBox(width: 6),
@@ -196,7 +238,13 @@ class _DamagesScreenState extends State<DamagesScreen> {
                   onTap: () => _pickDate(isStart: true),
                 ),
                 const SizedBox(width: 4),
-                Text('—', style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 14)),
+                Text(
+                  '—',
+                  style: TextStyle(
+                    color: AppTheme.secondaryText(context),
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 _dateChip(
                   label: _formatDateLabel(_safeEnd),
@@ -209,11 +257,22 @@ class _DamagesScreenState extends State<DamagesScreen> {
         ),
 
         Padding(
-          padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.pad(context, 16),
+            4,
+            AppTheme.pad(context, 16),
+            8,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(filterLabel,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.secondaryText(context))),
+            child: Text(
+              filterLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ),
         ),
 
@@ -221,22 +280,29 @@ class _DamagesScreenState extends State<DamagesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _damages.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.warning_amber_outlined, size: 48,
-                            color: AppTheme.secondaryText(context).withValues(alpha: 0.4)),
-                          const SizedBox(height: 12),
-                          Text('No damages for this date',
-                            style: TextStyle(color: AppTheme.secondaryText(context), fontSize: 15)),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_outlined,
+                        size: 48,
+                        color: AppTheme.secondaryText(
+                          context,
+                        ).withValues(alpha: 0.4),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: _damagesTable(),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No damages for this date',
+                        style: TextStyle(
+                          color: AppTheme.secondaryText(context),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _load, child: _damagesTable()),
         ),
       ],
     );
@@ -247,15 +313,27 @@ class _DamagesScreenState extends State<DamagesScreen> {
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _damages.length; i++) {
       final d = _damages[i];
-      rows.add(CompactDataRow([
-        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(d.reportDate.toLocal())),
-        CompactDataTable.accent(context, d.productName ?? 'Unknown'),
-        CompactDataTable.cell(context, '${d.quantity} ${d.damageUnit == 'box' ? 'box' : 'pc'}'),
-        CompactDataTable.muted(context, d.reason),
-        CompactDataTable.cell(context, '-${Currency.formatWhole(d.estimatedLoss)}',
-            color: AppTheme.dangerBright(context), weight: FontWeight.w600),
-        CompactDataTable.muted(context, d.reportedByName ?? '—'),
-      ]));
+      rows.add(
+        CompactDataRow([
+          CompactDataTable.cell(
+            context,
+            DateFormat('d MMM yyyy').format(d.reportDate.toLocal()),
+          ),
+          CompactDataTable.accent(context, d.productName ?? 'Unknown'),
+          CompactDataTable.cell(
+            context,
+            '${d.quantity} ${d.damageUnit == 'box' ? 'box' : 'pc'}',
+          ),
+          CompactDataTable.muted(context, d.reason),
+          CompactDataTable.cell(
+            context,
+            '-${Currency.formatWhole(d.estimatedLoss)}',
+            color: AppTheme.dangerBright(context),
+            weight: FontWeight.w600,
+          ),
+          CompactDataTable.muted(context, d.reportedByName ?? '—'),
+        ]),
+      );
     }
 
     return Padding(
@@ -274,39 +352,56 @@ class _DamagesScreenState extends State<DamagesScreen> {
     );
   }
 
-  Widget _filterBtn({required String label, required IconData icon, required bool isActive, required VoidCallback onTap}) {
+  Widget _filterBtn({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: isActive
-              ? AppTheme.primary
-              : Theme.of(context).cardColor,
+          color: isActive ? AppTheme.primary : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isActive ? AppTheme.primary : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+            color: isActive
+                ? AppTheme.primary
+                : Theme.of(context).dividerColor.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: isActive ? Colors.white : AppTheme.secondaryText(context)),
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? Colors.white : AppTheme.secondaryText(context),
+            ),
             const SizedBox(width: 4),
-            Text(label,
+            Text(
+              label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? Colors.white : AppTheme.secondaryText(context),
-              )),
+                color: isActive
+                    ? Colors.white
+                    : AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _dateChip({required String label, required IconData icon, required VoidCallback onTap}) {
+  Widget _dateChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -324,8 +419,13 @@ class _DamagesScreenState extends State<DamagesScreen> {
           children: [
             Icon(icon, size: 14, color: AppTheme.secondaryText(context)),
             const SizedBox(width: 4),
-            Text(label,
-              style: TextStyle(fontSize: 12, color: AppTheme.secondaryText(context))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),
@@ -353,8 +453,10 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     String stockInfo = p.sellsAsBox
                         ? '${p.stockBoxes} bx, ${p.currentStock} pc'
                         : '${p.currentStock} pc';
-                    return DropdownMenuItem(value: p,
-                      child: Text('${p.name} ($stockInfo)'));
+                    return DropdownMenuItem(
+                      value: p,
+                      child: Text('${p.name} ($stockInfo)'),
+                    );
                   }).toList(),
                   onChanged: (v) {
                     setDialogState(() {
@@ -367,19 +469,31 @@ class _DamagesScreenState extends State<DamagesScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Damage Unit'),
-                    value: (selectedProduct != null && !selectedProduct!.sellsAsBox) ? 'piece' : damageUnit,
+                    value:
+                        (selectedProduct != null &&
+                            !selectedProduct!.sellsAsBox)
+                        ? 'piece'
+                        : damageUnit,
                     items: const [
-                      DropdownMenuItem(value: 'piece', child: Text('Individual Pieces')),
+                      DropdownMenuItem(
+                        value: 'piece',
+                        child: Text('Individual Pieces'),
+                      ),
                       DropdownMenuItem(value: 'box', child: Text('Full Box')),
                     ],
-                    onChanged: (v) => setDialogState(() => damageUnit = v ?? 'piece'),
+                    onChanged: (v) =>
+                        setDialogState(() => damageUnit = v ?? 'piece'),
                   ),
                 ],
                 const SizedBox(height: 12),
-                TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'),
+                TextField(
+                  controller: qtyCtrl,
+                  decoration: const InputDecoration(labelText: 'Quantity'),
                   keyboardType: TextInputType.number,
-                  onChanged: (_) => setDialogState(() {})),
-                if (damageUnit == 'piece' && selectedProduct != null &&
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                if (damageUnit == 'piece' &&
+                    selectedProduct != null &&
                     selectedProduct!.sellsAsBox &&
                     !selectedProduct!.hasLoosePieces &&
                     selectedProduct!.hasFullBoxes &&
@@ -390,16 +504,25 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppTheme.warning.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber, size: 16, color: AppTheme.warning),
+                        Icon(
+                          Icons.warning_amber,
+                          size: 16,
+                          color: AppTheme.warning,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'No loose pieces. A box will be opened (${selectedProduct!.unitsPerBox} pc/box).',
-                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning),
+                            style: TextStyle(
+                              fontSize: AppTheme.fontSize(context, 12),
+                              color: AppTheme.warning,
+                            ),
                           ),
                         ),
                       ],
@@ -407,17 +530,27 @@ class _DamagesScreenState extends State<DamagesScreen> {
                   ),
                 ],
                 const SizedBox(height: 12),
-                TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: 'Reason'),
-                  maxLines: 3),
+                TextField(
+                  controller: reasonCtrl,
+                  decoration: const InputDecoration(labelText: 'Reason'),
+                  maxLines: 3,
+                ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+              loadingChild: const Text('Reporting...'),
               onPressed: () async {
-                if (selectedProduct == null || qtyCtrl.text.isEmpty || reasonCtrl.text.isEmpty) return;
+                if (selectedProduct == null ||
+                    qtyCtrl.text.isEmpty ||
+                    reasonCtrl.text.isEmpty)
+                  return;
                 try {
                   await ApiService.createDamage({
                     'productId': selectedProduct!.id,
@@ -433,7 +566,10 @@ class _DamagesScreenState extends State<DamagesScreen> {
                 } catch (e) {
                   if (ctx.mounted) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: AppTheme.danger,
+                      ),
                     );
                   }
                 }

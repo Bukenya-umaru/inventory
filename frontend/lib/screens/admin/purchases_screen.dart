@@ -8,6 +8,7 @@ import '../../models/purchase.dart';
 import '../../models/supplier.dart';
 import '../../widgets/supplier_picker.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -61,15 +62,27 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       String? startStr;
       String? endStr;
       if (!_showAll) {
-        final startUtc =
-            DateTime(_safeStart.year, _safeStart.month, _safeStart.day).toUtc();
+        final startUtc = DateTime(
+          _safeStart.year,
+          _safeStart.month,
+          _safeStart.day,
+        ).toUtc();
         final endUtc = DateTime(
-                _safeEnd.year, _safeEnd.month, _safeEnd.day, 23, 59, 59, 999)
-            .toUtc();
+          _safeEnd.year,
+          _safeEnd.month,
+          _safeEnd.day,
+          23,
+          59,
+          59,
+          999,
+        ).toUtc();
         startStr = startUtc.toIso8601String();
         endStr = endUtc.toIso8601String();
       }
-      final purchRes = await ApiService.getPurchases(startDate: startStr, endDate: endStr);
+      final purchRes = await ApiService.getPurchases(
+        startDate: startStr,
+        endDate: endStr,
+      );
       setState(() {
         _purchases = (purchRes['purchases'] as List)
             .map((p) => Purchase.fromJson(p))
@@ -147,30 +160,34 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
     return Column(
       children: [
-
-            Padding(
-              padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Stock History',
-                            style: TextStyle(
-                                fontSize: AppTheme.fontSize(context, 20),
-                                fontWeight: FontWeight.bold)),
-                        Text(
-                            '$_pendingCount pending • Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
-                            style: TextStyle(
-                                fontSize: AppTheme.fontSize(context, 13),
-                                color: AppTheme.secondaryText(context))),
-                      ],
+        Padding(
+          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Stock History',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 20),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                    Text(
+                      '$_pendingCount pending • Total Cost: ${Currency.formatWhole(totalCost)} • ${_purchases.length} records',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
+          ),
+        ),
 
         Padding(
           padding: EdgeInsets.fromLTRB(
@@ -184,16 +201,19 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
             child: Row(
               children: [
                 _filterBtn(
-                  label: 'Pending${_pendingCount > 0 ? ' ($_pendingCount)' : ''}',
+                  label:
+                      'Pending${_pendingCount > 0 ? ' ($_pendingCount)' : ''}',
                   icon: Icons.hourglass_top,
                   isActive: _showPendingOnly,
-                  onTap: () => setState(() => _showPendingOnly = !_showPendingOnly),
+                  onTap: () =>
+                      setState(() => _showPendingOnly = !_showPendingOnly),
                 ),
                 const SizedBox(width: 6),
                 _filterBtn(
                   label: 'Today',
                   icon: Icons.today,
-                  isActive: !_showAll &&
+                  isActive:
+                      !_showAll &&
                       _safeStart == _safeEnd &&
                       _safeStart == _today(),
                   onTap: _showToday,
@@ -212,9 +232,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   onTap: () => _pickDate(isStart: true),
                 ),
                 const SizedBox(width: 4),
-                Text('—',
-                    style: TextStyle(
-                        color: AppTheme.secondaryText(context), fontSize: 14)),
+                Text(
+                  '—',
+                  style: TextStyle(
+                    color: AppTheme.secondaryText(context),
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 _dateChip(
                   label: _formatDateLabel(_safeEnd),
@@ -228,14 +252,21 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-              AppTheme.pad(context, 16), 4, AppTheme.pad(context, 16), 8),
+            AppTheme.pad(context, 16),
+            4,
+            AppTheme.pad(context, 16),
+            8,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(filterLabel,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.secondaryText(context))),
+            child: Text(
+              filterLabel,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ),
         ),
 
@@ -243,11 +274,8 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _filteredPurchases().isEmpty
-                  ? _emptyState()
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: _purchasesTable(),
-                    ),
+              ? _emptyState()
+              : RefreshIndicator(onRefresh: _load, child: _purchasesTable()),
         ),
       ],
     );
@@ -271,21 +299,29 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.local_shipping_outlined,
-                size: 56,
-                color: AppTheme.primary.withValues(alpha: 0.4)),
+            child: Icon(
+              Icons.local_shipping_outlined,
+              size: 56,
+              color: AppTheme.primary.withValues(alpha: 0.4),
+            ),
           ),
           const SizedBox(height: 16),
-          Text('No purchases found',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 18),
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'No purchases found',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 18),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('Add stock to products from the Stock section',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 13),
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'Add stock to products from the Stock section',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 13),
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
         ],
       ),
     );
@@ -295,10 +331,16 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   Widget _purchasesTable() {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
-    final canApprove = user != null &&
-        (user.isAdmin || user.isDeveloper || user.hasPermission('record_purchases'));
-    final canEdit = user != null &&
-        (user.isAdmin || user.isDeveloper || user.hasPermission('create_products'));
+    final canApprove =
+        user != null &&
+        (user.isAdmin ||
+            user.isDeveloper ||
+            user.hasPermission('record_purchases'));
+    final canEdit =
+        user != null &&
+        (user.isAdmin ||
+            user.isDeveloper ||
+            user.hasPermission('create_products'));
 
     final purchases = _filteredPurchases();
     final rows = <CompactDataRow>[];
@@ -321,23 +363,43 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
       ];
 
-      rows.add(CompactDataRow([
-        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(p.purchaseDate.toLocal())),
-        CompactDataTable.accent(context, p.productName ?? 'Unknown'),
-        CompactDataTable.cell(context, '${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'}'),
-        CompactDataTable.cell(context, Currency.format(p.unitCost)),
-        CompactDataTable.cell(context, Currency.formatWhole(p.totalCost), weight: FontWeight.w600),
-        CompactDataTable.muted(context,
-            (p.supplier != null && p.supplier!.isNotEmpty) ? p.supplier! : '—'),
-        CompactDataTable.muted(context,
-            (p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty) ? 'INV: ${p.invoiceNumber}' : '—'),
-        CompactDataTable.chip(
-          context,
-          p.isPending ? 'Pending' : 'Approved',
-          p.isPending ? AppTheme.warningBright(context) : AppTheme.successBright(context),
-        ),
-        CompactDataTable.actions(actions),
-      ], onTap: p.editHistory.isNotEmpty ? () => _showEditHistory(p) : null));
+      rows.add(
+        CompactDataRow([
+          CompactDataTable.cell(
+            context,
+            DateFormat('d MMM yyyy').format(p.purchaseDate.toLocal()),
+          ),
+          CompactDataTable.accent(context, p.productName ?? 'Unknown'),
+          CompactDataTable.cell(
+            context,
+            '${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'}',
+          ),
+          CompactDataTable.cell(context, Currency.format(p.unitCost)),
+          CompactDataTable.cell(
+            context,
+            Currency.formatWhole(p.totalCost),
+            weight: FontWeight.w600,
+          ),
+          CompactDataTable.muted(
+            context,
+            (p.supplier != null && p.supplier!.isNotEmpty) ? p.supplier! : '—',
+          ),
+          CompactDataTable.muted(
+            context,
+            (p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty)
+                ? 'INV: ${p.invoiceNumber}'
+                : '—',
+          ),
+          CompactDataTable.chip(
+            context,
+            p.isPending ? 'Pending' : 'Approved',
+            p.isPending
+                ? AppTheme.warningBright(context)
+                : AppTheme.successBright(context),
+          ),
+          CompactDataTable.actions(actions),
+        ], onTap: p.editHistory.isNotEmpty ? () => _showEditHistory(p) : null),
+      );
     }
 
     return Padding(
@@ -365,16 +427,18 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Approve Stock Entry'),
         content: Text(
-            'Approve ${p.quantity} ${p.purchaseUnit == 'box' ? 'box(es)' : 'piece(s)'} of "${p.productName ?? 'product'}"?\n\nStock will be added to the product and the record will be locked from editing.'),
+          'Approve ${p.quantity} ${p.purchaseUnit == 'box' ? 'box(es)' : 'piece(s)'} of "${p.productName ?? 'product'}"?\n\nStock will be added to the product and the record will be locked from editing.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.success),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Approve')),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Approve'),
+          ),
         ],
       ),
     );
@@ -382,25 +446,38 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
     try {
       final res = await ApiService.approvePurchase(p.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text(res['message'] ?? 'Stock entry approved.'),
-          backgroundColor: AppTheme.success));
+          backgroundColor: AppTheme.success,
+        ),
+      );
       AppEvents.instance.emit('purchases');
       AppEvents.instance.emit('products');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.toString()), backgroundColor: AppTheme.danger));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: AppTheme.danger),
+      );
     }
   }
 
   void _showEditDialog(Purchase p) {
     final qtyCtrl = TextEditingController(text: p.quantity.toString());
-    final unitCostCtrl = TextEditingController(text: p.unitCost % 1 == 0 ? p.unitCost.toInt().toString() : p.unitCost.toString());
+    final unitCostCtrl = TextEditingController(
+      text: p.unitCost % 1 == 0
+          ? p.unitCost.toInt().toString()
+          : p.unitCost.toString(),
+    );
     Supplier? selectedSupplier =
         (p.supplierId != null && p.supplierId!.isNotEmpty)
-            ? Supplier(id: p.supplierId!, name: p.supplier ?? '', phone: p.supplierPhone, email: p.supplierEmail)
-            : null;
+        ? Supplier(
+            id: p.supplierId!,
+            name: p.supplier ?? '',
+            phone: p.supplierPhone,
+            email: p.supplierEmail,
+          )
+        : null;
     final invoiceCtrl = TextEditingController(text: p.invoiceNumber ?? '');
     final notesCtrl = TextEditingController(text: p.notes ?? '');
     String unit = p.purchaseUnit;
@@ -413,12 +490,17 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Edit Stock Record',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              const Text(
+                'Edit Stock Record',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
               Text(
-                  '${p.productName ?? 'Product'} — pending approval, changes are logged for the owner',
-                  style: TextStyle(
-                      fontSize: 12, color: AppTheme.secondaryText(context))),
+                '${p.productName ?? 'Product'} — pending approval, changes are logged for the owner',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.secondaryText(context),
+                ),
+              ),
             ],
           ),
           content: SingleChildScrollView(
@@ -429,7 +511,9 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   controller: qtyCtrl,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Quantity *', filled: true),
+                    labelText: 'Quantity *',
+                    filled: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -438,8 +522,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                       child: ChoiceChip(
                         label: const Text('Boxes'),
                         selected: unit == 'box',
-                        onSelected: (_) =>
-                            setDialogState(() => unit = 'box'),
+                        onSelected: (_) => setDialogState(() => unit = 'box'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -447,8 +530,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                       child: ChoiceChip(
                         label: const Text('Pieces'),
                         selected: unit == 'piece',
-                        onSelected: (_) =>
-                            setDialogState(() => unit = 'piece'),
+                        onSelected: (_) => setDialogState(() => unit = 'piece'),
                       ),
                     ),
                   ],
@@ -458,7 +540,9 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   controller: unitCostCtrl,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                      labelText: 'Unit Cost *', filled: true),
+                    labelText: 'Unit Cost *',
+                    filled: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 SupplierPicker(
@@ -469,22 +553,27 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                 TextField(
                   controller: invoiceCtrl,
                   decoration: const InputDecoration(
-                      labelText: 'Invoice Number', filled: true),
+                    labelText: 'Invoice Number',
+                    filled: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  decoration:
-                      const InputDecoration(labelText: 'Payment Method'),
+                  decoration: const InputDecoration(
+                    labelText: 'Payment Method',
+                  ),
                   value: paymentMethod,
                   items: const [
                     DropdownMenuItem(value: 'cash', child: Text('Cash')),
                     DropdownMenuItem(value: 'credit', child: Text('Credit')),
                     DropdownMenuItem(
-                        value: 'bank_transfer',
-                        child: Text('Bank Transfer')),
+                      value: 'bank_transfer',
+                      child: Text('Bank Transfer'),
+                    ),
                     DropdownMenuItem(
-                        value: 'mobile_money',
-                        child: Text('Mobile Money')),
+                      value: 'mobile_money',
+                      child: Text('Mobile Money'),
+                    ),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
                   ],
                   onChanged: (v) =>
@@ -494,29 +583,38 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                 TextField(
                   controller: notesCtrl,
                   decoration: const InputDecoration(
-                      labelText: 'Notes', filled: true),
+                    labelText: 'Notes',
+                    filled: true,
+                  ),
                 ),
               ],
             ),
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
               onPressed: () async {
                 final qty = int.tryParse(qtyCtrl.text);
                 final cost = double.tryParse(unitCostCtrl.text);
                 if (qty == null || qty < 1) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
                       content: Text('Quantity must be at least 1.'),
-                      backgroundColor: AppTheme.danger));
+                      backgroundColor: AppTheme.danger,
+                    ),
+                  );
                   return;
                 }
                 if (cost == null || cost < 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
                       content: Text('Enter a valid unit cost.'),
-                      backgroundColor: AppTheme.danger));
+                      backgroundColor: AppTheme.danger,
+                    ),
+                  );
                   return;
                 }
                 try {
@@ -534,17 +632,24 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   });
                   if (ctx.mounted) Navigator.pop(ctx);
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
                       content: Text('Record updated.'),
-                      backgroundColor: AppTheme.success));
+                      backgroundColor: AppTheme.success,
+                    ),
+                  );
                   AppEvents.instance.emit('purchases');
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
                       content: Text(e.toString()),
-                      backgroundColor: AppTheme.danger));
+                      backgroundColor: AppTheme.danger,
+                    ),
+                  );
                 }
               },
+              loadingChild: const Text('Saving...'),
               child: const Text('Save'),
             ),
           ],
@@ -578,14 +683,20 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        '${e.editedByName ?? 'User'} — ${DateFormat('MMM d, yyyy HH:mm').format(e.editedAt.toLocal())}',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 13)),
+                      '${e.editedByName ?? 'User'} — ${DateFormat('MMM d, yyyy HH:mm').format(e.editedAt.toLocal())}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(changeLines,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.secondaryText(context))),
+                    Text(
+                      changeLines,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -594,18 +705,20 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _filterBtn(
-      {required String label,
-      required IconData icon,
-      required bool isActive,
-      required VoidCallback onTap}) {
+  Widget _filterBtn({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -623,30 +736,33 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 14,
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? Colors.white : AppTheme.secondaryText(context),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                 color: isActive
                     ? Colors.white
-                    : AppTheme.secondaryText(context)),
-            const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive
-                      ? Colors.white
-                      : AppTheme.secondaryText(context),
-                )),
+                    : AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _dateChip(
-      {required String label,
-      required IconData icon,
-      required VoidCallback onTap}) {
+  Widget _dateChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -664,9 +780,13 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           children: [
             Icon(icon, size: 14, color: AppTheme.secondaryText(context)),
             const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12, color: AppTheme.secondaryText(context))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.secondaryText(context),
+              ),
+            ),
           ],
         ),
       ),

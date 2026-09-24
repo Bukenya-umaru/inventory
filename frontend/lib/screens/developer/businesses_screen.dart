@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../services/api_service.dart';
 import '../../models/tenant.dart';
 import '../../utils/theme.dart';
+import '../../widgets/loading_button.dart';
 
 class BusinessesScreen extends StatefulWidget {
   const BusinessesScreen({super.key});
@@ -28,8 +29,9 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
       final res = await ApiService.getTenants(
         status: _statusFilter.isNotEmpty ? _statusFilter : null,
       );
-      final list =
-          (res['tenants'] as List).map((t) => Tenant.fromJson(t)).toList();
+      final list = (res['tenants'] as List)
+          .map((t) => Tenant.fromJson(t))
+          .toList();
       setState(() {
         _tenants = list;
         _loading = false;
@@ -43,22 +45,23 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               const Expanded(
-                child: Text('Businesses',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Businesses',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _showCreateBusiness(),
                 icon: const Icon(Icons.add_business, size: 18),
                 label: const Text('Create Business'),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary),
+                  backgroundColor: AppTheme.primary,
+                ),
               ),
             ],
           ),
@@ -76,7 +79,9 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                       ButtonSegment(value: '', label: Text('All')),
                       ButtonSegment(value: 'active', label: Text('Active')),
                       ButtonSegment(
-                          value: 'suspended', label: Text('Suspended')),
+                        value: 'suspended',
+                        label: Text('Suspended'),
+                      ),
                       ButtonSegment(value: 'deleted', label: Text('Deleted')),
                     ],
                     selected: {_statusFilter},
@@ -96,28 +101,26 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _tenants.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 220),
-                          Center(child: Text('No businesses found')),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _tenants.length,
-                        itemBuilder: (ctx, i) => _TenantCard(
-                          tenant: _tenants[i],
-                          onRefresh: _load,
-                        ),
-                      ),
-                    ),
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 220),
+                      Center(child: Text('No businesses found')),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _tenants.length,
+                    itemBuilder: (ctx, i) =>
+                        _TenantCard(tenant: _tenants[i], onRefresh: _load),
+                  ),
+                ),
         ),
       ],
     );
@@ -126,7 +129,9 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   void _showCreateBusiness() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => _CreateBusinessScreen(onCreated: _load)),
+      MaterialPageRoute(
+        builder: (_) => _CreateBusinessScreen(onCreated: _load),
+      ),
     );
   }
 }
@@ -209,8 +214,9 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -219,7 +225,11 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
 
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() {
@@ -240,158 +250,181 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
             key: _formKey,
             child: ListView(
               padding: const EdgeInsets.all(16),
-          children: [
+              children: [
+                _sectionHeader('Business Information'),
+                const SizedBox(height: 12),
 
-            _sectionHeader('Business Information'),
-            const SizedBox(height: 12),
-
-            Center(
-              child: GestureDetector(
-                onTap: _pickLogo,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: _logoBytes != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.memory(_logoBytes!, fit: BoxFit.cover),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
-                            const SizedBox(height: 4),
-                            Text('Business\nLogo',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 11, color: AppTheme.primary)),
-                          ],
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickLogo,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.2),
                         ),
+                      ),
+                      child: _logoBytes != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.memory(
+                                _logoBytes!,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_a_photo_outlined,
+                                  size: 28,
+                                  color: AppTheme.primary,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Business\nLogo',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            TextFormField(
-              controller: _businessNameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Business Name *',
-                  prefixIcon: Icon(Icons.business)),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _businessType,
-              items: _types
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                  .toList(),
-              onChanged: (v) => setState(() => _businessType = v!),
-              decoration: const InputDecoration(
-                  labelText: 'Business Type', prefixIcon: Icon(Icons.category)),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Phone Number *',
-                  prefixIcon: Icon(Icons.phone)),
-              keyboardType: TextInputType.phone,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _addressCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Address',
-                  prefixIcon: Icon(Icons.location_on_outlined)),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _taxIdCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Tax ID',
-                  prefixIcon: Icon(Icons.receipt_long_outlined)),
-            ),
-            const SizedBox(height: 24),
+                TextFormField(
+                  controller: _businessNameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Name *',
+                    prefixIcon: Icon(Icons.business),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _businessType,
+                  items: _types
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => setState(() => _businessType = v!),
+                  decoration: const InputDecoration(
+                    labelText: 'Business Type',
+                    prefixIcon: Icon(Icons.category),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _phoneCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number *',
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _addressCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Address',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _taxIdCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Tax ID',
+                    prefixIcon: Icon(Icons.receipt_long_outlined),
+                  ),
+                ),
+                const SizedBox(height: 24),
 
-            _sectionHeader('Admin / Owner Information'),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _ownerNameCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Owner Name *',
-                  prefixIcon: Icon(Icons.person)),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _emailCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Admin Email *',
-                  prefixIcon: Icon(Icons.email)),
-              keyboardType: TextInputType.emailAddress,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _passwordCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Admin Password *',
-                  prefixIcon: Icon(Icons.lock),
-                  helperText: 'Password will be viewable by Developer'),
-              obscureText: true,
-              validator: (v) => v == null || v.length < 6
-                  ? 'Password must be at least 6 characters'
-                  : null,
-            ),
-            const SizedBox(height: 24),
+                _sectionHeader('Admin / Owner Information'),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _ownerNameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Owner Name *',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin Email *',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _passwordCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin Password *',
+                    prefixIcon: Icon(Icons.lock),
+                    helperText: 'Password will be viewable by Developer',
+                  ),
+                  obscureText: true,
+                  validator: (v) => v == null || v.length < 6
+                      ? 'Password must be at least 6 characters'
+                      : null,
+                ),
+                const SizedBox(height: 24),
 
-            _sectionHeader('Default Categories'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: _categories.map((cat) {
-                final selected = _selectedCategories.contains(cat);
-                return FilterChip(
-                  label: Text(cat),
-                  selected: selected,
-                  onSelected: (v) {
-                    setState(() {
-                      if (v) {
-                        _selectedCategories.add(cat);
-                      } else {
-                        _selectedCategories.remove(cat);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 32),
+                _sectionHeader('Default Categories'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _categories.map((cat) {
+                    final selected = _selectedCategories.contains(cat);
+                    return FilterChip(
+                      label: Text(cat),
+                      selected: selected,
+                      onSelected: (v) {
+                        setState(() {
+                          if (v) {
+                            _selectedCategories.add(cat);
+                          } else {
+                            _selectedCategories.remove(cat);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 32),
 
-            SizedBox(
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _create,
-                child: _saving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Create Business Account'),
-              ),
-            ),
-          ],
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _create,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Create Business Account'),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -403,11 +436,14 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.primary)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.primary,
+          ),
+        ),
         const Divider(),
       ],
     );
@@ -441,8 +477,9 @@ class _TenantCard extends StatelessWidget {
                   child: Text(
                     tenant.businessName[0].toUpperCase(),
                     style: const TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.bold),
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -450,27 +487,37 @@ class _TenantCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tenant.businessName,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(tenant.email,
-                          style: TextStyle(
-                              fontSize: 12, color: AppTheme.secondaryText(context))),
+                      Text(
+                        tenant.businessName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        tenant.email,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.secondaryText(context),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(tenant.status,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor)),
+                  child: Text(
+                    tenant.status,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -498,29 +545,53 @@ class _TenantCard extends StatelessWidget {
                 if (tenant.status == 'active') ...[
                   TextButton.icon(
                     onPressed: () => _suspend(context),
-                    icon: const Icon(Icons.pause, size: 16, color: AppTheme.warning),
-                    label: const Text('Suspend',
-                        style: TextStyle(color: AppTheme.warning)),
+                    icon: const Icon(
+                      Icons.pause,
+                      size: 16,
+                      color: AppTheme.warning,
+                    ),
+                    label: const Text(
+                      'Suspend',
+                      style: TextStyle(color: AppTheme.warning),
+                    ),
                   ),
                   TextButton.icon(
                     onPressed: () => _delete(context),
-                    icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.danger),
-                    label: const Text('Delete',
-                        style: TextStyle(color: AppTheme.danger)),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: AppTheme.danger,
+                    ),
+                    label: const Text(
+                      'Delete',
+                      style: TextStyle(color: AppTheme.danger),
+                    ),
                   ),
                 ],
                 if (tenant.status == 'suspended') ...[
                   TextButton.icon(
                     onPressed: () => _reactivate(),
-                    icon: const Icon(Icons.play_arrow, size: 16, color: AppTheme.success),
-                    label: const Text('Reactivate',
-                        style: TextStyle(color: AppTheme.success)),
+                    icon: const Icon(
+                      Icons.play_arrow,
+                      size: 16,
+                      color: AppTheme.success,
+                    ),
+                    label: const Text(
+                      'Reactivate',
+                      style: TextStyle(color: AppTheme.success),
+                    ),
                   ),
                   TextButton.icon(
                     onPressed: () => _delete(context),
-                    icon: const Icon(Icons.delete_outline, size: 16, color: AppTheme.danger),
-                    label: const Text('Delete',
-                        style: TextStyle(color: AppTheme.danger)),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: AppTheme.danger,
+                    ),
+                    label: const Text(
+                      'Delete',
+                      style: TextStyle(color: AppTheme.danger),
+                    ),
                   ),
                 ],
               ],
@@ -535,11 +606,17 @@ class _TenantCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
-        Text(value,
-            style:
-                const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: AppTheme.secondaryText(context),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -561,10 +638,12 @@ class _TenantCard extends StatelessWidget {
           children: [
             Text('Suspending "${tenant.businessName}" will:'),
             const SizedBox(height: 8),
-            const Text('• Prevent all users from logging in\n'
-                '• Block all sales and inventory activities\n'
-                '• Preserve all data for reactivation\n'
-                '• Notify the business owner'),
+            const Text(
+              '• Prevent all users from logging in\n'
+              '• Block all sales and inventory activities\n'
+              '• Preserve all data for reactivation\n'
+              '• Notify the business owner',
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: selected,
@@ -578,10 +657,12 @@ class _TenantCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          LoadingElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warning),
+            loadingChild: const Text('Saving...'),
             onPressed: () async {
               await ApiService.suspendTenant(tenant.id, selected);
               if (ctx.mounted) Navigator.pop(ctx);
@@ -604,36 +685,48 @@ class _TenantCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Business Account',
-            style: TextStyle(color: AppTheme.danger)),
+        title: const Text(
+          'Delete Business Account',
+          style: TextStyle(color: AppTheme.danger),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('⚠ PERMANENT ACTION - IRREVERSIBLE',
-                style:
-                    TextStyle(color: AppTheme.danger, fontWeight: FontWeight.bold)),
+            const Text(
+              '⚠ PERMANENT ACTION - IRREVERSIBLE',
+              style: TextStyle(
+                color: AppTheme.danger,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             Text('Deleting "${tenant.businessName}" will:'),
             const SizedBox(height: 8),
-            const Text('• Permanently remove ALL user accounts\n'
-                '• Delete ALL products, categories, and inventory data\n'
-                '• Remove ALL transaction and sales history\n'
-                '• Delete ALL financial and profit data\n'
-                '• This action CANNOT BE UNDONE'),
+            const Text(
+              '• Permanently remove ALL user accounts\n'
+              '• Delete ALL products, categories, and inventory data\n'
+              '• Remove ALL transaction and sales history\n'
+              '• Delete ALL financial and profit data\n'
+              '• This action CANNOT BE UNDONE',
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: confirmCtrl,
               decoration: const InputDecoration(
-                  labelText: 'Type "DELETE" to confirm'),
+                labelText: 'Type "DELETE" to confirm',
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          LoadingElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            loadingChild: const Text('Deleting...'),
             onPressed: () async {
               if (confirmCtrl.text != 'DELETE') return;
               await ApiService.deleteTenant(tenant.id);
@@ -663,13 +756,15 @@ class _TenantCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
                 Center(
                   child: GestureDetector(
                     onTap: () async {
                       final picker = ImagePicker();
                       final picked = await picker.pickImage(
-                          source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
+                        source: ImageSource.gallery,
+                        maxWidth: 512,
+                        maxHeight: 512,
+                      );
                       if (picked != null) {
                         final bytes = await picked.readAsBytes();
                         setDialogState(() {
@@ -684,70 +779,105 @@ class _TenantCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: AppTheme.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: brandingBytes != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(16),
-                              child: Image.memory(brandingBytes!, fit: BoxFit.cover),
+                              child: Image.memory(
+                                brandingBytes!,
+                                fit: BoxFit.cover,
+                              ),
                             )
                           : (tenant.businessLogo != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.network(
-                                    ApiService.fileUrl(tenant.businessLogo),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
-                                        const SizedBox(height: 4),
-                                        Text('Change\nLogo',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 11, color: AppTheme.primary)),
-                                      ],
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Image.network(
+                                      ApiService.fileUrl(tenant.businessLogo),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_a_photo_outlined,
+                                            size: 28,
+                                            color: AppTheme.primary,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Change\nLogo',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: AppTheme.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add_a_photo_outlined, size: 28, color: AppTheme.primary),
-                                    const SizedBox(height: 4),
-                                    Text('Business\nLogo',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 11, color: AppTheme.primary)),
-                                  ],
-                                )),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_a_photo_outlined,
+                                        size: 28,
+                                        color: AppTheme.primary,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Business\nLogo',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  )),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Business Name')),
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Business Name'),
+                ),
                 const SizedBox(height: 12),
                 TextField(
-                    controller: phoneCtrl,
-                    decoration: const InputDecoration(labelText: 'Phone Number')),
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                ),
                 const SizedBox(height: 12),
                 TextField(
-                    controller: addressCtrl,
-                    decoration: const InputDecoration(labelText: 'Address'),
-                    maxLines: 2),
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                  maxLines: 2,
+                ),
               ],
             ),
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
+              loadingChild: const Text('Saving...'),
               onPressed: () async {
-                await ApiService.updateBrandingWithLogo(tenant.id, {
-                  'businessName': nameCtrl.text,
-                  'phoneNumber': phoneCtrl.text,
-                  'address': addressCtrl.text,
-                }, brandingBytes, brandingXFile?.name);
+                await ApiService.updateBrandingWithLogo(
+                  tenant.id,
+                  {
+                    'businessName': nameCtrl.text,
+                    'phoneNumber': phoneCtrl.text,
+                    'address': addressCtrl.text,
+                  },
+                  brandingBytes,
+                  brandingXFile?.name,
+                );
                 if (ctx.mounted) Navigator.pop(ctx);
                 onRefresh();
               },

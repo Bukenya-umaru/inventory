@@ -6,6 +6,7 @@ import '../../services/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/loading_button.dart';
 import '../../utils/currency.dart';
 
 class SuppliersScreen extends StatefulWidget {
@@ -45,7 +46,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getSuppliers(search: _search.isNotEmpty ? _search : null);
+      final res = await ApiService.getSuppliers(
+        search: _search.isNotEmpty ? _search : null,
+      );
       final list = (res['suppliers'] as List)
           .map((s) => Supplier.fromJson(Map<String, dynamic>.from(s)))
           .toList();
@@ -62,7 +65,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isSmall = MediaQuery.of(context).size.height < 600 ||
+    final isSmall =
+        MediaQuery.of(context).size.height < 600 ||
         MediaQuery.of(context).size.width < 400;
     final canManage = _canManage();
 
@@ -76,14 +80,20 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Suppliers',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
-                            fontWeight: FontWeight.bold)),
-                    Text('${_suppliers.length} companies in your network',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
-                            color: AppTheme.secondaryText(context))),
+                    Text(
+                      'Suppliers',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${_suppliers.length} companies in your network',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -97,8 +107,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.fromLTRB(isSmall ? 12 : AppTheme.pad(context, 16), 0,
-              isSmall ? 12 : AppTheme.pad(context, 16), 8),
+          padding: EdgeInsets.fromLTRB(
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            0,
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            8,
+          ),
           child: TextField(
             onChanged: (v) {
               _search = v;
@@ -117,27 +131,30 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _suppliers.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _load,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(height: constraints.maxHeight * 0.3),
-                            _emptyState(canManage),
-                          ],
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                            AppTheme.pad(context, 16), 4,
-                            AppTheme.pad(context, 16), 12),
-                        child: _suppliersTable(canManage),
-                      ),
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: constraints.maxHeight * 0.3),
+                        _emptyState(canManage),
+                      ],
                     ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppTheme.pad(context, 16),
+                      4,
+                      AppTheme.pad(context, 16),
+                      12,
+                    ),
+                    child: _suppliersTable(canManage),
+                  ),
+                ),
         ),
       ],
     );
@@ -154,23 +171,30 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.business_outlined,
-                size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
+            child: Icon(
+              Icons.business_outlined,
+              size: 56,
+              color: AppTheme.primary.withValues(alpha: 0.4),
+            ),
           ),
           const SizedBox(height: 16),
-          Text('No suppliers yet',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 18),
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'No suppliers yet',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 18),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
           const SizedBox(height: 6),
           Text(
             canManage
                 ? 'Add the companies you buy stock from, then pick them when adding products'
                 : 'Suppliers added by the business owner will appear here',
             style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 13),
-                color: AppTheme.secondaryText(context)),
+              fontSize: AppTheme.fontSize(context, 13),
+              color: AppTheme.secondaryText(context),
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -183,14 +207,18 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _suppliers.length; i++) {
       final s = _suppliers[i];
-      rows.add(CompactDataRow(
-        [
+      rows.add(
+        CompactDataRow([
           CompactDataTable.accent(context, s.name),
           CompactDataTable.muted(context, s.contactPerson ?? '—'),
           CompactDataTable.cell(context, s.phone ?? '—'),
           CompactDataTable.muted(context, s.email ?? '—'),
           CompactDataTable.cell(context, '${s.purchaseCount}'),
-          CompactDataTable.cell(context, Currency.formatWhole(s.totalSpent), weight: FontWeight.w600),
+          CompactDataTable.cell(
+            context,
+            Currency.formatWhole(s.totalSpent),
+            weight: FontWeight.w600,
+          ),
           CompactDataTable.actions([
             CompactDataTable.actionIcon(
               icon: Icons.visibility_outlined,
@@ -206,9 +234,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 onTap: () => _showForm(supplier: s),
               ),
           ]),
-        ],
-        onTap: () => _showDetails(s),
-      ));
+        ], onTap: () => _showDetails(s)),
+      );
     }
 
     return CompactDataTable(
@@ -229,7 +256,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -250,26 +278,39 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     child: Text(
                       s.name.isNotEmpty ? s.name[0].toUpperCase() : '?',
                       style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(s.name,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      s.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              _detailRow(Icons.person_outline, 'Contact person',
-                  s.contactPerson, 'Not set'),
+              _detailRow(
+                Icons.person_outline,
+                'Contact person',
+                s.contactPerson,
+                'Not set',
+              ),
               _detailRow(Icons.phone_outlined, 'Phone', s.phone, 'Not set'),
               _detailRow(Icons.email_outlined, 'Email', s.email, 'Not set'),
-              _detailRow(Icons.location_on_outlined, 'Address', s.address,
-                  'Not set'),
+              _detailRow(
+                Icons.location_on_outlined,
+                'Address',
+                s.address,
+                'Not set',
+              ),
               _detailRow(Icons.notes_outlined, 'Notes', s.notes, '—'),
               const Divider(height: 24),
               Row(
@@ -279,8 +320,10 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _statTile(Currency.formatWhole(s.totalSpent),
-                        'total spent'),
+                    child: _statTile(
+                      Currency.formatWhole(s.totalSpent),
+                      'total spent',
+                    ),
                   ),
                 ],
               ),
@@ -302,7 +345,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     Expanded(
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.danger),
+                          foregroundColor: AppTheme.danger,
+                        ),
                         onPressed: () {
                           Navigator.pop(ctx);
                           _delete(s);
@@ -330,19 +374,29 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       ),
       child: Column(
         children: [
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: AppTheme.secondaryText(context))),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _detailRow(IconData icon, String label, String? value, String fallback) {
+  Widget _detailRow(
+    IconData icon,
+    String label,
+    String? value,
+    String fallback,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -350,19 +404,24 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         children: [
           Icon(icon, size: 16, color: AppTheme.secondaryText(context)),
           const SizedBox(width: 10),
-          Text('$label:',
-              style: TextStyle(
-                  fontSize: 13, color: AppTheme.secondaryText(context))),
+          Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               (value == null || value.isEmpty) ? fallback : value,
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: (value == null || value.isEmpty)
-                      ? AppTheme.secondaryText(context)
-                      : AppTheme.textColor(context)),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: (value == null || value.isEmpty)
+                    ? AppTheme.secondaryText(context)
+                    : AppTheme.textColor(context),
+              ),
             ),
           ),
         ],
@@ -373,7 +432,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   void _showForm({Supplier? supplier}) {
     final isEditing = supplier != null;
     final nameCtrl = TextEditingController(text: supplier?.name ?? '');
-    final contactCtrl = TextEditingController(text: supplier?.contactPerson ?? '');
+    final contactCtrl = TextEditingController(
+      text: supplier?.contactPerson ?? '',
+    );
     final phoneCtrl = TextEditingController(text: supplier?.phone ?? '');
     final emailCtrl = TextEditingController(text: supplier?.email ?? '');
     final addressCtrl = TextEditingController(text: supplier?.address ?? '');
@@ -382,8 +443,10 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isEditing ? 'Edit Supplier' : 'Add Supplier',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        title: Text(
+          isEditing ? 'Edit Supplier' : 'Add Supplier',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -394,7 +457,11 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               const SizedBox(height: 12),
               _field(phoneCtrl, 'Phone', keyboardType: TextInputType.phone),
               const SizedBox(height: 12),
-              _field(emailCtrl, 'Email', keyboardType: TextInputType.emailAddress),
+              _field(
+                emailCtrl,
+                'Email',
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 12),
               _field(addressCtrl, 'Address'),
               const SizedBox(height: 12),
@@ -404,13 +471,19 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          LoadingElevatedButton(
+            loadingChild: const Text('Saving...'),
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
                     content: Text('Supplier name is required.'),
-                    backgroundColor: AppTheme.danger));
+                    backgroundColor: AppTheme.danger,
+                  ),
+                );
                 return;
               }
               try {
@@ -439,18 +512,26 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 }
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text(isEditing
-                        ? 'Supplier updated.'
-                        : 'Supplier added — you can now select it when adding stock.'),
-                    backgroundColor: AppTheme.success));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isEditing
+                          ? 'Supplier updated.'
+                          : 'Supplier added — you can now select it when adding stock.',
+                    ),
+                    backgroundColor: AppTheme.success,
+                  ),
+                );
                 AppEvents.instance.emit('suppliers');
                 _load();
               } catch (e) {
                 if (ctx.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
                       content: Text(e.toString()),
-                      backgroundColor: AppTheme.danger));
+                      backgroundColor: AppTheme.danger,
+                    ),
+                  );
                 }
               }
             },
@@ -461,8 +542,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String label,
-      {TextInputType? keyboardType, int maxLines = 1}) {
+  Widget _field(
+    TextEditingController ctrl,
+    String label, {
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: ctrl,
       keyboardType: keyboardType,
@@ -481,15 +566,18 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Supplier'),
         content: Text(
-            'Delete "${s.name}"? Past stock records keep their supplier info for history.'),
+          'Delete "${s.name}"? Past stock records keep their supplier info for history.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete')),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

@@ -8,6 +8,7 @@ import '../../models/category.dart';
 import '../../models/supplier.dart';
 import '../../widgets/supplier_picker.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -59,10 +60,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ]);
       final res = results[0];
       final catRes = results[1];
-      final list =
-          (res['products'] as List).map((p) => Product.fromJson(p)).toList();
-      final cats =
-          (catRes['categories'] as List).map((c) => Category.fromJson(c)).toList();
+      final list = (res['products'] as List)
+          .map((p) => Product.fromJson(p))
+          .toList();
+      final cats = (catRes['categories'] as List)
+          .map((c) => Category.fromJson(c))
+          .toList();
       setState(() {
         _products = list;
         _categories = cats;
@@ -74,14 +77,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   int get _totalProducts => _products.length;
-  int get _inStock =>
-      _products.where((p) => p.totalStockPieces > 0).length;
-  int get _lowStock =>
-      _products.where((p) => p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock).length;
-  int get _outOfStock =>
-      _products.where((p) => p.totalStockPieces == 0).length;
-  double get _totalValue => _products.fold(
-      0.0, (s, p) => s + (p.costPrice * p.totalStockPieces));
+  int get _inStock => _products.where((p) => p.totalStockPieces > 0).length;
+  int get _lowStock => _products
+      .where(
+        (p) => p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock,
+      )
+      .length;
+  int get _outOfStock => _products.where((p) => p.totalStockPieces == 0).length;
+  double get _totalValue =>
+      _products.fold(0.0, (s, p) => s + (p.costPrice * p.totalStockPieces));
 
   @override
   Widget build(BuildContext context) {
@@ -90,41 +94,52 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     return Column(
       children: [
-
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 8 : AppTheme.pad(context, 8)),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 8 : AppTheme.pad(context, 8),
+          ),
           child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Stock',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
-                            fontWeight: FontWeight.bold)),
-                    Text('$_totalProducts items in inventory',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
-                            color: AppTheme.secondaryText(context))),
+                    Text(
+                      'Stock',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '$_totalProducts items in inventory',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(Currency.formatWhole(_totalValue),
-                    style: TextStyle(
-                        fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryBright(context)),
+                child: Text(
+                  Currency.formatWhole(_totalValue),
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryBright(context),
+                  ),
                 ),
               ),
             ],
@@ -133,12 +148,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 12 : AppTheme.pad(context, 16), 0,
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 8 : AppTheme.pad(context, 8)),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            0,
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 8 : AppTheme.pad(context, 8),
+          ),
           child: Row(
             children: [
-              _statChip('$_inStock', 'In Stock', AppTheme.successBright(context)),
+              _statChip(
+                '$_inStock',
+                'In Stock',
+                AppTheme.successBright(context),
+              ),
               const SizedBox(width: 8),
               _statChip('$_lowStock', 'Low', AppTheme.warningBright(context)),
               const SizedBox(width: 8),
@@ -149,10 +170,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              isSmall ? 10 : AppTheme.pad(context, 12),
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              0),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            isSmall ? 10 : AppTheme.pad(context, 12),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            0,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -161,7 +183,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     hintText: 'Search products...',
                     prefixIcon: const Icon(Icons.search, size: 20),
                     contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12, vertical: isSmall ? 10 : 14),
+                      horizontal: 12,
+                      vertical: isSmall ? 10 : 14,
+                    ),
                     filled: true,
                     fillColor: Theme.of(context).cardColor,
                     border: OutlineInputBorder(
@@ -170,11 +194,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                   ),
                   style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
+                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                  ),
                   onChanged: (v) {
                     _search = v;
                     _searchTimer?.cancel();
-                    _searchTimer = Timer(const Duration(milliseconds: 350), () => _load());
+                    _searchTimer = Timer(
+                      const Duration(milliseconds: 350),
+                      () => _load(),
+                    );
                   },
                 ),
               ),
@@ -219,22 +247,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _products.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _load,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(height: constraints.maxHeight * 0.35),
-                            _emptyState(),
-                          ],
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: _productTable(),
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: constraints.maxHeight * 0.35),
+                        _emptyState(),
+                      ],
                     ),
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _load, child: _productTable()),
         ),
       ],
     );
@@ -242,7 +267,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _statChip(String value, String label, Color color) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.1);
+    final bgColor = isDark
+        ? color.withValues(alpha: 0.15)
+        : color.withValues(alpha: 0.1);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -252,13 +279,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold, color: color, fontSize: 12)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 12,
+            ),
+          ),
           const SizedBox(width: 3),
-          Text(label,
-              style: TextStyle(
-                  color: color, fontSize: 10)),
+          Text(label, style: TextStyle(color: color, fontSize: 10)),
         ],
       ),
     );
@@ -275,19 +305,29 @@ class _ProductsScreenState extends State<ProductsScreen> {
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.inventory_2_outlined,
-                size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 56,
+              color: AppTheme.primary.withValues(alpha: 0.4),
+            ),
           ),
           const SizedBox(height: 16),
-          Text('No products found',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 18),
-                  fontWeight: FontWeight.w600,                  color: AppTheme.secondaryText(context))),
-                  const SizedBox(height: 6),
-                  Text('Add your first product to get started',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 13),
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'No products found',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 18),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Add your first product to get started',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 13),
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
         ],
       ),
     );
@@ -298,53 +338,68 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _products.length; i++) {
       final p = _products[i];
-      final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
+      final isLow =
+          p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
       final out = p.totalStockPieces == 0;
 
-      rows.add(CompactDataRow([
-        CompactDataTable.accent(context, p.name),
-        CompactDataTable.cell(context, p.categoryName ?? '—'),
-        CompactDataTable.cell(context, '${p.totalStockPieces}'),
-        CompactDataTable.cell(context, p.sku ?? '—'),
-        CompactDataTable.cell(context, Currency.format(p.costPrice)),
-        CompactDataTable.cell(context, Currency.format(p.sellingPrice)),
-        CompactDataTable.chip(
-          context,
-          out ? 'Out of stock' : isLow ? 'Low stock' : 'In stock',
-          out ? AppTheme.dangerBright(context) : isLow ? AppTheme.warningBright(context) : AppTheme.successBright(context),
-        ),
-        CompactDataTable.actions([
-          CompactDataTable.actionIcon(
-            icon: Icons.add_circle_outline,
-            color: AppTheme.successBright(context),
-            tooltip: 'Restock',
-            onTap: () => _showRestockDialog(p),
+      rows.add(
+        CompactDataRow([
+          CompactDataTable.accent(context, p.name),
+          CompactDataTable.cell(context, p.categoryName ?? '—'),
+          CompactDataTable.cell(context, '${p.totalStockPieces}'),
+          CompactDataTable.cell(context, p.sku ?? '—'),
+          CompactDataTable.cell(context, Currency.format(p.costPrice)),
+          CompactDataTable.cell(context, Currency.format(p.sellingPrice)),
+          CompactDataTable.chip(
+            context,
+            out
+                ? 'Out of stock'
+                : isLow
+                ? 'Low stock'
+                : 'In stock',
+            out
+                ? AppTheme.dangerBright(context)
+                : isLow
+                ? AppTheme.warningBright(context)
+                : AppTheme.successBright(context),
           ),
-          CompactDataTable.actionIcon(
-            icon: Icons.history,
-            color: AppTheme.warningBright(context),
-            tooltip: 'Price history',
-            onTap: () => _showPriceHistory(p),
-          ),
-          CompactDataTable.actionIcon(
-            icon: Icons.edit_outlined,
-            color: AppTheme.blueBright(context),
-            tooltip: 'Edit',
-            onTap: () => _showForm(product: p),
-          ),
-          CompactDataTable.actionIcon(
-            icon: Icons.delete_outline,
-            color: AppTheme.dangerBright(context),
-            tooltip: 'Delete',
-            onTap: () => _delete(p),
-          ),
-        ],),
-      ]));
+          CompactDataTable.actions([
+            CompactDataTable.actionIcon(
+              icon: Icons.add_circle_outline,
+              color: AppTheme.successBright(context),
+              tooltip: 'Restock',
+              onTap: () => _showRestockDialog(p),
+            ),
+            CompactDataTable.actionIcon(
+              icon: Icons.history,
+              color: AppTheme.warningBright(context),
+              tooltip: 'Price history',
+              onTap: () => _showPriceHistory(p),
+            ),
+            CompactDataTable.actionIcon(
+              icon: Icons.edit_outlined,
+              color: AppTheme.blueBright(context),
+              tooltip: 'Edit',
+              onTap: () => _showForm(product: p),
+            ),
+            CompactDataTable.actionIcon(
+              icon: Icons.delete_outline,
+              color: AppTheme.dangerBright(context),
+              tooltip: 'Delete',
+              onTap: () => _delete(p),
+            ),
+          ]),
+        ]),
+      );
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 12), 4,
-          AppTheme.pad(context, 12), 12),
+      padding: EdgeInsets.fromLTRB(
+        AppTheme.pad(context, 12),
+        4,
+        AppTheme.pad(context, 12),
+        12,
+      ),
       child: CompactDataTable(
         columns: const [
           CompactTableColumn('Item Name', flex: 3),
@@ -373,7 +428,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget _duplicateBanner(BuildContext dialogCtx, Product p) {
     return InkWell(
       onTap: () {
-        Navigator.pop(dialogCtx); 
+        Navigator.pop(dialogCtx);
         _showRestockDialog(p);
       },
       borderRadius: BorderRadius.circular(8),
@@ -414,28 +469,43 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 color: AppTheme.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.history, color: AppTheme.warning, size: 20),
+              child: const Icon(
+                Icons.history,
+                color: AppTheme.warning,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Price History',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                  Text(p.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 12, color: AppTheme.secondaryText(context))),
+                  const Text(
+                    'Price History',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    p.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.secondaryText(context),
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ),
         content: history.isEmpty
-            ? Text('No price changes recorded yet.',
-                style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context)))
+            ? Text(
+                'No price changes recorded yet.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.secondaryText(context),
+                ),
+              )
             : SizedBox(
                 width: 360,
                 child: ListView.separated(
@@ -444,8 +514,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (ctx, i) {
                     final h = history[i];
-                    final dateStr =
-                        DateFormat('MMM d, yyyy').format(h.changedAt.toLocal());
+                    final dateStr = DateFormat(
+                      'MMM d, yyyy',
+                    ).format(h.changedAt.toLocal());
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       dense: true,
@@ -463,19 +534,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ? '${Currency.format(h.boxCostPrice!)} → ${Currency.format(h.boxSellingPrice ?? 0)} / box (${Currency.format(h.costPrice)} → ${Currency.format(h.sellingPrice)} / pc)'
                             : '${Currency.format(h.costPrice)} → ${Currency.format(h.sellingPrice)} / pc',
                         style: const TextStyle(
-                            fontSize: 12.5, fontWeight: FontWeight.w600),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      subtitle: Text('$dateStr • ${h.sourceLabel}',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.secondaryText(context))),
+                      subtitle: Text(
+                        '$dateStr • ${h.sourceLabel}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.secondaryText(context),
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -491,13 +569,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
     String fmtPrice(num v) =>
         v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
     final costCtrl = TextEditingController(
-        text: unit == 'box'
-            ? fmtPrice(p.boxCostPrice ?? (p.costPrice * p.unitsPerBox))
-            : fmtPrice(p.costPrice));
+      text: unit == 'box'
+          ? fmtPrice(p.boxCostPrice ?? (p.costPrice * p.unitsPerBox))
+          : fmtPrice(p.costPrice),
+    );
     final sellPriceCtrl = TextEditingController(
-        text: unit == 'box'
-            ? fmtPrice(p.boxSellingPrice ?? (p.sellingPrice * p.unitsPerBox))
-            : fmtPrice(p.sellingPrice));
+      text: unit == 'box'
+          ? fmtPrice(p.boxSellingPrice ?? (p.sellingPrice * p.unitsPerBox))
+          : fmtPrice(p.sellingPrice),
+    );
     String paymentMethod = 'cash';
 
     showDialog(
@@ -512,20 +592,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   color: AppTheme.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.add_shopping_cart, color: AppTheme.success, size: 20),
+                child: const Icon(
+                  Icons.add_shopping_cart,
+                  color: AppTheme.success,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Add Stock',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                    Text(p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 12, color: AppTheme.secondaryText(context))),
+                    const Text(
+                      'Add Stock',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -536,134 +629,179 @@ class _ProductsScreenState extends State<ProductsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.success.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.success.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    p.sellsAsBox
+                        ? 'Current stock: ${p.stockBoxes} box(es), ${p.currentStock} pc'
+                        : 'Current stock: ${p.totalStockPieces} pc',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.success,
+                    ),
+                  ),
                 ),
-                child: Text(
-                  p.sellsAsBox
-                      ? 'Current stock: ${p.stockBoxes} box(es), ${p.currentStock} pc'
-                      : 'Current stock: ${p.totalStockPieces} pc',
-                  style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.success),
+                if (p.priceHistory.length > 1) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Last price change: ${DateFormat('MMM d, yyyy').format(p.priceHistory.last.changedAt.toLocal())} — leaving the pre-filled prices unchanged keeps this batch at the current prices.',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppTheme.secondaryText(context),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (p.sellsAsBox) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Boxes'),
+                          selected: unit == 'box',
+                          onSelected: (_) => setDialogState(() {
+                            unit = 'box';
+                            costCtrl.text = fmtPrice(
+                              p.boxCostPrice ?? (p.costPrice * p.unitsPerBox),
+                            );
+                            sellPriceCtrl.text = fmtPrice(
+                              p.boxSellingPrice ??
+                                  (p.sellingPrice * p.unitsPerBox),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Pieces'),
+                          selected: unit == 'piece',
+                          onSelected: (_) => setDialogState(() {
+                            unit = 'piece';
+                            costCtrl.text = fmtPrice(p.costPrice);
+                            sellPriceCtrl.text = fmtPrice(p.sellingPrice);
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: qtyCtrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText:
+                        'Quantity to add (${unit == 'box' ? 'boxes' : 'pieces'}) *',
+                    filled: true,
+                    fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  ),
                 ),
-              ),
-              if (p.priceHistory.length > 1) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Last price change: ${DateFormat('MMM d, yyyy').format(p.priceHistory.last.changedAt.toLocal())} — leaving the pre-filled prices unchanged keeps this batch at the current prices.',
-                  style: TextStyle(
-                      fontSize: 10.5, color: AppTheme.secondaryText(context)),
-                ),
-              ],
-              const SizedBox(height: 12),
-              if (p.sellsAsBox) ...[
+                const SizedBox(height: 16),
+
                 Row(
                   children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('Boxes'),
-                        selected: unit == 'box',
-                        onSelected: (_) => setDialogState(() {
-                          unit = 'box';
-                          costCtrl.text = fmtPrice(p.boxCostPrice ?? (p.costPrice * p.unitsPerBox));
-                          sellPriceCtrl.text = fmtPrice(p.boxSellingPrice ?? (p.sellingPrice * p.unitsPerBox));
-                        }),
+                    Icon(
+                      Icons.local_shipping,
+                      size: 14,
+                      color: AppTheme.success,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Supplier & Purchase Info',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.success,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('Pieces'),
-                        selected: unit == 'piece',
-                        onSelected: (_) => setDialogState(() {
-                          unit = 'piece';
-                          costCtrl.text = fmtPrice(p.costPrice);
-                          sellPriceCtrl.text = fmtPrice(p.sellingPrice);
-                        }),
+                    const SizedBox(width: 4),
+                    Text(
+                      '* Supplier required',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.secondaryText(context),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-              ],
-              TextField(
-                controller: qtyCtrl,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Quantity to add (${unit == 'box' ? 'boxes' : 'pieces'}) *',
-                  filled: true,
-                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                SupplierPicker(
+                  selected: selectedSupplier,
+                  onChanged: (s) => setDialogState(() => selectedSupplier = s),
+                  onAddNewRequested: () => _showSupplierForm(),
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Icon(Icons.local_shipping, size: 14, color: AppTheme.success),
-                  const SizedBox(width: 6),
-                  Text('Supplier & Purchase Info',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.success)),
-                  const SizedBox(width: 4),
-                  Text('* Supplier required',
-                      style: TextStyle(fontSize: 10, color: AppTheme.secondaryText(context))),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SupplierPicker(
-                selected: selectedSupplier,
-                onChanged: (s) => setDialogState(() => selectedSupplier = s),
-                onAddNewRequested: () => _showSupplierForm(),
-              ),
-              const SizedBox(height: 12),
-              _field(costCtrl,
-                  unit == 'box' ? 'Buying Price (per box) *' : 'Buying Price (per piece) *',
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              _field(sellPriceCtrl,
-                  unit == 'box' ? 'Selling Price (per box) *' : 'Selling Price (per piece) *',
-                  keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              _field(invoiceCtrl, 'Invoice Number'),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Payment Method'),
-                value: paymentMethod,
-                items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                  DropdownMenuItem(value: 'credit', child: Text('Credit')),
-                  DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                  DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
-                  DropdownMenuItem(value: 'other', child: Text('Other')),
-                ],
-                onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
-              ),
-              const SizedBox(height: 12),
-              _field(notesCtrl, 'Notes'),
-            ],
+                const SizedBox(height: 12),
+                _field(
+                  costCtrl,
+                  unit == 'box'
+                      ? 'Buying Price (per box) *'
+                      : 'Buying Price (per piece) *',
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                _field(
+                  sellPriceCtrl,
+                  unit == 'box'
+                      ? 'Selling Price (per box) *'
+                      : 'Selling Price (per piece) *',
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                _field(invoiceCtrl, 'Invoice Number'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Payment Method',
+                  ),
+                  value: paymentMethod,
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    DropdownMenuItem(value: 'credit', child: Text('Credit')),
+                    DropdownMenuItem(
+                      value: 'bank_transfer',
+                      child: Text('Bank Transfer'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'mobile_money',
+                      child: Text('Mobile Money'),
+                    ),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (v) =>
+                      setDialogState(() => paymentMethod = v ?? 'cash'),
+                ),
+                const SizedBox(height: 12),
+                _field(notesCtrl, 'Notes'),
+              ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
               onPressed: () => _submitRestock(
-                  ctx,
-                  p,
-                  qtyCtrl,
-                  unit,
-                  selectedSupplier: selectedSupplier,
-                  invoiceCtrl: invoiceCtrl,
-                  notesCtrl: notesCtrl,
-                  costCtrl: costCtrl,
-                  sellPriceCtrl: sellPriceCtrl,
-                  paymentMethod: paymentMethod),
+                ctx,
+                p,
+                qtyCtrl,
+                unit,
+                selectedSupplier: selectedSupplier,
+                invoiceCtrl: invoiceCtrl,
+                notesCtrl: notesCtrl,
+                costCtrl: costCtrl,
+                sellPriceCtrl: sellPriceCtrl,
+                paymentMethod: paymentMethod,
+              ),
+              loadingChild: const Text('Adding...'),
               child: const Text('Add'),
             ),
           ],
@@ -686,34 +824,45 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }) async {
     final qty = int.tryParse(qtyCtrl.text) ?? 0;
     if (qty <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text('Enter a quantity greater than 0.'),
-          backgroundColor: AppTheme.danger));
+          backgroundColor: AppTheme.danger,
+        ),
+      );
       return;
     }
 
     if (selectedSupplier == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text('Search and select a supplier first.'),
-          backgroundColor: AppTheme.danger));
+          backgroundColor: AppTheme.danger,
+        ),
+      );
       return;
     }
     final buyPrice = double.tryParse(costCtrl.text);
     if (buyPrice == null || buyPrice < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text('Enter the buying price for this batch.'),
-          backgroundColor: AppTheme.danger));
+          backgroundColor: AppTheme.danger,
+        ),
+      );
       return;
     }
     final sellPrice = double.tryParse(sellPriceCtrl.text);
     if (sellPrice == null || sellPrice < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
           content: Text('Enter the selling price for this batch.'),
-          backgroundColor: AppTheme.danger));
+          backgroundColor: AppTheme.danger,
+        ),
+      );
       return;
     }
     try {
-
       await ApiService.createProduct({
         'name': p.name,
         'categoryId': p.categoryId,
@@ -730,30 +879,46 @@ class _ProductsScreenState extends State<ProductsScreen> {
         'batchSellingPrice': sellPrice,
         'supplier': selectedSupplier.name,
         'supplierId': selectedSupplier.id,
-        'supplierPhone': (selectedSupplier.phone != null && selectedSupplier.phone!.isNotEmpty)
+        'supplierPhone':
+            (selectedSupplier.phone != null &&
+                selectedSupplier.phone!.isNotEmpty)
             ? selectedSupplier.phone
             : null,
-        'supplierEmail': (selectedSupplier.email != null && selectedSupplier.email!.isNotEmpty)
+        'supplierEmail':
+            (selectedSupplier.email != null &&
+                selectedSupplier.email!.isNotEmpty)
             ? selectedSupplier.email
             : null,
-        'invoiceNumber': invoiceCtrl.text.trim().isNotEmpty ? invoiceCtrl.text.trim() : null,
+        'invoiceNumber': invoiceCtrl.text.trim().isNotEmpty
+            ? invoiceCtrl.text.trim()
+            : null,
         'paymentMethod': paymentMethod,
-        'notes': notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
+        'notes': notesCtrl.text.trim().isNotEmpty
+            ? notesCtrl.text.trim()
+            : null,
       });
       if (ctx.mounted) {
         Navigator.pop(ctx);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(
-                'Stock entry recorded: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — pending approval'),
-            backgroundColor: AppTheme.success));
+              'Stock entry recorded: +$qty ${unit == 'box' ? 'box(es)' : 'piece(s)'} of ${p.name} — pending approval',
+            ),
+            backgroundColor: AppTheme.success,
+          ),
+        );
       }
 
       AppEvents.instance.emit('purchases');
-      AppEvents.instance.emit('products'); 
+      AppEvents.instance.emit('products');
     } catch (e) {
       if (ctx.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString()), backgroundColor: AppTheme.danger));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppTheme.danger,
+          ),
+        );
       }
     }
   }
@@ -761,14 +926,30 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void _showForm({Product? product}) {
     final isEditing = product != null;
     final nameCtrl = TextEditingController(text: product?.name ?? '');
-    final costCtrl = TextEditingController(text: product?.costPrice.toString() ?? '');
-    final priceCtrl = TextEditingController(text: product?.sellingPrice.toString() ?? '');
-    final stockCtrl = TextEditingController(text: product?.currentStock.toString() ?? '0');
-    final minCtrl = TextEditingController(text: product?.minimumStock.toString() ?? '5');
-    final unitsPerBoxCtrl = TextEditingController(text: product?.unitsPerBox.toString() ?? '1');
-    final stockBoxesCtrl = TextEditingController(text: product?.stockBoxes.toString() ?? '0');
-    final boxCostCtrl = TextEditingController(text: product?.boxCostPrice?.toString() ?? '');
-    final boxPriceCtrl = TextEditingController(text: product?.boxSellingPrice?.toString() ?? '');
+    final costCtrl = TextEditingController(
+      text: product?.costPrice.toString() ?? '',
+    );
+    final priceCtrl = TextEditingController(
+      text: product?.sellingPrice.toString() ?? '',
+    );
+    final stockCtrl = TextEditingController(
+      text: product?.currentStock.toString() ?? '0',
+    );
+    final minCtrl = TextEditingController(
+      text: product?.minimumStock.toString() ?? '5',
+    );
+    final unitsPerBoxCtrl = TextEditingController(
+      text: product?.unitsPerBox.toString() ?? '1',
+    );
+    final stockBoxesCtrl = TextEditingController(
+      text: product?.stockBoxes.toString() ?? '0',
+    );
+    final boxCostCtrl = TextEditingController(
+      text: product?.boxCostPrice?.toString() ?? '',
+    );
+    final boxPriceCtrl = TextEditingController(
+      text: product?.boxSellingPrice?.toString() ?? '',
+    );
 
     Supplier? selectedSupplier;
     final invoiceCtrl = TextEditingController();
@@ -778,6 +959,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     String sellingUnit = product?.sellingUnit ?? 'piece';
     String? selectedCategoryId = product?.categoryId;
     Product? duplicate;
+    bool isSubmitting = false;
 
     void recalcPieces() {
       final boxes = int.tryParse(stockBoxesCtrl.text) ?? 0;
@@ -797,20 +979,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(isEditing ? Icons.edit : Icons.add, color: AppTheme.primary, size: 20),
+                child: Icon(
+                  isEditing ? Icons.edit : Icons.add,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
-              Text(isEditing ? 'Edit Product' : 'Add Product',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(
+                isEditing ? 'Edit Product' : 'Add Product',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
-                _field(nameCtrl, 'Product Name *',
-                    onChanged: (v) => setDialogState(() => duplicate = _findDuplicate(v))),
+                _field(
+                  nameCtrl,
+                  'Product Name *',
+                  onChanged: (v) =>
+                      setDialogState(() => duplicate = _findDuplicate(v)),
+                ),
                 if (!isEditing && duplicate != null) ...[
                   const SizedBox(height: 10),
                   _duplicateBanner(ctx, duplicate!),
@@ -819,8 +1013,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Category'),
                   value: selectedCategoryId,
-                  items: _categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                  onChanged: (v) => setDialogState(() => selectedCategoryId = v),
+                  items: _categories
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
+                      .toList(),
+                  onChanged: (v) =>
+                      setDialogState(() => selectedCategoryId = v),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -839,63 +1039,119 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 if (sellingUnit != 'piece') ...[
                   const SizedBox(height: 12),
-                  _field(unitsPerBoxCtrl, 'Units Per Box',
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) { setDialogState(() {}); recalcPieces(); }),
+                  _field(
+                    unitsPerBoxCtrl,
+                    'Units Per Box',
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) {
+                      setDialogState(() {});
+                      recalcPieces();
+                    },
+                  ),
                 ],
                 const SizedBox(height: 12),
-                _field(costCtrl, 'Cost Price (per piece)', keyboardType: TextInputType.number),
+                _field(
+                  costCtrl,
+                  'Cost Price (per piece)',
+                  keyboardType: TextInputType.number,
+                ),
                 const SizedBox(height: 12),
-                _field(priceCtrl, 'Selling Price (per piece)', keyboardType: TextInputType.number),
+                _field(
+                  priceCtrl,
+                  'Selling Price (per piece)',
+                  keyboardType: TextInputType.number,
+                ),
                 if (sellingUnit != 'piece') ...[
                   const SizedBox(height: 12),
-                  _field(boxCostCtrl, 'Box Cost Price', keyboardType: TextInputType.number),
+                  _field(
+                    boxCostCtrl,
+                    'Box Cost Price',
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 12),
-                  _field(boxPriceCtrl, 'Box Selling Price', keyboardType: TextInputType.number),
+                  _field(
+                    boxPriceCtrl,
+                    'Box Selling Price',
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 12),
-                  _field(stockBoxesCtrl, 'Stock (Boxes)',
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) { setDialogState(() {}); recalcPieces(); }),
+                  _field(
+                    stockBoxesCtrl,
+                    'Stock (Boxes)',
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) {
+                      setDialogState(() {});
+                      recalcPieces();
+                    },
+                  ),
                 ],
                 const SizedBox(height: 12),
-                _field(stockCtrl,
-                    sellingUnit == 'box' ? 'Stock (Auto: Boxes × Units/Box)' : 'Stock (Pieces)',
-                    keyboardType: TextInputType.number, readOnly: sellingUnit == 'box'),
+                _field(
+                  stockCtrl,
+                  sellingUnit == 'box'
+                      ? 'Stock (Auto: Boxes × Units/Box)'
+                      : 'Stock (Pieces)',
+                  keyboardType: TextInputType.number,
+                  readOnly: sellingUnit == 'box',
+                ),
                 const SizedBox(height: 12),
-                _field(minCtrl, 'Min Stock', keyboardType: TextInputType.number),
+                _field(
+                  minCtrl,
+                  'Min Stock',
+                  keyboardType: TextInputType.number,
+                ),
 
                 if (!isEditing) ...[
                   const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.success.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text('Supplier & Purchase Info (Optional)',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.success)),
+                    child: Text(
+                      'Supplier & Purchase Info (Optional)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.success,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SupplierPicker(
                     selected: selectedSupplier,
-                    onChanged: (s) => setDialogState(() => selectedSupplier = s),
+                    onChanged: (s) =>
+                        setDialogState(() => selectedSupplier = s),
                     onAddNewRequested: () => _showSupplierForm(),
                   ),
                   const SizedBox(height: 12),
                   _field(invoiceCtrl, 'Invoice Number'),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Payment Method'),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Method',
+                    ),
                     value: paymentMethod,
                     items: const [
                       DropdownMenuItem(value: 'cash', child: Text('Cash')),
                       DropdownMenuItem(value: 'credit', child: Text('Credit')),
-                      DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                      DropdownMenuItem(value: 'mobile_money', child: Text('Mobile Money')),
+                      DropdownMenuItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'mobile_money',
+                        child: Text('Mobile Money'),
+                      ),
                       DropdownMenuItem(value: 'other', child: Text('Other')),
                     ],
-                    onChanged: (v) => setDialogState(() => paymentMethod = v ?? 'cash'),
+                    onChanged: (v) =>
+                        setDialogState(() => paymentMethod = v ?? 'cash'),
                   ),
                   const SizedBox(height: 12),
                   _field(purchaseNotesCtrl, 'Purchase Notes'),
@@ -904,91 +1160,150 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              onPressed: () async {
-                if (nameCtrl.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Product name is required.'), backgroundColor: AppTheme.danger));
-                  return;
-                }
-                if (selectedCategoryId == null || selectedCategoryId!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Please select a category.'), backgroundColor: AppTheme.danger));
-                  return;
-                }
-                if (double.tryParse(costCtrl.text) == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Valid cost price is required.'), backgroundColor: AppTheme.danger));
-                  return;
-                }
-                if (double.tryParse(priceCtrl.text) == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Valid selling price is required.'), backgroundColor: AppTheme.danger));
-                  return;
-                }
-                final data = {
-                  'name': nameCtrl.text.trim(),
-                  'categoryId': selectedCategoryId!,
-                  'costPrice': double.tryParse(costCtrl.text) ?? 0,
-                  'sellingPrice': double.tryParse(priceCtrl.text) ?? 0,
-                  'minimumStock': int.tryParse(minCtrl.text) ?? 5,
-                  'sellingUnit': sellingUnit,
-                  'unitsPerBox': int.tryParse(unitsPerBoxCtrl.text) ?? 1,
-                  'stockBoxes': int.tryParse(stockBoxesCtrl.text) ?? 0,
-                  'currentStock': sellingUnit == 'box' ? 0 : (int.tryParse(stockCtrl.text) ?? 0),
-                  'boxCostPrice': double.tryParse(boxCostCtrl.text) ?? 0,
-                  'boxSellingPrice': double.tryParse(boxPriceCtrl.text) ?? 0,
-                };
-                bool merged = false;
-                try {
-                  if (isEditing) {
-                    await ApiService.updateProduct(product!.id, data);
-                  } else {
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (nameCtrl.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Product name is required.'),
+                            backgroundColor: AppTheme.danger,
+                          ),
+                        );
+                        return;
+                      }
+                      if (selectedCategoryId == null ||
+                          selectedCategoryId!.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please select a category.'),
+                            backgroundColor: AppTheme.danger,
+                          ),
+                        );
+                        return;
+                      }
+                      if (double.tryParse(costCtrl.text) == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Valid cost price is required.'),
+                            backgroundColor: AppTheme.danger,
+                          ),
+                        );
+                        return;
+                      }
+                      if (double.tryParse(priceCtrl.text) == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Valid selling price is required.'),
+                            backgroundColor: AppTheme.danger,
+                          ),
+                        );
+                        return;
+                      }
+                      final data = {
+                        'name': nameCtrl.text.trim(),
+                        'categoryId': selectedCategoryId!,
+                        'costPrice': double.tryParse(costCtrl.text) ?? 0,
+                        'sellingPrice': double.tryParse(priceCtrl.text) ?? 0,
+                        'minimumStock': int.tryParse(minCtrl.text) ?? 5,
+                        'sellingUnit': sellingUnit,
+                        'unitsPerBox': int.tryParse(unitsPerBoxCtrl.text) ?? 1,
+                        'stockBoxes': int.tryParse(stockBoxesCtrl.text) ?? 0,
+                        'currentStock': sellingUnit == 'box'
+                            ? 0
+                            : (int.tryParse(stockCtrl.text) ?? 0),
+                        'boxCostPrice': double.tryParse(boxCostCtrl.text) ?? 0,
+                        'boxSellingPrice':
+                            double.tryParse(boxPriceCtrl.text) ?? 0,
+                      };
+                      bool merged = false;
+                      setDialogState(() => isSubmitting = true);
+                      try {
+                        if (isEditing) {
+                          await ApiService.updateProduct(product!.id, data);
+                        } else {
+                          final sendData = Map<String, dynamic>.from(data);
+                          final sup = selectedSupplier;
+                          if (sup != null) {
+                            sendData['supplier'] = sup.name;
+                            sendData['supplierId'] = sup.id;
+                            sendData['supplierPhone'] =
+                                (sup.phone != null && sup.phone!.isNotEmpty)
+                                ? sup.phone
+                                : null;
+                            sendData['supplierEmail'] =
+                                (sup.email != null && sup.email!.isNotEmpty)
+                                ? sup.email
+                                : null;
+                          } else {
+                            sendData['supplier'] = null;
+                            sendData['supplierId'] = null;
+                          }
+                          sendData['invoiceNumber'] =
+                              invoiceCtrl.text.isNotEmpty
+                              ? invoiceCtrl.text
+                              : null;
+                          sendData['paymentMethod'] = paymentMethod;
+                          sendData['notes'] = purchaseNotesCtrl.text.isNotEmpty
+                              ? purchaseNotesCtrl.text
+                              : null;
 
-                    final sendData = Map<String, dynamic>.from(data);
-                    final sup = selectedSupplier;
-                    if (sup != null) {
-                      sendData['supplier'] = sup.name;
-                      sendData['supplierId'] = sup.id;
-                      sendData['supplierPhone'] = (sup.phone != null && sup.phone!.isNotEmpty)
-                          ? sup.phone
-                          : null;
-                      sendData['supplierEmail'] = (sup.email != null && sup.email!.isNotEmpty)
-                          ? sup.email
-                          : null;
-                    } else {
-                      sendData['supplier'] = null;
-                      sendData['supplierId'] = null;
-                    }
-                    sendData['invoiceNumber'] = invoiceCtrl.text.isNotEmpty ? invoiceCtrl.text : null;
-                    sendData['paymentMethod'] = paymentMethod;
-                    sendData['notes'] = purchaseNotesCtrl.text.isNotEmpty ? purchaseNotesCtrl.text : null;
+                          // The backend now creates the pending purchase record for
+                          // the opening stock itself — no separate purchase call.
+                          final res = await ApiService.createProduct(sendData);
+                          merged = res['merged'] == true;
+                        }
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          final msg = merged
+                              ? 'Stock entry pending approval — product already exists.'
+                              : 'Product created — opening stock pending approval.';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(msg),
+                              backgroundColor: AppTheme.success,
+                            ),
+                          );
+                        }
 
-                    // The backend now creates the pending purchase record for
-                    // the opening stock itself — no separate purchase call.
-                    final res = await ApiService.createProduct(sendData);
-                    merged = res['merged'] == true;
-                  }
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    final msg = merged
-                        ? 'Stock entry pending approval — product already exists.'
-                        : 'Product created — opening stock pending approval.';
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(msg), backgroundColor: AppTheme.success));
-                  }
-
-                  AppEvents.instance.emit('purchases');
-                  AppEvents.instance.emit('products');
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(e.toString()), backgroundColor: AppTheme.danger));
-                  }
-                }
-              },
-              child: Text(isEditing ? 'Update' : 'Create'),
+                        AppEvents.instance.emit('purchases');
+                        AppEvents.instance.emit('products');
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          setDialogState(() => isSubmitting = false);
+                        }
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(e.toString()),
+                              backgroundColor: AppTheme.danger,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSubmitting
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(isEditing ? 'Updating...' : 'Creating...'),
+                      ],
+                    )
+                  : Text(isEditing ? 'Update' : 'Create'),
             ),
           ],
         ),
@@ -996,8 +1311,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String label,
-      {TextInputType? keyboardType, bool readOnly = false, Function(String)? onChanged}) {
+  Widget _field(
+    TextEditingController ctrl,
+    String label, {
+    TextInputType? keyboardType,
+    bool readOnly = false,
+    Function(String)? onChanged,
+  }) {
     return TextField(
       controller: ctrl,
       readOnly: readOnly,
@@ -1023,8 +1343,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Supplier',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+        title: const Text(
+          'Add Supplier',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1035,7 +1357,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
               const SizedBox(height: 12),
               _field(phoneCtrl, 'Phone', keyboardType: TextInputType.phone),
               const SizedBox(height: 12),
-              _field(emailCtrl, 'Email', keyboardType: TextInputType.emailAddress),
+              _field(
+                emailCtrl,
+                'Email',
+                keyboardType: TextInputType.emailAddress,
+              ),
               const SizedBox(height: 12),
               _field(addressCtrl, 'Address'),
             ],
@@ -1043,13 +1369,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          LoadingElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
                     content: Text('Supplier name is required.'),
-                    backgroundColor: AppTheme.danger));
+                    backgroundColor: AppTheme.danger,
+                  ),
+                );
                 return;
               }
               try {
@@ -1070,18 +1401,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 });
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
                     content: Text('Supplier added — now search and select it.'),
-                    backgroundColor: AppTheme.success));
+                    backgroundColor: AppTheme.success,
+                  ),
+                );
                 AppEvents.instance.emit('suppliers');
               } catch (e) {
                 if (ctx.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
                       content: Text(e.toString()),
-                      backgroundColor: AppTheme.danger));
+                      backgroundColor: AppTheme.danger,
+                    ),
+                  );
                 }
               }
             },
+            loadingChild: const Text('Adding...'),
             child: const Text('Add'),
           ),
         ],
@@ -1097,12 +1435,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
         content: Text('Delete "${p.name}"?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete')),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -1112,4 +1452,4 @@ class _ProductsScreenState extends State<ProductsScreen> {
       AppEvents.instance.emit('products');
     }
   }
-}
+}
