@@ -101,9 +101,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('header and cards fit at 320x640 (small phone)', (tester) async {
+  testWidgets('header and table fit at 320x640 (small phone)', (tester) async {
     await _pumpStoreAt(tester, size: const Size(320, 640));
 
+    expect(find.text('ITEM NAME'), findsOneWidget);
     final summary = tester.widget<Text>(find.textContaining('items')).data!;
     expect(summary, contains('• 12 bx •'), reason: 'header must show box total');
     expect(find.text('12 bx, 5 pc'), findsOneWidget,
@@ -112,7 +113,7 @@ void main() {
         reason: 'piece-sold product card unchanged');
   });
 
-  testWidgets('header and cards fit at 360x800 (common phone)', (tester) async {
+  testWidgets('header and table fit at 360x800 (common phone)', (tester) async {
     await _pumpStoreAt(tester, size: const Size(360, 800));
 
     final summary = tester.widget<Text>(find.textContaining('items')).data!;
@@ -120,7 +121,7 @@ void main() {
     expect(find.text('12 bx, 5 pc'), findsOneWidget);
   });
 
-  testWidgets('header and cards fit at 412x915 (large phone)', (tester) async {
+  testWidgets('header and table fit at 412x915 (large phone)', (tester) async {
     await _pumpStoreAt(tester, size: const Size(412, 915));
 
     final summary = tester.widget<Text>(find.textContaining('items')).data!;

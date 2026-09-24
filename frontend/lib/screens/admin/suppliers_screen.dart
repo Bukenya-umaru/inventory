@@ -131,20 +131,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: isSmall
-                          ? ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(12, 4, 12, 80),
-                              itemCount: _suppliers.length,
-                              separatorBuilder: (_, _) => const SizedBox(height: 8),
-                              itemBuilder: (ctx, i) => _supplierCard(_suppliers[i], canManage),
-                            )
-                          : Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                  AppTheme.pad(context, 16), 4,
-                                  AppTheme.pad(context, 16), 12),
-                              child: _suppliersTable(canManage),
-                            ),
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                            AppTheme.pad(context, 16), 4,
+                            AppTheme.pad(context, 16), 12),
+                        child: _suppliersTable(canManage),
+                      ),
                     ),
         ),
       ],
@@ -230,82 +222,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
         CompactTableColumn('Actions', flex: 1, rightAligned: true),
       ],
       rows: rows,
-    );
-  }
-
-  Widget _supplierCard(Supplier s, bool canManage) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showDetails(s),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  s.name.isNotEmpty ? s.name[0].toUpperCase() : '?',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primary),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, 15),
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (s.phone != null && s.phone!.isNotEmpty) s.phone!,
-                        if (s.purchaseCount > 0) '${s.purchaseCount} deliveries',
-                      ].join(' • '),
-                      style: TextStyle(
-                          fontSize: AppTheme.fontSize(context, 12),
-                          color: AppTheme.secondaryText(context)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (s.totalSpent > 0) ...[
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(Currency.formatWhole(s.totalSpent),
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, 13),
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.success)),
-                    Text('total spent',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, 10),
-                            color: AppTheme.secondaryText(context))),
-                  ],
-                ),
-              ],
-              const Icon(Icons.chevron_right, size: 20),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

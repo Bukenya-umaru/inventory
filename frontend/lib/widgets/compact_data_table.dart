@@ -12,7 +12,11 @@ class CompactTableColumn {
   /// Right-align the cell contents (numbers, actions).
   final bool rightAligned;
 
-  const CompactTableColumn(this.label, {this.flex = 1, this.rightAligned = false});
+  const CompactTableColumn(
+    this.label, {
+    this.flex = 1,
+    this.rightAligned = false,
+  });
 }
 
 /// One table row: one cell widget per column, in column order.
@@ -55,28 +59,34 @@ class CompactDataTable extends StatefulWidget {
     Color? color,
     FontWeight weight = FontWeight.w400,
     double size = 12,
-  }) =>
-      Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: AppTheme.fontSize(context, size),
-          fontWeight: weight,
-          color: color ?? AppTheme.textColor(context),
-        ),
-      );
+  }) => Text(
+    text,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: TextStyle(
+      fontSize: AppTheme.fontSize(context, size),
+      fontWeight: weight,
+      color: color ?? AppTheme.textColor(context),
+    ),
+  );
 
   /// Blue accent text — item names / primary links.
   static Widget accent(BuildContext context, String text, {double size = 12}) =>
-      cell(context, text, color: AppTheme.blueBright(context), weight: FontWeight.w600, size: size);
+      cell(
+        context,
+        text,
+        color: AppTheme.blueBright(context),
+        weight: FontWeight.w600,
+        size: size,
+      );
 
   /// Muted secondary text.
   static Widget muted(BuildContext context, String text, {double size = 12}) =>
       cell(context, text, color: AppTheme.secondaryText(context), size: size);
 
   /// Pill status chip, tinted with [color].
-  static Widget chip(BuildContext context, String text, Color color) => Container(
+  static Widget chip(BuildContext context, String text, Color color) =>
+      Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
@@ -95,15 +105,19 @@ class CompactDataTable extends StatefulWidget {
       );
 
   /// A row of small action icon buttons for the trailing column.
-  static Widget actions(List<Widget> children) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            if (i > 0) const SizedBox(width: 6),
-            children[i],
-          ],
+  static Widget actions(List<Widget> children) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerRight,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          children[i],
         ],
-      );
+      ],
+    ),
+  );
 
   /// Small rounded icon action button (30x30) with a tooltip.
   static Widget actionIcon({
@@ -111,24 +125,23 @@ class CompactDataTable extends StatefulWidget {
     required Color color,
     required String tooltip,
     VoidCallback? onTap,
-  }) =>
-      Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: onTap,
+  }) => Tooltip(
+    message: tooltip,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          child: Container(
-            width: 30,
-            height: 30,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
         ),
-      );
+        child: Icon(icon, size: 16, color: color),
+      ),
+    ),
+  );
 
   @override
   State<CompactDataTable> createState() => _CompactDataTableState();
@@ -174,8 +187,12 @@ class _CompactDataTableState extends State<CompactDataTable> {
         children: [
           _header(context),
           for (var i = 0; i < pageRows.length; i++)
-            _row(context, pageRows[i], start + i,
-                isLast: i == pageRows.length - 1),
+            _row(
+              context,
+              pageRows[i],
+              start + i,
+              isLast: i == pageRows.length - 1,
+            ),
           if (pageRows.isEmpty) _empty(context),
           _footer(context, start, end, total, page, totalPages),
         ],
@@ -220,8 +237,12 @@ class _CompactDataTableState extends State<CompactDataTable> {
     );
   }
 
-  Widget _row(BuildContext context, CompactDataRow row, int index,
-      {required bool isLast}) {
+  Widget _row(
+    BuildContext context,
+    CompactDataRow row,
+    int index, {
+    required bool isLast,
+  }) {
     return _HoverRow(
       onTap: row.onTap,
       child: Container(
@@ -232,7 +253,11 @@ class _CompactDataTableState extends State<CompactDataTable> {
               ? null
               : Border(
                   bottom: BorderSide(
-                      color: AppTheme.dividerColor(context).withValues(alpha: 0.7))),
+                    color: AppTheme.dividerColor(
+                      context,
+                    ).withValues(alpha: 0.7),
+                  ),
+                ),
         ),
         child: Row(
           children: [
@@ -289,31 +314,37 @@ class _CompactDataTableState extends State<CompactDataTable> {
   }
 
   Widget _footer(
-      BuildContext context, int start, int end, int total, int page, int totalPages) {
+    BuildContext context,
+    int start,
+    int end,
+    int total,
+    int page,
+    int totalPages,
+  ) {
     final mutedStyle = TextStyle(
       fontSize: AppTheme.fontSize(context, 11),
       color: AppTheme.secondaryText(context),
     );
 
     Widget navBtn(String label, VoidCallback? onTap) => InkWell(
-          onTap: onTap,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.borderColor(context)),
-            ),
-            child: Text(
-              label,
-              style: mutedStyle.copyWith(
-                color: onTap == null
-                    ? AppTheme.secondaryText(context).withValues(alpha: 0.4)
-                    : AppTheme.textColor(context),
-              ),
-            ),
+          border: Border.all(color: AppTheme.borderColor(context)),
+        ),
+        child: Text(
+          label,
+          style: mutedStyle.copyWith(
+            color: onTap == null
+                ? AppTheme.secondaryText(context).withValues(alpha: 0.4)
+                : AppTheme.textColor(context),
           ),
-        );
+        ),
+      ),
+    );
 
     Widget pageBtn(int p) {
       final isCurrent = p == page;
@@ -359,14 +390,22 @@ class _CompactDataTableState extends State<CompactDataTable> {
               style: mutedStyle,
             ),
           ),
-          navBtn('Previous', page > 0 ? () => setState(() => _page = page - 1) : null),
+          navBtn(
+            'Previous',
+            page > 0 ? () => setState(() => _page = page - 1) : null,
+          ),
           const SizedBox(width: 8),
           for (var i = 0; i < pages.length; i++) ...[
             if (i > 0) const SizedBox(width: 4),
             pageBtn(pages[i]),
           ],
           const SizedBox(width: 8),
-          navBtn('Next', page < totalPages - 1 ? () => setState(() => _page = page + 1) : null),
+          navBtn(
+            'Next',
+            page < totalPages - 1
+                ? () => setState(() => _page = page + 1)
+                : null,
+          ),
         ],
       ),
     );
@@ -399,12 +438,16 @@ class _HoverRowState extends State<_HoverRow> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      cursor: widget.onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : MouseCursor.defer,
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          color: _hover ? AppTheme.blueBright(context).withValues(alpha: 0.06) : null,
+          color: _hover
+              ? AppTheme.blueBright(context).withValues(alpha: 0.06)
+              : null,
           child: widget.child,
         ),
       ),

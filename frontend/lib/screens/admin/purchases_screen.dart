@@ -246,9 +246,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   ? _emptyState()
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: MediaQuery.of(context).size.width >= 900
-                          ? _purchasesTable()
-                          : _buildGroupedList(),
+                      child: _purchasesTable(),
                     ),
         ),
       ],
@@ -339,7 +337,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           p.isPending ? AppTheme.warningBright(context) : AppTheme.successBright(context),
         ),
         CompactDataTable.actions(actions),
-      ]));
+      ], onTap: p.editHistory.isNotEmpty ? () => _showEditHistory(p) : null));
     }
 
     return Padding(
@@ -357,204 +355,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           CompactTableColumn('Actions', flex: 2, rightAligned: true),
         ],
         rows: rows,
-      ),
-    );
-  }
-
-  Widget _buildGroupedList() {
-    final purchases = _filteredPurchases();
-    final Map<String, List<Purchase>> grouped = {};
-    for (final purchase in purchases) {
-      final dateKey =
-          DateFormat('yyyy-MM-dd').format(purchase.purchaseDate.toLocal());
-      grouped.putIfAbsent(dateKey, () => []).add(purchase);
-    }
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    final List<Widget> items = [];
-    for (final dateKey in sortedDates) {
-      final dayPurchases = grouped[dateKey]!;
-      final dayCost =
-          dayPurchases.where((p) => p.isApproved).fold(0.0, (s, p) => s + p.totalCost);
-      final date = DateTime.parse(dateKey);
-
-      if (sortedDates.length > 1) {
-        items.add(_dateHeader(date, dayPurchases.length, dayCost));
-      }
-      for (final p in dayPurchases) {
-        items.add(_purchaseCard(p));
-      }
-    }
-    if (items.isEmpty) {
-      items.add(Padding(
-        padding: const EdgeInsets.only(top: 40),
-        child: _emptyState(),
-      ));
-    }
-
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-          AppTheme.pad(context, 16), 0, AppTheme.pad(context, 16), 80),
-      itemCount: items.length,
-      itemBuilder: (ctx, i) => items[i],
-    );
-  }
-
-  Widget _dateHeader(DateTime date, int count, double cost) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final purchaseDay = DateTime(date.year, date.month, date.day);
-    String label;
-    if (purchaseDay == today) {
-      label = 'Today';
-    } else if (purchaseDay == today.subtract(const Duration(days: 1))) {
-      label = 'Yesterday';
-    } else {
-      label = DateFormat('EEEE, MMM d, yyyy').format(date);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, size: 16, color: AppTheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: AppTheme.textColor(context))),
-                Text('$count purchase${count != 1 ? 's' : ''}',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.secondaryText(context))),
-              ],
-            ),
-          ),
-          Text(Currency.formatWhole(cost),
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppTheme.primary)),
-        ],
-      ),
-    );
-  }
-
-  Widget _purchaseCard(Purchase p) {
-    final auth = context.watch<AuthProvider>();
-    final user = auth.user;
-    final canApprove = user != null && (user.isAdmin || user.isDeveloper || user.hasPermission('record_purchases'));
-    final canEdit = p.isPending &&
-        user != null &&
-        (user.isAdmin || user.isDeveloper || user.hasPermission('create_products'));
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      color: p.isPending ? AppTheme.warning.withValues(alpha: 0.05) : null,
-      child: ListTile(
-        onTap: p.editHistory.isNotEmpty ? () => _showEditHistory(p) : null,
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(p.productName ?? 'Unknown',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: AppTheme.fontSize(context, 14))),
-            ),
-            _statusChip(p),
-          ],
-        ),
-        subtitle: Text(
-          'Qty: ${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'} • ${Currency.format(p.unitCost)} each'
-          '${p.supplier != null && p.supplier!.isNotEmpty ? ' • ${p.supplier!}' : ''}'
-          '${p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty ? ' • INV: ${p.invoiceNumber}' : ''}'
-          '${p.recordedByName != null ? ' • by ${p.recordedByName}' : ''}'
-          '${p.editHistory.isNotEmpty ? ' • edited ×${p.editHistory.length}' : ''}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
-        leading: Icon(
-            p.isPending ? Icons.hourglass_top : Icons.local_shipping,
-            size: 20,
-            color: p.isPending ? AppTheme.warning : AppTheme.primary),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(Currency.formatWhole(p.totalCost),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: AppTheme.fontSize(context, 13))),
-                Text(_paymentLabel(p.paymentMethod),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: AppTheme.fontSize(context, 11),
-                        color: AppTheme.secondaryText(context))),
-              ],
-            ),
-            if (canEdit) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.edit_outlined,
-                    size: 18, color: AppTheme.blueBright(context)),
-                tooltip: 'Edit before approval',
-                onPressed: () => _showEditDialog(p),
-              ),
-            ],
-            if (canApprove && p.isPending) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.check_circle_outline,
-                    size: 18, color: AppTheme.successBright(context)),
-                tooltip: 'Approve & apply stock',
-                onPressed: () => _approvePurchase(p),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _statusChip(Purchase p) {
-    final isPending = p.isPending;
-    final color = isPending ? AppTheme.warning : AppTheme.success;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        isPending ? 'Pending' : 'Approved',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
       ),
     );
   }
@@ -799,23 +599,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
         ],
       ),
     );
-  }
-
-  String _paymentLabel(String? method) {
-    switch (method) {
-      case 'cash':
-        return 'Cash';
-      case 'credit':
-        return 'Credit';
-      case 'bank_transfer':
-        return 'Bank Transfer';
-      case 'mobile_money':
-        return 'Mobile Money';
-      case 'other':
-        return 'Other';
-      default:
-        return 'Cash';
-    }
   }
 
   Widget _filterBtn(

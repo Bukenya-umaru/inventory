@@ -237,9 +237,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: MediaQuery.of(context).size.width >= 900
-                          ? _salesTable()
-                          : _buildGroupedList(),
+                      child: _salesTable(),
                     ),
         ),
       ],
@@ -278,115 +276,6 @@ class _SalesScreenState extends State<SalesScreen> {
           CompactTableColumn('Recorded By', flex: 2),
         ],
         rows: rows,
-      ),
-    );
-  }
-
-  Widget _buildGroupedList() {
-    final Map<String, List<Sale>> grouped = {};
-    for (final sale in _sales) {
-      final dateKey = DateFormat('yyyy-MM-dd').format(sale.saleDate.toLocal());
-      grouped.putIfAbsent(dateKey, () => []).add(sale);
-    }
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    final List<Widget> items = [];
-    for (final dateKey in sortedDates) {
-      final daySales = grouped[dateKey]!;
-      final dayRevenue = daySales.fold(0.0, (s, sale) => s + sale.totalAmount);
-      final dayProfit = daySales.fold(0.0, (s, sale) => s + sale.profit);
-      final date = DateTime.parse(dateKey);
-
-      if (sortedDates.length > 1) {
-        items.add(_dateHeader(date, daySales.length, dayRevenue, dayProfit));
-      }
-      for (final s in daySales) {
-        items.add(_saleCard(s));
-      }
-    }
-
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        AppTheme.pad(context, 16), 0,
-        AppTheme.pad(context, 16), 80),
-      itemCount: items.length,
-      itemBuilder: (ctx, i) => items[i],
-    );
-  }
-
-  Widget _dateHeader(DateTime date, int count, double revenue, double profit) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final saleDay = DateTime(date.year, date.month, date.day);
-    String label;
-    if (saleDay == today) {
-      label = 'Today';
-    } else if (saleDay == today.subtract(const Duration(days: 1))) {
-      label = 'Yesterday';
-    } else {
-      label = DateFormat('EEEE, MMM d, yyyy').format(date);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, size: 16, color: AppTheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textColor(context))),
-                Text('$count sale${count != 1 ? 's' : ''}',
-                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(Currency.formatWhole(revenue),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primary)),
-              Text('Profit: ${Currency.formatWhole(profit)}',
-                style: TextStyle(fontSize: 11, color: AppTheme.success)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _saleCard(Sale s) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
-        title: Text(s.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
-        subtitle: Text(
-          'Qty: ${s.quantity} ${s.saleUnit == 'box' ? 'box' : 'pc'} • ${Currency.format(s.unitPrice)} each'
-          '${s.customerName != null ? ' • ${s.customerName}' : ''}',
-          maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
-        leading: Icon(Icons.shopping_cart, size: 20, color: AppTheme.success),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(Currency.formatWhole(s.totalAmount), maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppTheme.fontSize(context, 13))),
-            Text('Profit: ${Currency.formatWhole(s.profit)}', maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: AppTheme.success)),
-          ],
-        ),
       ),
     );
   }

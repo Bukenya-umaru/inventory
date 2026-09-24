@@ -136,99 +136,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: MediaQuery.of(context).size.width >= 900
-                      ? _employeesTable()
-                      : ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-                          itemCount: _employees.length,
-                          itemBuilder: (ctx, i) => _employeeCard(_employees[i]),
-                        ),
+                  child: _employeesTable(),
                 ),
     );
   }
 
-  /// Phone-width card view (kept for small screens).
-  Widget _employeeCard(User e) {
-    final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppTheme.success.withValues(alpha: 0.1),
-                  child: Text(e.name[0].toUpperCase(),
-                    style: const TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(e.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
-                      Text('${e.email} • ${e.permissions.length} permissions',
-                        style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.vpn_key, size: 18),
-                  tooltip: 'Manage Permissions',
-                  onPressed: () => _showPermissions(e),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.danger),
-                  onPressed: () => _deleteEmployee(e),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
-                          size: 16, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(isRevealed ? _revealedPassword! : '••••••••',
-                            style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
-                              color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
-                        ),
-                        if (isRevealed)
-                          Text('$_countdown s',
-                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: isRevealed ? null : () => _viewPassword(e.id),
-                  icon: const Icon(Icons.key, size: 16),
-                  label: const Text('Show'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Compact table view for wide screens.
+  /// Compact table view.
   Widget _employeesTable() {
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _employees.length; i++) {

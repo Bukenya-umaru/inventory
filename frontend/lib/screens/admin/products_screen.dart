@@ -87,7 +87,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isSmall = size.height < 600 || size.width < 400;
-    final isWide = size.width >= 900;
 
     return Column(
       children: [
@@ -234,9 +233,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: isWide
-                          ? _productTable()
-                          : _listView(isSmall),
+                      child: _productTable(),
                     ),
         ),
       ],
@@ -362,189 +359,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         rows: rows,
       ),
     );
-  }
-
-  Widget _listView(bool isSmall) {
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-          isSmall ? 8 : AppTheme.pad(context, 12),
-          isSmall ? 4 : AppTheme.pad(context, 8),
-          isSmall ? 8 : AppTheme.pad(context, 12),
-          80),
-      itemCount: _products.length,
-      itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
-    );
-  }
-
-  Widget _productCard(Product p, bool isSmall) {
-    final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
-    final out = p.totalStockPieces == 0;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showForm(product: p),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 10, vertical: isSmall ? 6 : 8),
-          child: Row(
-            children: [
-
-              Container(
-                width: isSmall ? 32 : 36,
-                height: isSmall ? 32 : 36,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: out
-                        ? [Colors.red.shade400, Colors.red.shade600]
-                        : isLow
-                            ? [Colors.orange.shade300, Colors.orange.shade500]
-                            : [AppTheme.success, Color(0xFF0D9E42)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Icon(
-                    _categoryIcon(p.categoryName),
-                    color: Colors.white,
-                    size: isSmall ? 16 : 18,
-                  ),
-                ),
-              ),
-              SizedBox(width: isSmall ? 8 : 10),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: AppTheme.fontSize(context, isSmall ? 12 : 13))),
-                    const SizedBox(height: 2),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (p.categoryName != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(p.categoryName!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: AppTheme.fontSize(context, 9),
-                                    color: AppTheme.primaryBright(context),
-                                    fontWeight: FontWeight.w500)),
-                          ),
-                        Text('${Currency.format(p.sellingPrice)}/pc',
-                            style: TextStyle(
-                                fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryBright(context))),
-                        if (p.sellsAsBox && p.boxSellingPrice != null)
-                          Text('${Currency.format(p.boxSellingPrice!)}/box',
-                              style: TextStyle(
-                                  fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.blueBright(context))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: out
-                          ? AppTheme.danger.withValues(alpha: 0.1)
-                          : isLow
-                              ? AppTheme.warning.withValues(alpha: 0.1)
-                              : AppTheme.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      out
-                          ? 'Out'
-                          : p.sellsAsBox
-                              ? '${p.stockBoxes} bx${p.currentStock > 0 ? ', ${p.currentStock} pc' : ''}'
-                              : '${p.totalStockPieces} pc',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: AppTheme.fontSize(context, isSmall ? 10 : 11),
-                          color: out
-                              ? AppTheme.dangerBright(context)
-                              : isLow
-                                  ? AppTheme.warningBright(context)
-                                  : AppTheme.successBright(context)),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _actionBtn(Icons.add_circle_outline, () => _showRestockDialog(p), AppTheme.successBright(context), isSmall),
-                      const SizedBox(width: 3),
-                      _actionBtn(Icons.history, () => _showPriceHistory(p), AppTheme.warningBright(context), isSmall),
-                      const SizedBox(width: 3),
-                      _actionBtn(Icons.edit_outlined, () => _showForm(product: p), AppTheme.blueBright(context), isSmall),
-                      const SizedBox(width: 3),
-                      _actionBtn(Icons.delete_outline, () => _delete(p), AppTheme.dangerBright(context), isSmall),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _actionBtn(IconData icon, VoidCallback onTap, Color color, bool isSmall) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: EdgeInsets.all(isSmall ? 3 : 4),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(icon, size: isSmall ? 13 : 14, color: color),
-      ),
-    );
-  }
-
-  IconData _categoryIcon(String? category) {
-    if (category == null) return Icons.inventory_2;
-    final lower = category.toLowerCase();
-    if (lower.contains('electronic')) return Icons.devices;
-    if (lower.contains('cloth') || lower.contains('fashion')) return Icons.checkroom;
-    if (lower.contains('food') || lower.contains('beverage')) return Icons.restaurant;
-    if (lower.contains('furniture')) return Icons.chair;
-    if (lower.contains('book')) return Icons.menu_book;
-    if (lower.contains('health') || lower.contains('beauty')) return Icons.spa;
-    if (lower.contains('sport')) return Icons.sports_basketball;
-    if (lower.contains('toy')) return Icons.toys;
-    if (lower.contains('auto') || lower.contains('car')) return Icons.directions_car;
-    return Icons.inventory_2;
   }
 
   Product? _findDuplicate(String name) {

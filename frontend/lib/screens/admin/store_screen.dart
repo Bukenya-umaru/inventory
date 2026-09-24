@@ -6,6 +6,7 @@ import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
+import '../../widgets/compact_data_table.dart';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -18,7 +19,7 @@ class _StoreScreenState extends State<StoreScreen> {
   List<Category> _categories = [];
   bool _loading = true;
   String _search = '';
-  String? _selectedCategoryId; 
+  String? _selectedCategoryId;
   Timer? _searchTimer;
 
   @override
@@ -48,17 +49,17 @@ class _StoreScreenState extends State<StoreScreen> {
     if (!silent) setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        ApiService.getProducts(
-          search: _search.isNotEmpty ? _search : null,
-        ),
+        ApiService.getProducts(search: _search.isNotEmpty ? _search : null),
         ApiService.getCategories(),
       ]);
       final res = results[0];
       final catRes = results[1];
-      final list =
-          (res['products'] as List).map((p) => Product.fromJson(p)).toList();
-      final cats =
-          (catRes['categories'] as List).map((c) => Category.fromJson(c)).toList();
+      final list = (res['products'] as List)
+          .map((p) => Product.fromJson(p))
+          .toList();
+      final cats = (catRes['categories'] as List)
+          .map((c) => Category.fromJson(c))
+          .toList();
       setState(() {
         _products = list;
         _categories = cats;
@@ -84,32 +85,36 @@ class _StoreScreenState extends State<StoreScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isSmall = size.height < 600 || size.width < 400;
-    final isWide = size.width >= 900;
 
     return Column(
       children: [
-
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 12 : AppTheme.pad(context, 16),
-              isSmall ? 4 : AppTheme.pad(context, 4)),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 12 : AppTheme.pad(context, 16),
+            isSmall ? 4 : AppTheme.pad(context, 4),
+          ),
           child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Store',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
-                            fontWeight: FontWeight.bold)),
                     Text(
-                        '${_filtered.length} items • $_totalBoxes bx • $_totalStock pcs • ${Currency.formatWhole(_totalValue)}',
-                        style: TextStyle(
-                            fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
-                            color: AppTheme.secondaryText(context))),
+                      'Store',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 18 : 22),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${_filtered.length} items • $_totalBoxes bx • $_totalStock pcs • ${Currency.formatWhole(_totalValue)}',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                        color: AppTheme.secondaryText(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -119,16 +124,19 @@ class _StoreScreenState extends State<StoreScreen> {
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              isSmall ? 6 : AppTheme.pad(context, 8),
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              0),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            isSmall ? 6 : AppTheme.pad(context, 8),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            0,
+          ),
           child: TextField(
             decoration: InputDecoration(
               hintText: 'Search store...',
               prefixIcon: const Icon(Icons.search, size: 20),
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12, vertical: isSmall ? 10 : 14),
+                horizontal: 12,
+                vertical: isSmall ? 10 : 14,
+              ),
               filled: true,
               fillColor: Theme.of(context).cardColor,
               border: OutlineInputBorder(
@@ -136,21 +144,27 @@ class _StoreScreenState extends State<StoreScreen> {
                 borderSide: BorderSide.none,
               ),
             ),
-            style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15)),
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+            ),
             onChanged: (v) {
               _search = v;
               _searchTimer?.cancel();
-              _searchTimer = Timer(const Duration(milliseconds: 350), () => _load());
+              _searchTimer = Timer(
+                const Duration(milliseconds: 350),
+                () => _load(),
+              );
             },
           ),
         ),
 
         Padding(
           padding: EdgeInsets.fromLTRB(
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              isSmall ? 6 : AppTheme.pad(context, 8),
-              isSmall ? 10 : AppTheme.pad(context, 16),
-              0),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            isSmall ? 6 : AppTheme.pad(context, 8),
+            isSmall ? 10 : AppTheme.pad(context, 16),
+            0,
+          ),
           child: SizedBox(
             height: 38,
             child: ListView(
@@ -169,22 +183,19 @@ class _StoreScreenState extends State<StoreScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _filtered.isEmpty
-                  ? RefreshIndicator(
-                      onRefresh: _load,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) => ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: [
-                            SizedBox(height: constraints.maxHeight * 0.35),
-                            _emptyState(),
-                          ],
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: isWide ? _wideGrid(isSmall) : _listView(isSmall),
+              ? RefreshIndicator(
+                  onRefresh: _load,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(height: constraints.maxHeight * 0.35),
+                        _emptyState(),
+                      ],
                     ),
+                  ),
+                )
+              : RefreshIndicator(onRefresh: _load, child: _storeTable()),
         ),
       ],
     );
@@ -200,8 +211,9 @@ class _StoreScreenState extends State<StoreScreen> {
         selectedColor: AppTheme.primary,
         backgroundColor: Theme.of(context).cardColor,
         labelStyle: TextStyle(
-            color: isActive ? Colors.white : AppTheme.secondaryText(context),
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400),
+          color: isActive ? Colors.white : AppTheme.secondaryText(context),
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+        ),
         side: BorderSide(
           color: isActive
               ? AppTheme.primary
@@ -225,177 +237,97 @@ class _StoreScreenState extends State<StoreScreen> {
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.storefront_outlined,
-                size: 56, color: AppTheme.primary.withValues(alpha: 0.4)),
+            child: Icon(
+              Icons.storefront_outlined,
+              size: 56,
+              color: AppTheme.primary.withValues(alpha: 0.4),
+            ),
           ),
           const SizedBox(height: 16),
-          Text('No products in store',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 18),
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'No products in store',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 18),
+              fontWeight: FontWeight.w600,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('Add products from the Stock section',
-              style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 13),
-                  color: AppTheme.secondaryText(context))),
+          Text(
+            'Add products from the Stock section',
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, 13),
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _wideGrid(bool isSmall) {
-    return GridView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 2.8,
-      ),
-      itemCount: _filtered.length,
-      itemBuilder: (ctx, i) => _productCard(_filtered[i], isSmall),
-    );
-  }
+  Widget _storeTable() {
+    final rows = <CompactDataRow>[];
 
-  Widget _listView(bool isSmall) {
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-          isSmall ? 8 : AppTheme.pad(context, 12),
-          isSmall ? 4 : AppTheme.pad(context, 8),
-          isSmall ? 8 : AppTheme.pad(context, 12),
-          80),
-      itemCount: _filtered.length,
-      itemBuilder: (ctx, i) => _productCard(_filtered[i], isSmall),
-    );
-  }
+    for (final product in _filtered) {
+      final isLow =
+          product.totalStockPieces > 0 &&
+          product.totalStockPieces <= product.minimumStock;
+      final out = product.totalStockPieces == 0;
+      final stock = product.sellsAsBox
+          ? '${product.stockBoxes} bx${product.currentStock > 0 ? ', ${product.currentStock} pc' : ''}'
+          : '${product.totalStockPieces} pcs';
 
-  Widget _productCard(Product p, bool isSmall) {
-    final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
-    final out = p.totalStockPieces == 0;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _showDetails(p),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: isSmall ? 10 : 12, vertical: isSmall ? 8 : 10),
-          child: Row(
-            children: [
-
-              Container(
-                width: isSmall ? 36 : 40,
-                height: isSmall ? 36 : 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: out
-                        ? [Colors.red.shade400, Colors.red.shade600]
-                        : isLow
-                            ? [Colors.orange.shade300, Colors.orange.shade500]
-                            : [AppTheme.success, const Color(0xFF0D9E42)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Icon(
-                    _categoryIcon(p.categoryName),
-                    color: Colors.white,
-                    size: isSmall ? 17 : 19,
-                  ),
-                ),
-              ),
-              SizedBox(width: isSmall ? 10 : 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14))),
-                    const SizedBox(height: 3),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (p.categoryName != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(p.categoryName!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: AppTheme.fontSize(context, 10),
-                                    color: AppTheme.primaryBright(context),
-                                    fontWeight: FontWeight.w500)),
-                          ),
-                        Text('${Currency.format(p.sellingPrice)}/pc',
-                            style: TextStyle(
-                                fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryBright(context))),
-                        if (p.sellsAsBox && p.boxSellingPrice != null)
-                          Text('${Currency.format(p.boxSellingPrice!)}/box',
-                              style: TextStyle(
-                                  fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.blueBright(context))),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: out
-                      ? AppTheme.danger.withValues(alpha: 0.1)
-                      : isLow
-                          ? AppTheme.warning.withValues(alpha: 0.1)
-                          : AppTheme.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  out
-                      ? 'Out of Stock'
-                      : p.sellsAsBox
-                          ? '${p.stockBoxes} bx${p.currentStock > 0 ? ', ${p.currentStock} pc' : ''}'
-                          : '${p.totalStockPieces} pcs',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: AppTheme.fontSize(context, isSmall ? 11 : 12),
-                      color: out
-                          ? AppTheme.dangerBright(context)
-                          : isLow
-                              ? AppTheme.warningBright(context)
-                              : AppTheme.successBright(context)),
-                ),
-              ),
-            ],
+      rows.add(
+        CompactDataRow([
+          CompactDataTable.accent(context, product.name),
+          CompactDataTable.muted(context, product.categoryName ?? '—'),
+          CompactDataTable.cell(context, stock),
+          CompactDataTable.cell(
+            context,
+            '${Currency.format(product.sellingPrice)}/pc',
           ),
-        ),
+          CompactDataTable.cell(
+            context,
+            product.sellsAsBox && product.boxSellingPrice != null
+                ? '${Currency.format(product.boxSellingPrice!)}/box'
+                : '—',
+          ),
+          CompactDataTable.chip(
+            context,
+            out
+                ? 'Out of stock'
+                : isLow
+                ? 'Low stock'
+                : 'In stock',
+            out
+                ? AppTheme.dangerBright(context)
+                : isLow
+                ? AppTheme.warningBright(context)
+                : AppTheme.successBright(context),
+          ),
+        ], onTap: () => _showDetails(product)),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Item Name', flex: 3),
+          CompactTableColumn('Category', flex: 2),
+          CompactTableColumn('Stock', flex: 2),
+          CompactTableColumn('Piece Price', flex: 2),
+          CompactTableColumn('Box Price', flex: 2),
+          CompactTableColumn('Status', flex: 2),
+        ],
+        rows: rows,
       ),
     );
   }
 
   void _showDetails(Product p) {
-    final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
+    final isLow =
+        p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
     final out = p.totalStockPieces == 0;
     showModalBottomSheet(
       context: context,
@@ -419,20 +351,36 @@ class _StoreScreenState extends State<StoreScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(p.name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              p.name,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             if (p.categoryName != null) ...[
               const SizedBox(height: 4),
-              Text(p.categoryName!,
-                  style: TextStyle(fontSize: 13, color: AppTheme.secondaryText(context))),
+              Text(
+                p.categoryName!,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.secondaryText(context),
+                ),
+              ),
             ],
             const SizedBox(height: 16),
-            _detailRow('Selling Price', '${Currency.format(p.sellingPrice)}/pc'),
+            _detailRow(
+              'Selling Price',
+              '${Currency.format(p.sellingPrice)}/pc',
+            ),
             _detailRow('Cost Price', '${Currency.format(p.costPrice)}/pc'),
             if (p.sellsAsBox && p.boxSellingPrice != null)
-              _detailRow('Box Selling Price', '${Currency.format(p.boxSellingPrice!)}/box'),
+              _detailRow(
+                'Box Selling Price',
+                '${Currency.format(p.boxSellingPrice!)}/box',
+              ),
             if (p.sellsAsBox && p.boxCostPrice != null)
-              _detailRow('Box Cost Price', '${Currency.format(p.boxCostPrice!)}/box'),
+              _detailRow(
+                'Box Cost Price',
+                '${Currency.format(p.boxCostPrice!)}/box',
+              ),
             const Divider(height: 20),
             _detailRow('Total Stock', '${p.totalStockPieces} pcs'),
             if (p.sellsAsBox) ...[
@@ -448,19 +396,24 @@ class _StoreScreenState extends State<StoreScreen> {
                 color: out
                     ? AppTheme.danger.withValues(alpha: 0.1)
                     : isLow
-                        ? AppTheme.warning.withValues(alpha: 0.1)
-                        : AppTheme.success.withValues(alpha: 0.1),
+                    ? AppTheme.warning.withValues(alpha: 0.1)
+                    : AppTheme.success.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                out ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock',
+                out
+                    ? 'Out of Stock'
+                    : isLow
+                    ? 'Low Stock'
+                    : 'In Stock',
                 style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: out
-                        ? AppTheme.dangerBright(context)
-                        : isLow
-                            ? AppTheme.warningBright(context)
-                            : AppTheme.successBright(context)),
+                  fontWeight: FontWeight.w600,
+                  color: out
+                      ? AppTheme.dangerBright(context)
+                      : isLow
+                      ? AppTheme.warningBright(context)
+                      : AppTheme.successBright(context),
+                ),
               ),
             ),
           ],
@@ -475,29 +428,19 @@ class _StoreScreenState extends State<StoreScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 13, color: AppTheme.secondaryText(context))),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.secondaryText(context),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
   }
-
-  IconData _categoryIcon(String? category) {
-    if (category == null) return Icons.storefront;
-    final lower = category.toLowerCase();
-    if (lower.contains('electronic')) return Icons.devices;
-    if (lower.contains('cloth') || lower.contains('fashion')) return Icons.checkroom;
-    if (lower.contains('food') || lower.contains('beverage')) return Icons.restaurant;
-    if (lower.contains('furniture')) return Icons.chair;
-    if (lower.contains('book')) return Icons.menu_book;
-    if (lower.contains('health') || lower.contains('beauty')) return Icons.spa;
-    if (lower.contains('sport')) return Icons.sports_basketball;
-    if (lower.contains('toy')) return Icons.toys;
-    if (lower.contains('auto') || lower.contains('car')) return Icons.directions_car;
-    return Icons.storefront;
-  }
-}
+}

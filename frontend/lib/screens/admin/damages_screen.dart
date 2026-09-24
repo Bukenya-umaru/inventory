@@ -235,9 +235,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: MediaQuery.of(context).size.width >= 900
-                          ? _damagesTable()
-                          : _buildGroupedList(),
+                      child: _damagesTable(),
                     ),
         ),
       ],
@@ -272,104 +270,6 @@ class _DamagesScreenState extends State<DamagesScreen> {
           CompactTableColumn('Reported By', flex: 2),
         ],
         rows: rows,
-      ),
-    );
-  }
-
-  Widget _buildGroupedList() {
-    final Map<String, List<Damage>> grouped = {};
-    for (final damage in _damages) {
-      final dateKey = DateFormat('yyyy-MM-dd').format(damage.reportDate.toLocal());
-      grouped.putIfAbsent(dateKey, () => []).add(damage);
-    }
-    final sortedDates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    final List<Widget> items = [];
-    for (final dateKey in sortedDates) {
-      final dayDamages = grouped[dateKey]!;
-      final dayLoss = dayDamages.fold(0.0, (s, d) => s + d.estimatedLoss);
-      final date = DateTime.parse(dateKey);
-
-      if (sortedDates.length > 1) {
-        items.add(_dateHeader(date, dayDamages.length, dayLoss));
-      }
-      for (final d in dayDamages) {
-        items.add(_damageCard(d));
-      }
-    }
-
-    return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        AppTheme.pad(context, 16), 0,
-        AppTheme.pad(context, 16), 80),
-      itemCount: items.length,
-      itemBuilder: (ctx, i) => items[i],
-    );
-  }
-
-  Widget _dateHeader(DateTime date, int count, double loss) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final saleDay = DateTime(date.year, date.month, date.day);
-    String label;
-    if (saleDay == today) {
-      label = 'Today';
-    } else if (saleDay == today.subtract(const Duration(days: 1))) {
-      label = 'Yesterday';
-    } else {
-      label = DateFormat('EEEE, MMM d, yyyy').format(date);
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12, bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, size: 16, color: AppTheme.danger),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppTheme.textColor(context))),
-                Text('$count damage${count != 1 ? 's' : ''}',
-                  style: TextStyle(fontSize: 11, color: AppTheme.secondaryText(context))),
-              ],
-            ),
-          ),
-          Text('Loss: -${Currency.formatWhole(loss)}',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.danger)),
-        ],
-      ),
-    );
-  }
-
-  Widget _damageCard(Damage d) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
-        leading: const Icon(Icons.warning_amber, color: AppTheme.warning),
-        title: Text(d.productName ?? 'Unknown', maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 14))),
-        subtitle: Text('${d.damageUnit == 'box' ? 'Box' : 'Piece'}: ${d.reason}', maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Qty: ${d.quantity}', maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 13))),
-            Text('-${Currency.formatWhole(d.estimatedLoss)}', maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.danger)),
-          ],
-        ),
       ),
     );
   }
