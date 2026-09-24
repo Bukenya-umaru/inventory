@@ -7,6 +7,7 @@ import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../models/supplier.dart';
 import '../../widgets/supplier_picker.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -234,7 +235,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: isWide
-                          ? _wideGrid(isSmall)
+                          ? _productTable()
                           : _listView(isSmall),
                     ),
         ),
@@ -295,18 +296,71 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  Widget _wideGrid(bool isSmall) {
-    return GridView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 3.0,
+  /// Compact table view for wide screens.
+  Widget _productTable() {
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < _products.length; i++) {
+      final p = _products[i];
+      final isLow = p.totalStockPieces > 0 && p.totalStockPieces <= p.minimumStock;
+      final out = p.totalStockPieces == 0;
+
+      rows.add(CompactDataRow([
+        CompactDataTable.accent(context, p.name),
+        CompactDataTable.cell(context, p.categoryName ?? '—'),
+        CompactDataTable.cell(context, '${p.totalStockPieces}'),
+        CompactDataTable.cell(context, p.sku ?? '—'),
+        CompactDataTable.cell(context, Currency.format(p.costPrice)),
+        CompactDataTable.cell(context, Currency.format(p.sellingPrice)),
+        CompactDataTable.chip(
+          context,
+          out ? 'Out of stock' : isLow ? 'Low stock' : 'In stock',
+          out ? AppTheme.dangerBright(context) : isLow ? AppTheme.warningBright(context) : AppTheme.successBright(context),
+        ),
+        CompactDataTable.actions([
+          CompactDataTable.actionIcon(
+            icon: Icons.add_circle_outline,
+            color: AppTheme.successBright(context),
+            tooltip: 'Restock',
+            onTap: () => _showRestockDialog(p),
+          ),
+          CompactDataTable.actionIcon(
+            icon: Icons.history,
+            color: AppTheme.warningBright(context),
+            tooltip: 'Price history',
+            onTap: () => _showPriceHistory(p),
+          ),
+          CompactDataTable.actionIcon(
+            icon: Icons.edit_outlined,
+            color: AppTheme.blueBright(context),
+            tooltip: 'Edit',
+            onTap: () => _showForm(product: p),
+          ),
+          CompactDataTable.actionIcon(
+            icon: Icons.delete_outline,
+            color: AppTheme.dangerBright(context),
+            tooltip: 'Delete',
+            onTap: () => _delete(p),
+          ),
+        ],),
+      ]));
+    }
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(AppTheme.pad(context, 12), 4,
+          AppTheme.pad(context, 12), 12),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Item Name', flex: 3),
+          CompactTableColumn('Category', flex: 2),
+          CompactTableColumn('Qty', flex: 1),
+          CompactTableColumn('SKU', flex: 2),
+          CompactTableColumn('Cost Price', flex: 2),
+          CompactTableColumn('Selling Price', flex: 2),
+          CompactTableColumn('Status', flex: 2),
+          CompactTableColumn('Actions', flex: 2, rightAligned: true),
+        ],
+        rows: rows,
       ),
-      itemCount: _products.length,
-      itemBuilder: (ctx, i) => _productCard(_products[i], isSmall),
     );
   }
 

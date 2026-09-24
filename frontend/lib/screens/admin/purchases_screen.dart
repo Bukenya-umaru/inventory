@@ -7,6 +7,7 @@ import '../../services/auth_provider.dart';
 import '../../models/purchase.dart';
 import '../../models/supplier.dart';
 import '../../widgets/supplier_picker.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -245,7 +246,9 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   ? _emptyState()
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: _buildGroupedList(),
+                      child: MediaQuery.of(context).size.width >= 900
+                          ? _purchasesTable()
+                          : _buildGroupedList(),
                     ),
         ),
       ],
@@ -286,6 +289,74 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
                   fontSize: AppTheme.fontSize(context, 13),
                   color: AppTheme.secondaryText(context))),
         ],
+      ),
+    );
+  }
+
+  /// Compact table view for wide screens.
+  Widget _purchasesTable() {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
+    final canApprove = user != null &&
+        (user.isAdmin || user.isDeveloper || user.hasPermission('record_purchases'));
+    final canEdit = user != null &&
+        (user.isAdmin || user.isDeveloper || user.hasPermission('create_products'));
+
+    final purchases = _filteredPurchases();
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < purchases.length; i++) {
+      final p = purchases[i];
+      final actions = <Widget>[
+        if (canEdit && p.isPending)
+          CompactDataTable.actionIcon(
+            icon: Icons.edit_outlined,
+            color: AppTheme.blueBright(context),
+            tooltip: 'Edit before approval',
+            onTap: () => _showEditDialog(p),
+          ),
+        if (canApprove && p.isPending)
+          CompactDataTable.actionIcon(
+            icon: Icons.check_circle_outline,
+            color: AppTheme.successBright(context),
+            tooltip: 'Approve & apply stock',
+            onTap: () => _approvePurchase(p),
+          ),
+      ];
+
+      rows.add(CompactDataRow([
+        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(p.purchaseDate.toLocal())),
+        CompactDataTable.accent(context, p.productName ?? 'Unknown'),
+        CompactDataTable.cell(context, '${p.quantity} ${p.purchaseUnit == 'box' ? 'box' : 'pc'}'),
+        CompactDataTable.cell(context, Currency.format(p.unitCost)),
+        CompactDataTable.cell(context, Currency.formatWhole(p.totalCost), weight: FontWeight.w600),
+        CompactDataTable.muted(context,
+            (p.supplier != null && p.supplier!.isNotEmpty) ? p.supplier! : '—'),
+        CompactDataTable.muted(context,
+            (p.invoiceNumber != null && p.invoiceNumber!.isNotEmpty) ? 'INV: ${p.invoiceNumber}' : '—'),
+        CompactDataTable.chip(
+          context,
+          p.isPending ? 'Pending' : 'Approved',
+          p.isPending ? AppTheme.warningBright(context) : AppTheme.successBright(context),
+        ),
+        CompactDataTable.actions(actions),
+      ]));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Date', flex: 2),
+          CompactTableColumn('Product', flex: 3),
+          CompactTableColumn('Qty', flex: 1),
+          CompactTableColumn('Unit Cost', flex: 2),
+          CompactTableColumn('Total', flex: 2),
+          CompactTableColumn('Supplier', flex: 2),
+          CompactTableColumn('Invoice', flex: 2),
+          CompactTableColumn('Status', flex: 2),
+          CompactTableColumn('Actions', flex: 2, rightAligned: true),
+        ],
+        rows: rows,
       ),
     );
   }

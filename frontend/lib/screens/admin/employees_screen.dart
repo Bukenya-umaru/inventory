@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab;
 import '../../widgets/download_app_fab.dart' show DownloadAppFab;
 
@@ -135,91 +136,188 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(AppTheme.pad(context, 16)),
-                    itemCount: _employees.length,
-                    itemBuilder: (ctx, i) {
-                      final e = _employees[i];
-                      final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: EdgeInsets.all(AppTheme.pad(context, 12)),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: AppTheme.success.withValues(alpha: 0.1),
-                                    child: Text(e.name[0].toUpperCase(),
-                                      style: const TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold)),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(e.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
-                                        Text('${e.email} • ${e.permissions.length} permissions',
-                                          style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.vpn_key, size: 18),
-                                    tooltip: 'Manage Permissions',
-                                    onPressed: () => _showPermissions(e),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.danger),
-                                    onPressed: () => _deleteEmployee(e),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
-                                            size: 16, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(isRevealed ? _revealedPassword! : '••••••••',
-                                              style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
-                                                color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
-                                          ),
-                                          if (isRevealed)
-                                            Text('$_countdown s',
-                                              style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton.icon(
-                                    onPressed: isRevealed ? null : () => _viewPassword(e.id),
-                                    icon: const Icon(Icons.key, size: 16),
-                                    label: const Text('Show'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                  child: MediaQuery.of(context).size.width >= 900
+                      ? _employeesTable()
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+                          itemCount: _employees.length,
+                          itemBuilder: (ctx, i) => _employeeCard(_employees[i]),
                         ),
-                      );
-                    },
+                ),
+    );
+  }
+
+  /// Phone-width card view (kept for small screens).
+  Widget _employeeCard(User e) {
+    final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: EdgeInsets.all(AppTheme.pad(context, 12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppTheme.success.withValues(alpha: 0.1),
+                  child: Text(e.name[0].toUpperCase(),
+                    style: const TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(e.name, style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppTheme.fontSize(context, 15))),
+                      Text('${e.email} • ${e.permissions.length} permissions',
+                        style: TextStyle(fontSize: AppTheme.fontSize(context, 13), color: AppTheme.secondaryText(context))),
+                    ],
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.vpn_key, size: 18),
+                  tooltip: 'Manage Permissions',
+                  onPressed: () => _showPermissions(e),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.danger),
+                  onPressed: () => _deleteEmployee(e),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
+                          size: 16, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(isRevealed ? _revealedPassword! : '••••••••',
+                            style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w600,
+                              color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
+                        ),
+                        if (isRevealed)
+                          Text('$_countdown s',
+                            style: TextStyle(fontSize: AppTheme.fontSize(context, 12), color: AppTheme.warning, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: isRevealed ? null : () => _viewPassword(e.id),
+                  icon: const Icon(Icons.key, size: 16),
+                  label: const Text('Show'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Compact table view for wide screens.
+  Widget _employeesTable() {
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < _employees.length; i++) {
+      final e = _employees[i];
+      final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
+      rows.add(CompactDataRow([
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 13,
+              backgroundColor: AppTheme.success.withValues(alpha: 0.1),
+              child: Text(e.name[0].toUpperCase(),
+                style: const TextStyle(color: AppTheme.success, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: CompactDataTable.accent(context, e.name),
+            ),
+          ],
+        ),
+        CompactDataTable.muted(context, e.email),
+        CompactDataTable.chip(
+          context,
+          e.role[0].toUpperCase() + e.role.substring(1),
+          e.isAdmin ? AppTheme.blueBright(context) : AppTheme.successBright(context),
+        ),
+        CompactDataTable.cell(context, '${e.permissions.length}'),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isRevealed ? AppTheme.passwordRevealedBg(context) : AppTheme.passwordHiddenBg(context),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(isRevealed ? Icons.visibility : Icons.visibility_off,
+                size: 14, color: isRevealed ? AppTheme.success : AppTheme.mutedIcon(context)),
+              const SizedBox(width: 6),
+              Text(isRevealed ? _revealedPassword! : '••••••••',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: AppTheme.fontSize(context, 11),
+                  fontWeight: FontWeight.w600,
+                  color: isRevealed ? AppTheme.textColor(context) : AppTheme.mutedIcon(context))),
+              if (isRevealed) ...[
+                const SizedBox(width: 6),
+                Text('$_countdown s',
+                  style: TextStyle(fontSize: AppTheme.fontSize(context, 10), color: AppTheme.warning, fontWeight: FontWeight.bold)),
+              ],
+            ],
+          ),
+        ),
+        CompactDataTable.actions([
+          CompactDataTable.actionIcon(
+            icon: Icons.key,
+            color: AppTheme.warningBright(context),
+            tooltip: isRevealed ? 'Password revealed' : 'Show password',
+            onTap: isRevealed ? null : () => _viewPassword(e.id),
+          ),
+          CompactDataTable.actionIcon(
+            icon: Icons.vpn_key,
+            color: AppTheme.blueBright(context),
+            tooltip: 'Manage Permissions',
+            onTap: () => _showPermissions(e),
+          ),
+          CompactDataTable.actionIcon(
+            icon: Icons.delete_outline,
+            color: AppTheme.dangerBright(context),
+            tooltip: 'Delete',
+            onTap: () => _deleteEmployee(e),
+          ),
+        ]),
+      ]));
+    }
+
+    return Padding(
+      padding: EdgeInsets.all(AppTheme.pad(context, 16)),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Employee', flex: 3),
+          CompactTableColumn('Email', flex: 3),
+          CompactTableColumn('Role', flex: 2),
+          CompactTableColumn('Perms', flex: 1),
+          CompactTableColumn('Password', flex: 3),
+          CompactTableColumn('Actions', flex: 2, rightAligned: true),
+        ],
+        rows: rows,
+      ),
     );
   }
 

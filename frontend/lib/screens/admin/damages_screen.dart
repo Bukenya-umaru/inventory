@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/app_events.dart';
 import '../../models/damage.dart';
 import '../../models/product.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -234,10 +235,44 @@ class _DamagesScreenState extends State<DamagesScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: _buildGroupedList(),
+                      child: MediaQuery.of(context).size.width >= 900
+                          ? _damagesTable()
+                          : _buildGroupedList(),
                     ),
         ),
       ],
+    );
+  }
+
+  /// Compact table view for wide screens.
+  Widget _damagesTable() {
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < _damages.length; i++) {
+      final d = _damages[i];
+      rows.add(CompactDataRow([
+        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(d.reportDate.toLocal())),
+        CompactDataTable.accent(context, d.productName ?? 'Unknown'),
+        CompactDataTable.cell(context, '${d.quantity} ${d.damageUnit == 'box' ? 'box' : 'pc'}'),
+        CompactDataTable.muted(context, d.reason),
+        CompactDataTable.cell(context, '-${Currency.formatWhole(d.estimatedLoss)}',
+            color: AppTheme.dangerBright(context), weight: FontWeight.w600),
+        CompactDataTable.muted(context, d.reportedByName ?? '—'),
+      ]));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Date', flex: 2),
+          CompactTableColumn('Product', flex: 3),
+          CompactTableColumn('Qty', flex: 1),
+          CompactTableColumn('Reason', flex: 3),
+          CompactTableColumn('Est. Loss', flex: 2),
+          CompactTableColumn('Reported By', flex: 2),
+        ],
+        rows: rows,
+      ),
     );
   }
 

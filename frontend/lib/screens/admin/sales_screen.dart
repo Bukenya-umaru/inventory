@@ -4,6 +4,7 @@ import '../../services/api_service.dart';
 import '../../services/app_events.dart';
 import '../../models/sale.dart';
 import '../../models/product.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -236,10 +237,48 @@ class _SalesScreenState extends State<SalesScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: _buildGroupedList(),
+                      child: MediaQuery.of(context).size.width >= 900
+                          ? _salesTable()
+                          : _buildGroupedList(),
                     ),
         ),
       ],
+    );
+  }
+
+  /// Compact table view for wide screens.
+  Widget _salesTable() {
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < _sales.length; i++) {
+      final s = _sales[i];
+      rows.add(CompactDataRow([
+        CompactDataTable.cell(context, DateFormat('d MMM yyyy').format(s.saleDate.toLocal())),
+        CompactDataTable.accent(context, s.productName ?? 'Unknown'),
+        CompactDataTable.cell(context, '${s.quantity} ${s.saleUnit == 'box' ? 'box' : 'pc'}'),
+        CompactDataTable.cell(context, Currency.format(s.unitPrice)),
+        CompactDataTable.cell(context, Currency.formatWhole(s.totalAmount), weight: FontWeight.w600),
+        CompactDataTable.cell(context, Currency.formatWhole(s.profit),
+            color: AppTheme.successBright(context)),
+        CompactDataTable.muted(context, s.customerName ?? 'Walk-in'),
+        CompactDataTable.muted(context, s.recordedByName ?? '—'),
+      ]));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: CompactDataTable(
+        columns: const [
+          CompactTableColumn('Date', flex: 2),
+          CompactTableColumn('Item Name', flex: 3),
+          CompactTableColumn('Qty', flex: 1),
+          CompactTableColumn('Unit Price', flex: 2),
+          CompactTableColumn('Total', flex: 2),
+          CompactTableColumn('Profit', flex: 2),
+          CompactTableColumn('Customer', flex: 2),
+          CompactTableColumn('Recorded By', flex: 2),
+        ],
+        rows: rows,
+      ),
     );
   }
 

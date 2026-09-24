@@ -5,6 +5,7 @@ import '../../services/app_events.dart';
 import '../../services/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../utils/theme.dart';
+import '../../widgets/compact_data_table.dart';
 import '../../utils/currency.dart';
 
 class SuppliersScreen extends StatefulWidget {
@@ -130,15 +131,20 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
-                      child: ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
-                            isSmall ? 12 : AppTheme.pad(context, 16), 4,
-                            isSmall ? 12 : AppTheme.pad(context, 16), 80),
-                        itemCount: _suppliers.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (ctx, i) => _supplierCard(_suppliers[i], canManage),
-                      ),
+                      child: isSmall
+                          ? ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(12, 4, 12, 80),
+                              itemCount: _suppliers.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 8),
+                              itemBuilder: (ctx, i) => _supplierCard(_suppliers[i], canManage),
+                            )
+                          : Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                  AppTheme.pad(context, 16), 4,
+                                  AppTheme.pad(context, 16), 12),
+                              child: _suppliersTable(canManage),
+                            ),
                     ),
         ),
       ],
@@ -177,6 +183,53 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Compact table view for wide screens.
+  Widget _suppliersTable(bool canManage) {
+    final rows = <CompactDataRow>[];
+    for (var i = 0; i < _suppliers.length; i++) {
+      final s = _suppliers[i];
+      rows.add(CompactDataRow(
+        [
+          CompactDataTable.accent(context, s.name),
+          CompactDataTable.muted(context, s.contactPerson ?? '—'),
+          CompactDataTable.cell(context, s.phone ?? '—'),
+          CompactDataTable.muted(context, s.email ?? '—'),
+          CompactDataTable.cell(context, '${s.purchaseCount}'),
+          CompactDataTable.cell(context, Currency.formatWhole(s.totalSpent), weight: FontWeight.w600),
+          CompactDataTable.actions([
+            CompactDataTable.actionIcon(
+              icon: Icons.visibility_outlined,
+              color: AppTheme.blueBright(context),
+              tooltip: 'View details',
+              onTap: () => _showDetails(s),
+            ),
+            if (canManage)
+              CompactDataTable.actionIcon(
+                icon: Icons.edit_outlined,
+                color: AppTheme.warningBright(context),
+                tooltip: 'Edit',
+                onTap: () => _showForm(supplier: s),
+              ),
+          ]),
+        ],
+        onTap: () => _showDetails(s),
+      ));
+    }
+
+    return CompactDataTable(
+      columns: const [
+        CompactTableColumn('Supplier Name', flex: 3),
+        CompactTableColumn('Contact Person', flex: 2),
+        CompactTableColumn('Phone', flex: 2),
+        CompactTableColumn('Email', flex: 3),
+        CompactTableColumn('Purchases', flex: 1),
+        CompactTableColumn('Total Spent', flex: 2),
+        CompactTableColumn('Actions', flex: 1, rightAligned: true),
+      ],
+      rows: rows,
     );
   }
 
