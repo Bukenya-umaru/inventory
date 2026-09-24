@@ -3,63 +3,90 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
-import '../../widgets/app_drawer.dart' show ThemeToggleFab, kWideScreenBreakpoint;
+import '../../widgets/app_drawer.dart' show ThemeToggleFab;
 import '../../widgets/download_app_fab.dart';
 import '../../utils/theme.dart';
 
 /// Duration the blue splash is shown before revealing the login page.
 const Duration _kSplashDuration = Duration(seconds: 2);
 
-/// Accent blue used on splash + login, matching the design mock.
-const Color _kBlue = Color(0xFF283593);
-const Color _kBlueDark = Color(0xFF1A237E);
+/// Brand palette for splash + login, matching the design mock:
+/// deep-navy page background with a vivid blue card header.
+const Color _kBlueTop = Color(0xFF1C5AA8);
+const Color _kBlueBottom = Color(0xFF2F7CD1);
+const Color _kPageTop = Color(0xFF102E52);
+const Color _kPageBottom = Color(0xFF1D4B80);
+const Color _kPageTopDark = Color(0xFF0A1B31);
+const Color _kPageBottomDark = Color(0xFF123253);
 
-/// Logo mark: "Inventory" with three dots above, in accent blue.
-class _Wordmark extends StatelessWidget {
-  final double fontSize;
-  final Color color;
+const LinearGradient _kBlueGradient = LinearGradient(
+  begin: Alignment.topCenter,
+  end: Alignment.bottomCenter,
+  colors: [_kBlueTop, _kBlueBottom],
+);
 
-  const _Wordmark({required this.fontSize, required this.color});
+/// Logo square + "Inventory" wordmark + tagline. Shown on the login card
+/// header and on the phone splash.
+class _BrandHeader extends StatelessWidget {
+  final double iconSize;
+  final double nameSize;
+  final double taglineSize;
+
+  const _BrandHeader({
+    required this.iconSize,
+    required this.nameSize,
+    required this.taglineSize,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Dots above the word.
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _dot(3, color.withValues(alpha: 0.35)),
-            const SizedBox(width: 3),
-            _dot(5, color.withValues(alpha: 0.55)),
-            const SizedBox(width: 3),
-            _dot(7, color),
-          ],
+        // Frosted rounded-square holding the boxes logo.
+        Container(
+          width: iconSize,
+          height: iconSize,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(iconSize * 0.28),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            Icons.view_in_ar,
+            size: iconSize * 0.55,
+            color: Colors.white,
+          ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: iconSize * 0.22),
         Text(
           'Inventory',
           style: TextStyle(
-            color: color,
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: nameSize,
+            fontWeight: FontWeight.w800,
+            letterSpacing: nameSize * 0.08,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Smart Inventory, Total Control',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.85),
+            fontSize: taglineSize,
             letterSpacing: 0.5,
           ),
         ),
       ],
     );
   }
-
-  Widget _dot(double size, Color c) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-      );
 }
 
-/// White page containing the login form. On wide screens the form is
-/// presented as a centered card on a light background.
+/// Gradient page with the centered login card: blue brand header on top and
+/// the white "Welcome back" form below.
 class _LoginFormView extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
@@ -82,8 +109,18 @@ class _LoginFormView extends StatelessWidget {
   });
 
   OutlineInputBorder _border(Color c, {double width = 1}) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: c, width: width),
+      );
+
+  Widget _fieldLabel(BuildContext context, String text, bool isSmall) => Text(
+        text,
+        style: TextStyle(
+          fontSize: AppTheme.fontSize(context, isSmall ? 11.5 : 13),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.1,
+          color: AppTheme.secondaryText(context),
+        ),
       );
 
   Widget _buildForm(BuildContext context) {
@@ -95,25 +132,17 @@ class _LoginFormView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo
-          Center(
-            child: _Wordmark(
-              fontSize: AppTheme.fontSize(context, isSmall ? 26 : 32),
-              color: _kBlue,
-            ),
-          ),
-          SizedBox(height: isSmall ? 28 : 48),
-
           // Heading
           Text(
-            'Login to your Account',
+            'Welcome back',
             style: TextStyle(
-              fontSize: AppTheme.fontSize(context, isSmall ? 16 : 20),
-              fontWeight: FontWeight.w700,
+              fontSize: AppTheme.fontSize(context, isSmall ? 22 : 26),
+              fontWeight: FontWeight.w800,
               color: AppTheme.textColor(context),
+              height: 1.1,
             ),
           ),
-          SizedBox(height: isSmall ? 16 : 24),
+          SizedBox(height: isSmall ? 14 : 22),
 
           if (error != null)
             Container(
@@ -138,24 +167,34 @@ class _LoginFormView extends StatelessWidget {
             ),
 
           // Email
+          _fieldLabel(context, 'EMAIL ADDRESS', isSmall),
+          const SizedBox(height: 8),
           TextFormField(
             controller: emailCtrl,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14)),
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+              color: AppTheme.textColor(context),
+            ),
             decoration: InputDecoration(
-              hintText: 'Email',
+              hintText: 'name@gmail.com',
               hintStyle: TextStyle(
                 color: AppTheme.secondaryText(context),
-                fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
+                fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
               ),
               filled: true,
               fillColor: AppTheme.cardColor(context),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: isSmall ? 12 : 14),
-              enabledBorder: _border(Colors.grey.shade300),
-              focusedBorder: _border(_kBlue, width: 1.5),
+                vertical: isSmall ? 14 : 16),
+              prefixIcon: Icon(
+                Icons.mail_outline,
+                color: AppTheme.secondaryText(context),
+                size: 20,
+              ),
+              enabledBorder: _border(AppTheme.borderColor(context)),
+              focusedBorder: _border(_kBlueBottom, width: 1.5),
               errorBorder: _border(AppTheme.danger),
               focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
             ),
@@ -165,27 +204,37 @@ class _LoginFormView extends StatelessWidget {
               return null;
             },
           ),
-          SizedBox(height: isSmall ? 12 : 16),
+          SizedBox(height: isSmall ? 14 : 20),
 
           // Password
+          _fieldLabel(context, 'PASSWORD', isSmall),
+          const SizedBox(height: 8),
           TextFormField(
             controller: passCtrl,
             obscureText: obscure,
             textInputAction: TextInputAction.done,
-            style: TextStyle(fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14)),
+            style: TextStyle(
+              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+              color: AppTheme.textColor(context),
+            ),
             decoration: InputDecoration(
               hintText: 'Password',
               hintStyle: TextStyle(
                 color: AppTheme.secondaryText(context),
-                fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
+                fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
               ),
               filled: true,
               fillColor: AppTheme.cardColor(context),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: isSmall ? 12 : 14),
-              enabledBorder: _border(Colors.grey.shade300),
-              focusedBorder: _border(_kBlue, width: 1.5),
+                vertical: isSmall ? 14 : 16),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: AppTheme.secondaryText(context),
+                size: 20,
+              ),
+              enabledBorder: _border(AppTheme.borderColor(context)),
+              focusedBorder: _border(_kBlueBottom, width: 1.5),
               errorBorder: _border(AppTheme.danger),
               focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
               suffixIcon: IconButton(
@@ -203,28 +252,56 @@ class _LoginFormView extends StatelessWidget {
             },
             onFieldSubmitted: (_) => onSubmit(),
           ),
-          SizedBox(height: isSmall ? 18 : 28),
+          SizedBox(height: isSmall ? 20 : 28),
 
-          // Sign in button
+          // Sign in button (blue gradient)
           SizedBox(
             width: double.infinity,
-            height: isSmall ? 44 : 50,
-            child: ElevatedButton(
-              onPressed: loading ? null : onSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kBlue,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: _kBlue.withValues(alpha: 0.5),
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            height: isSmall ? 48 : 54,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: _kBlueGradient,
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: loading
-                  ? const SizedBox(width: 22, height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                  : Text('Sign in',
-                      style: TextStyle(
-                        fontSize: AppTheme.fontSize(context, isSmall ? 14 : 16),
-                        fontWeight: FontWeight.w600)),
+              child: ElevatedButton(
+                onPressed: loading ? null : onSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  disabledBackgroundColor: Colors.transparent,
+                  disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: loading
+                    ? const SizedBox(width: 22, height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.login, size: 22),
+                          const SizedBox(width: 10),
+                          Text('Sign In',
+                              style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
+                                fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+          SizedBox(height: isSmall ? 20 : 28),
+
+          // Footer note (no link, per design).
+          Divider(color: AppTheme.dividerColor(context), height: 1),
+          SizedBox(height: isSmall ? 14 : 18),
+          Center(
+            child: Text(
+              'Contact your administrator for access',
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 13),
+                color: AppTheme.secondaryText(context)),
             ),
           ),
         ],
@@ -234,68 +311,65 @@ class _LoginFormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width >= kWideScreenBreakpoint;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSmall = MediaQuery.of(context).size.height < 600;
 
-    if (isWide) {
-      // Big screens: centered white card on a light background.
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: AppTheme.surfaceColor(context),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32),
-            child: Container(
-              width: 420,
-              padding: const EdgeInsets.fromLTRB(32, 48, 32, 40),
-              decoration: BoxDecoration(
-                color: AppTheme.cardColor(context),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: _buildForm(context),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Phones & small screens: full white page, footer pinned at the bottom.
-    final isSmall = size.height < 600;
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: AppTheme.cardColor(context),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [_kPageTopDark, _kPageBottomDark]
+              : const [_kPageTop, _kPageBottom],
+        ),
+      ),
       child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Padding(
-                // Top padding keeps the wordmark's dots clear of the
-                // status bar / top edge on phones.
-                padding: EdgeInsets.fromLTRB(28, isSmall ? 20 : 32, 28, 0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildForm(context),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        'Contact your administrator for access',
-                        style: TextStyle(
-                          fontSize: AppTheme.fontSize(context, 12),
-                          color: AppTheme.secondaryText(context)),
-                      ),
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.cardColor(context),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
                     ),
                   ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Blue brand header
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: isSmall ? 24 : 34),
+                        decoration: const BoxDecoration(gradient: _kBlueGradient),
+                        child: _BrandHeader(
+                          iconSize: isSmall ? 64 : 78,
+                          nameSize: AppTheme.fontSize(context, isSmall ? 26 : 30),
+                          taglineSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                        ),
+                      ),
+                      // White form body
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          24, isSmall ? 20 : 28, 24, isSmall ? 20 : 24),
+                        child: _buildForm(context),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -352,15 +426,26 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Full-screen blue splash with the "Inventory" wordmark.
+  /// Full-screen blue splash with the brand mark.
   Widget _buildSplash(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ColoredBox(
-      color: isDark ? _kBlueDark : _kBlue,
-      child: Center(
-        child: _Wordmark(
-          fontSize: 38,
-          color: Colors.white,
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [_kPageTopDark, _kBlueTop]
+              : const [_kPageTop, _kBlueBottom],
+        ),
+      ),
+      child: const Center(
+        child: _BrandHeader(
+          iconSize: 92,
+          nameSize: 36,
+          taglineSize: 16,
         ),
       ),
     );
