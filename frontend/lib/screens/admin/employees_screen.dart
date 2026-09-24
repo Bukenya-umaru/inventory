@@ -113,6 +113,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           ],
           const SizedBox(height: 12),
           FloatingActionButton(
+            // No hero: the nav wrapper's toggle FAB lives on the same route.
+            heroTag: null,
             onPressed: () => _showCreate(),
             child: const Icon(Icons.person_add),
           ),

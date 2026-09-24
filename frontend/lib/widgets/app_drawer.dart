@@ -435,6 +435,9 @@ class ThemeToggleFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     return FloatingActionButton(
+      // No hero: several FABs share this route (IndexedStack keeps every tab
+      // alive), so the default hero tag would collide.
+      heroTag: null,
       mini: mini,
       tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
       onPressed: () => context.read<ThemeProvider>().toggle(),

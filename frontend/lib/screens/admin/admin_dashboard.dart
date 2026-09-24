@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../services/app_events.dart';
@@ -6,8 +9,29 @@ import '../../services/auth_provider.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
+/// Accent palette matching the dashboard mock.
+const Color _kChartBlue = Color(0xFF2563EB);
+const Color _kGreen = Color(0xFF16A34A);
+const Color _kOrange = Color(0xFFF59E0B);
+const Color _kPurple = Color(0xFF8B5CF6);
+const Color _kRed = Color(0xFFDC2626);
+
+/// Donut palette for Stock by Category.
+const List<Color> _kCategoryColors = [
+  _kChartBlue,
+  _kGreen,
+  _kOrange,
+  _kPurple,
+  Color(0xFF0EA5E9),
+  Color(0xFFEF4444),
+];
+
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  /// 0 = open Sales, 1 = open Products (used by the "View All" links).
+  final void Function(int target)? onSeeAll;
+
+  const AdminDashboard({super.key, this.onSeeAll});
+
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
@@ -15,20 +39,18 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   Map<String, dynamic>? _data;
   bool _loading = true;
-  String _salesRange = 'Today'; // Sales Activity filter: Today | Weekly | Monthly
-  List<bool> _salesMetrics = [true, true, true, true]; // Revenue, Profit, Stock, Employees
+  String _range = 'This Month'; // Stock Overview filter
 
   @override
   void initState() {
     super.initState();
     _load();
-
     AppEvents.instance.subscribe(_onEvent);
   }
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'purchases') {
+    if (event == 'purchases' || event == 'sales') {
       _load();
     }
   }
@@ -51,33 +73,138 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width >= 900;
-
     if (_loading) return const Center(child: CircularProgressIndicator());
-    final d = _data ?? {};
-
-    final todayRevenue = Currency.formatWhole((d['today']?['revenue'] ?? 0));
-    final todayProfit = Currency.formatWhole((d['today']?['profit'] ?? 0));
-    final productCount = '${d['productCount'] ?? 0}';
-    final employeeCount = '${d['employeeCount'] ?? 0}';
-    final monthlyRevenue = Currency.formatWhole((d['monthly']?['revenue'] ?? 0));
-    final monthlyProfit = Currency.formatWhole((d['monthly']?['profit'] ?? 0));
-    final salesCount = '${d['monthly']?['salesCount'] ?? 0}';
-    final lowStock = '${d['lowStockCount'] ?? 0}';
-    final totalStock = Currency.formatWhole(d['totalStockValue'] ?? 0);
+    if (_data == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wifi_off_outlined,
+                size: 40, color: AppTheme.secondaryText(context)),
+            const SizedBox(height: 12),
+            Text('Failed to load dashboard',
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 14),
+                color: AppTheme.secondaryText(context))),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _load, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
-      child: isWide
-          ? _wideLayout(d, todayRevenue, todayProfit, productCount, employeeCount, monthlyRevenue, monthlyProfit, salesCount, lowStock, totalStock)
-          : _mobileLayout(d, todayRevenue, todayProfit, productCount, employeeCount, monthlyRevenue, monthlyProfit, salesCount, lowStock, totalStock),
+      child: _buildContent(),
     );
   }
 
-  // ---- Design-system building blocks (dashboard mock style) ----
+  // ---- Data accessors ----
 
-  /// White rounded card used as outer container.
+  List<({String date, num revenue, num profit, int salesCount})> _trendData() {
+    final trend = _data?['trend'] as List<dynamic>?;
+    return (trend ?? [])
+        .map((t) => (
+              date: (t['date'] ?? '') as String,
+              revenue: (t['revenue'] ?? 0) as num,
+              profit: (t['profit'] ?? 0) as num,
+              salesCount: (t['salesCount'] ?? 0) as int,
+            ))
+        .toList();
+  }
+
+  List<({String name, num value})> _categoryData() {
+    final raw = _data?['stockByCategory'] as List<dynamic>? ?? [];
+    return raw
+        .map((e) => (
+              name: (e['name'] ?? 'Uncategorized') as String,
+              value: (e['value'] ?? 0) as num,
+            ))
+        .where((e) => e.value > 0)
+        .toList();
+  }
+
+  List<({String name, String sku, num stock})> _lowStockItems() {
+    final raw = _data?['lowStockItems'] as List<dynamic>? ?? [];
+    return raw
+        .map((e) => (
+              name: (e['name'] ?? 'Unknown') as String,
+              sku: (e['sku'] ?? '-') as String,
+              stock: (e['stock'] ?? 0) as num,
+            ))
+        .toList();
+  }
+
+  List<({String date, String type, String reference, String party, num amount, String status})>
+      _recentTransactions() {
+    final raw = _data?['recentTransactions'] as List<dynamic>? ?? [];
+    return raw
+        .map((e) => (
+              date: (e['date'] ?? '') as String,
+              type: (e['type'] ?? 'Sale') as String,
+              reference: (e['reference'] ?? '-') as String,
+              party: (e['party'] ?? '-') as String,
+              amount: (e['amount'] ?? 0) as num,
+              status: (e['status'] ?? 'Completed') as String,
+            ))
+        .toList();
+  }
+
+  // ---- Layout ----
+
+  Widget _buildContent() {
+    final d = _data ?? {};
+    final isWide = MediaQuery.of(context).size.width >= 900;
+
+    final productCount = '${d['productCount'] ?? 0}';
+    final totalStockUnits = Currency.formatWhole(d['totalStockUnits'] ?? 0);
+    final lowStock = '${d['lowStockCount'] ?? 0}';
+    final totalValue = Currency.formatWhole(d['totalStockValue'] ?? 0);
+
+    final overview = _stockOverviewCard();
+    final byCategory = _stockByCategoryCard();
+    final transactions = _recentTransactionsCard();
+    final alerts = _lowStockAlertsCard();
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.all(isWide ? 24 : 16),
+      children: [
+        _statsRow(productCount, totalStockUnits, lowStock, totalValue),
+        const SizedBox(height: 16),
+        if (isWide) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: overview),
+              const SizedBox(width: 16),
+              Expanded(flex: 2, child: byCategory),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 3, child: transactions),
+              const SizedBox(width: 16),
+              Expanded(flex: 2, child: alerts),
+            ],
+          ),
+        ] else ...[
+          overview,
+          const SizedBox(height: 16),
+          byCategory,
+          const SizedBox(height: 16),
+          transactions,
+          const SizedBox(height: 16),
+          alerts,
+        ],
+      ],
+    );
+  }
+
+  // ---- Building blocks ----
+
   Widget _card({required Widget child, EdgeInsets? padding}) {
     return Container(
       padding: padding ?? const EdgeInsets.all(16),
@@ -90,7 +217,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  /// Card header: title on the left, optional action on the right.
   Widget _cardHeader(String title, {Widget? action}) {
     return Row(
       children: [
@@ -106,1077 +232,670 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  /// Inner light-gray panel that holds white sub-cards (mock style).
-  Widget _panel({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppTheme.panelColor(context),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: child,
+  Widget _viewAll(int target) {
+    return GestureDetector(
+      onTap: () => widget.onSeeAll?.call(target),
+      child: Text('View All',
+        style: TextStyle(
+          fontSize: AppTheme.fontSize(context, 12),
+          fontWeight: FontWeight.w600,
+          color: _kChartBlue)),
     );
   }
 
-  /// Small circular icon button in the card header (like "..." / filter).
-  Widget _headerIcon(IconData icon) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: AppTheme.borderColor(context)),
-        color: AppTheme.cardColor(context),
-      ),
-      child: Icon(icon, size: 18, color: AppTheme.mutedIcon(context)),
-    );
+  // ---- Section 1: stat cards ----
+
+  Widget _statsRow(String products, String stock, String lowStock, String value) {
+    final cards = [
+      _statCard('Total Products', products, 'Active Products',
+          _kChartBlue, Icons.inventory_2_outlined),
+      _statCard('Total Stock', stock, 'In Hand', _kGreen, Icons.circle),
+      _statCard('Low Stock', lowStock, 'Products', _kOrange,
+          Icons.warning_amber_outlined),
+      _statCard('Total Value', value, 'Stock Value', _kPurple,
+          Icons.attach_money),
+    ];
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final w = constraints.maxWidth;
+      final cols = w >= 720 ? 4 : 2;
+      final cw = (w - 16 * (cols - 1)) / cols;
+      return Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: [for (final c in cards) SizedBox(width: cw, child: c)],
+      );
+    });
   }
 
-  /// Muted label + bold value, the mock's stat style.
-  Widget _statTile(String label, String value, Color valueColor, IconData icon) {
-    return _card(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: valueColor),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, 11),
-                    color: AppTheme.secondaryText(context))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(value,
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 17),
-                fontWeight: FontWeight.bold,
-                color: valueColor)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---- Sections ----
-
-  Widget _brandingCard() {
-    final auth = context.watch<AuthProvider>();
-    final branding = auth.branding;
+  Widget _statCard(String label, String value, String sub, Color color, IconData icon) {
     return _card(
       child: Row(
         children: [
-          if (branding?.businessLogo != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(ApiService.fileUrl(branding!.businessLogo),
-                height: 40,
-                errorBuilder: (_, _, _) => Icon(Icons.storefront,
-                    size: 40, color: AppTheme.dashNavyColor(context))),
-            )
-          else
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppTheme.dashNavyColor(context).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.storefront, size: 24, color: AppTheme.dashNavyColor(context)),
-            ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(branding?.businessName ?? 'Business',
-                  style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 17),
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textColor(context))),
-                Text('Welcome back, ${auth.user?.name ?? ''}!',
-                  style: TextStyle(
-                      color: AppTheme.secondaryText(context),
-                      fontSize: AppTheme.fontSize(context, 13))),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Sales Activity filter bottom sheet.
-  Future<void> _showSalesActivityFilter() async {
-    var range = _salesRange;
-    var metrics = List<bool>.from(_salesMetrics);
-    const labels = ['Revenue', 'Profit', 'Stock', 'Employees'];
-
-    final applied = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: AppTheme.cardColor(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (sheetContext, setSheetState) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Filter Sales Activity',
-                        style: TextStyle(
-                          fontSize: AppTheme.fontSize(sheetContext, 16),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textColor(sheetContext))),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(sheetContext, false),
-                      icon: Icon(Icons.close,
-                        color: AppTheme.secondaryText(sheetContext))),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text('PERIOD',
+                Text(label,
                   style: TextStyle(
-                    fontSize: AppTheme.fontSize(sheetContext, 11),
+                    fontSize: AppTheme.fontSize(context, 13),
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                    color: AppTheme.secondaryText(sheetContext))),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final r in const ['Today', 'Weekly', 'Monthly'])
-                      ChoiceChip(
-                        label: Text(r),
-                        selected: range == r,
-                        selectedColor:
-                            AppTheme.dashNavyColor(sheetContext).withValues(alpha: 0.15),
-                        labelStyle: TextStyle(
-                          color: range == r
-                              ? AppTheme.dashNavyColor(sheetContext)
-                              : AppTheme.secondaryText(sheetContext),
-                          fontWeight: range == r ? FontWeight.bold : FontWeight.w500),
-                        onSelected: (_) => setSheetState(() => range = r),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text('METRICS SHOWN',
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSize(sheetContext, 11),
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                    color: AppTheme.secondaryText(sheetContext))),
-                const SizedBox(height: 4),
-                ...List.generate(4, (i) => CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  activeColor: AppTheme.dashNavyColor(sheetContext),
-                  title: Text(labels[i],
+                    color: AppTheme.textColor(context))),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(value,
                     style: TextStyle(
-                      fontSize: AppTheme.fontSize(sheetContext, 14),
-                      color: AppTheme.textColor(sheetContext))),
-                  value: metrics[i],
-                  onChanged: (v) => setSheetState(() => metrics[i] = v ?? false),
-                )),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setSheetState(() {
-                          range = 'Today';
-                          metrics = [true, true, true, true];
-                        }),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.borderColor(sheetContext))),
-                        child: Text('Reset',
-                          style: TextStyle(
-                            color: AppTheme.secondaryText(sheetContext))),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(sheetContext, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.dashNavyColor(sheetContext),
-                          foregroundColor: Colors.white),
-                        child: const Text('Apply'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (applied == true && mounted) {
-      setState(() {
-        _salesRange = range;
-        _salesMetrics = metrics;
-      });
-    }
-  }
-
-  /// Values for the Sales Activity tiles according to the current filter.
-  ({List<String> values, String subtitle}) _salesActivityValues(
-    String revenue, String profit, String products, String employees,
-    String mRevenue, String mProfit, String sales,
-  ) {
-    switch (_salesRange) {
-      case 'Weekly':
-        final week = _lastWeekTotals();
-        return (
-          values: [
-            Currency.formatWhole(week.revenue),
-            Currency.formatWhole(week.profit),
-            products,
-            employees,
-          ],
-          subtitle: 'Last 7 days · ${week.salesCount} sales',
-        );
-      case 'Monthly':
-        return (
-          values: [mRevenue, mProfit, products, employees],
-          subtitle: 'This month · $sales sales',
-        );
-      default:
-        return (
-          values: [revenue, profit, products, employees],
-          subtitle: 'Today · ${_todaySalesCount()} sales',
-        );
-    }
-  }
-
-  ({num revenue, num profit, int salesCount}) _lastWeekTotals() {
-    final trend = _data?['trend'] as List<dynamic>?;
-    if (trend == null || trend.length < 7) {
-      final m = _data?['monthly'];
-      return (revenue: m?['revenue'] ?? 0, profit: m?['profit'] ?? 0, salesCount: m?['salesCount'] ?? 0);
-    }
-    num revenue = 0, profit = 0;
-    var salesCount = 0;
-    for (final t in trend.skip(trend.length - 7)) {
-      revenue += (t['revenue'] ?? 0) as num;
-      profit += (t['profit'] ?? 0) as num;
-      salesCount += (t['salesCount'] ?? 0) as int;
-    }
-    return (revenue: revenue, profit: profit, salesCount: salesCount);
-  }
-
-  int _todaySalesCount() {
-    final trend = _data?['trend'] as List<dynamic>?;
-    if (trend != null && trend.isNotEmpty) {
-      return (trend.last['salesCount'] ?? 0) as int;
-    }
-    return (_data?['today']?['salesCount'] ?? 0) as int;
-  }
-
-  Widget _salesActivityCard(String revenue, String profit, String products, String employees,
-      {required bool twoColumn, String mRevenue = '', String mProfit = '', String sales = '0'}) {
-    final allIcons = [
-      Icons.payments_outlined,
-      Icons.trending_up,
-      Icons.inventory_2_outlined,
-      Icons.people_outline,
-    ];
-    final data = _salesActivityValues(revenue, profit, products, employees, mRevenue, mProfit, sales);
-    final visible = <int>[];
-    for (var i = 0; i < _salesMetrics.length; i++) {
-      if (_salesMetrics[i]) visible.add(i);
-    }
-
-    final tiles = <Widget>[];
-    for (final i in visible) {
-      final colors = [
-        AppTheme.dashNavyColor(context),
-        AppTheme.success,
-        AppTheme.dashOrange,
-        AppTheme.blueBright(context),
-      ];
-      tiles.add(SizedBox(
-        width: twoColumn ? 160 : 150,
-        child: _statTile(
-          const ['Revenue', 'Profit', 'Stock', 'Employees'][i],
-          data.values[i],
-          colors[i],
-          allIcons[i],
-        ),
-      ));
-    }
-
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _cardHeader('Sales Activity',
-            action: GestureDetector(
-              onTap: _showSalesActivityFilter,
-              child: _headerIcon(Icons.filter_list))),
-          const SizedBox(height: 4),
-          Text(data.subtitle,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 11),
-              color: AppTheme.secondaryText(context))),
-          const SizedBox(height: 12),
-          if (tiles.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text('All metrics hidden — use the filter to show some.',
-                style: TextStyle(
-                  fontSize: AppTheme.fontSize(context, 12),
-                  color: AppTheme.secondaryText(context))),
-            )
-          else
-            SizedBox(
-              height: twoColumn ? 84 : 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.zero,
-                itemCount: tiles.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                itemBuilder: (_, i) => tiles[i],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _inventorySummaryCard(String productCount, String lowStock, String totalStock) {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _cardHeader('Inventory Summary', action: _headerIcon(Icons.more_horiz)),
-          const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                _summaryRow('Quantity in Hand', productCount, Icons.inventory_2_outlined),
-                Divider(height: 1, color: AppTheme.dividerColor(context)),
-                _summaryRow('Quantity to Receive', lowStock, Icons.receipt_long_outlined),
-                Divider(height: 1, color: AppTheme.dividerColor(context)),
-                _summaryRow('Total Stock Value', totalStock, Icons.payments_outlined),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _productDetailsCard(dynamic d, String productCount, String lowStock, String totalStock) {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _cardHeader('Product Details', action: _headerIcon(Icons.more_horiz)),
-          const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                _detailChipRow('Low Stock Items', lowStock, warning: true),
-                const SizedBox(height: 8),
-                _detailChipRow('All Item Groups', '${d['categoryCount'] ?? 0}', warning: false),
-                const SizedBox(height: 8),
-                _detailChipRow('All Items', productCount, warning: false),
-                const SizedBox(height: 8),
-                _detailChipRow('Total Stock Value', totalStock, warning: false),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _topSellingCard(String revenue, String mRevenue, String mProfit) {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _cardHeader('Top Selling Items', action: _headerIcon(Icons.more_horiz)),
-          const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                _sellingItem('Today\'s Sales', revenue, AppTheme.success, Icons.trending_up),
-                const SizedBox(height: 8),
-                _sellingItem('This Month', mRevenue, AppTheme.blueBright(context), Icons.calendar_month_outlined),
-                const SizedBox(height: 8),
-                _sellingItem('Profit', mProfit, AppTheme.dashOrange, Icons.payments_outlined),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _purchaseOrderCard(String totalStock, String productCount) {
-    return _card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _cardHeader('Purchase Order', action: _headerIcon(Icons.more_horiz)),
-          const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(totalStock,
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 30),
+                      fontSize: AppTheme.fontSize(context, 22),
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.dashNavyColor(context))),
-                ),
+                      color: AppTheme.textColor(context)))),
                 const SizedBox(height: 4),
-                Center(
-                  child: Text('Stock Value',
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 13),
-                      color: AppTheme.secondaryText(context))),
-                ),
-                const SizedBox(height: 12),
-                _card(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.shopping_cart_outlined,
-                        size: 16, color: AppTheme.secondaryText(context)),
-                      const SizedBox(width: 6),
-                      Text('Quantity Ordered',
-                        style: TextStyle(
-                          fontSize: AppTheme.fontSize(context, 12),
-                          color: AppTheme.secondaryText(context))),
-                      const SizedBox(width: 8),
-                      Text(productCount,
-                        style: TextStyle(
-                          fontSize: AppTheme.fontSize(context, 15),
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textColor(context))),
-                    ],
-                  ),
-                ),
+                Text(sub,
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 11),
+                    color: AppTheme.secondaryText(context))),
               ],
             ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
         ],
       ),
     );
   }
 
-  Widget _salesOrderCard(String revenue, String profit, String sales, String mRevenue, String mProfit) {
+  // ---- Section 2: Stock Overview (line chart) ----
+
+  Widget _stockOverviewCard() {
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _cardHeader('Sales Order', action: _headerIcon(Icons.more_horiz)),
-          const SizedBox(height: 12),
-          _panel(
-            child: Column(
-              children: [
-                _orderRow(['Channel', 'Revenue', 'Profit', 'Sales'], isHeader: true),
-                const SizedBox(height: 6),
-                _orderRow(['Today', revenue, profit, sales]),
-                const SizedBox(height: 6),
-                _orderRow(['Monthly', mRevenue, mProfit, sales]),
-              ],
-            ),
-          ),
+          _cardHeader('Stock Overview', action: _rangeSelector()),
+          const SizedBox(height: 16),
+          _overviewChart(),
         ],
       ),
     );
   }
 
-  // ---- Statistics section ----
-
-  List<({String date, num revenue, num profit, int salesCount})> _trendData() {
-    final trend = _data?['trend'] as List<dynamic>?;
-    return (trend ?? [])
-        .map((t) => (
-              date: (t['date'] ?? '') as String,
-              revenue: (t['revenue'] ?? 0) as num,
-              profit: (t['profit'] ?? 0) as num,
-              salesCount: (t['salesCount'] ?? 0) as int,
-            ))
-        .toList();
+  Widget _rangeSelector() {
+    return PopupMenuButton<String>(
+      onSelected: (v) => setState(() => _range = v),
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'Last 7 Days', child: Text('Last 7 Days')),
+        PopupMenuItem(value: 'This Month', child: Text('This Month')),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.borderColor(context)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_range,
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 12),
+                color: AppTheme.textColor(context))),
+            const SizedBox(width: 4),
+            Icon(Icons.expand_more,
+                size: 16, color: AppTheme.secondaryText(context)),
+          ],
+        ),
+      ),
+    );
   }
 
-  /// Custom bar chart (no chart library): one bar per day, last 7/14/30 days.
-  Widget _trendChart(int days) {
-    final trend = _trendData();
+  Widget _overviewChart() {
+    var trend = _trendData();
     if (trend.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Center(
-          child: Text('No sales data for the last 30 days',
+          child: Text('No sales data yet',
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, 13),
               color: AppTheme.secondaryText(context))),
         ),
       );
     }
+    if (_range == 'Last 7 Days' && trend.length > 7) {
+      trend = trend.sublist(trend.length - 7);
+    }
 
-    final data = trend.length > days ? trend.sublist(trend.length - days) : trend;
-    final maxRevenue = data
-        .map((e) => e.revenue.toDouble())
-        .reduce((a, b) => a > b ? a : b);
-    final maxValue = maxRevenue <= 0 ? 1.0 : maxRevenue;
+    final values = trend.map((t) => t.revenue.toDouble()).toList();
+    if (values.length == 1) values.add(values.first);
+    final maxV = values.reduce(math.max);
+    final yMax = _niceMax(maxV);
+
+    final yLabels = [
+      _compact(0),
+      _compact(yMax * 0.25),
+      _compact(yMax * 0.5),
+      _compact(yMax * 0.75),
+      _compact(yMax),
+    ];
+
+    // X labels: evenly spaced dates across the visible range.
+    final xCount = values.length <= 7 ? values.length : 5;
+    final xLabels = <String>[];
+    for (var i = 0; i < xCount; i++) {
+      final idx = values.length <= 7
+          ? i
+          : (i * (values.length - 1) / (xCount - 1)).round();
+      xLabels.add(_shortDate(trend[idx].date));
+    }
+
+    final chartColor = AppTheme.textColor(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            _legendDot(AppTheme.dashNavyColor(context), 'Revenue'),
-            const SizedBox(width: 14),
-            _legendDot(AppTheme.success, 'Profit'),
-            const Spacer(),
-            Text('Peak: ${Currency.formatWhole(maxRevenue)}',
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 11),
-                color: AppTheme.secondaryText(context))),
-          ],
-        ),
-        const SizedBox(height: 12),
         SizedBox(
-          height: 150,
+          height: 190,
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < data.length; i++)
-                Expanded(
-                  child: Tooltip(
-                    message:
-                        '${data[i].date}\nRevenue: ${Currency.formatWhole(data[i].revenue)}\nProfit: ${Currency.formatWhole(data[i].profit)}\nSales: ${data[i].salesCount}',
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: LayoutBuilder(builder: (context, constraints) {
-                        final h = constraints.maxHeight;
-                        final revenueH = (data[i].revenue / maxValue) * (h - 4);
-                        final profitH = (data[i].profit / maxValue) * (h - 4);
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Container(
-                                  width: 5,
-                                  height: revenueH < 2 ? 2 : revenueH,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.dashNavyColor(context),
-                                    borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(3))),
-                                ),
-                                const SizedBox(width: 2),
-                                Container(
-                                  width: 5,
-                                  height: profitH < 2 ? 2 : profitH,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.success,
-                                    borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(3))),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
+              SizedBox(
+                width: 46,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final l in yLabels.reversed)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6, bottom: 2),
+                        child: Text(l,
+                          style: TextStyle(
+                            fontSize: AppTheme.fontSize(context, 10),
+                            color: AppTheme.secondaryText(context))),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CustomPaint(
+                  painter: _LineChartPainter(
+                    values: values,
+                    yMax: yMax,
+                    lineColor: _kChartBlue,
+                    fillTop: _kChartBlue.withValues(alpha: 0.25),
+                    gridColor: AppTheme.dividerColor(context),
                   ),
                 ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 6),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(_shortDay(data.first.date),
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 10),
-                color: AppTheme.secondaryText(context))),
-            Text(_shortDay(data.last.date),
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 10),
-                color: AppTheme.secondaryText(context))),
+            const SizedBox(width: 46),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (final l in xLabels)
+                    Text(l,
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 10),
+                        color: AppTheme.secondaryText(context))),
+                ],
+              ),
+            ),
           ],
         ),
+        SizedBox(height: 2, child: Text('', style: TextStyle(color: chartColor, fontSize: 1))),
       ],
     );
   }
 
-  String _shortDay(String isoDate) {
-    final parts = isoDate.split('-');
-    if (parts.length < 3) return isoDate;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final month = months[(int.tryParse(parts[1]) ?? 1) - 1];
-    final day = int.parse(parts[2]);
-    return '$month $day';
+  double _niceMax(double v) {
+    if (v <= 0) return 10;
+    final mag = math.pow(10, (math.log(v) / math.ln10).floor()).toDouble();
+    final n = v / mag;
+    final nice = n <= 1
+        ? 1.0
+        : n <= 2
+            ? 2.0
+            : n <= 2.5
+                ? 2.5
+                : n <= 5
+                    ? 5.0
+                    : 10.0;
+    return nice * mag;
   }
 
-  Widget _legendDot(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(label,
-          style: TextStyle(
-            fontSize: AppTheme.fontSize(context, 11),
-            color: AppTheme.secondaryText(context))),
-      ],
-    );
+  String _compact(num v) {
+    if (v >= 1000000) {
+      final m = v / 1000000;
+      return '${m % 1 == 0 ? m.toStringAsFixed(0) : m.toStringAsFixed(1)}M';
+    }
+    if (v >= 1000) {
+      final k = v / 1000;
+      return '${k % 1 == 0 ? k.toStringAsFixed(0) : k.toStringAsFixed(1)}K';
+    }
+    return v.toStringAsFixed(0);
   }
 
-  Widget _statisticsCard() {
-    final trend = _trendData();
-    final totalRevenue = trend.fold<num>(0, (s, e) => s + e.revenue);
-    final totalProfit = trend.fold<num>(0, (s, e) => s + e.profit);
-    final totalSales = trend.fold<int>(0, (s, e) => s + e.salesCount);
+  String _shortDate(String isoDate) {
+    final d = DateTime.tryParse(isoDate);
+    if (d == null) return isoDate;
+    if (_range == 'Last 7 Days') {
+      return DateFormat('EEE').format(d);
+    }
+    return DateFormat('MMM d').format(d);
+  }
+
+  // ---- Section 3: Stock by Category (donut) ----
+
+  Widget _stockByCategoryCard() {
+    final data = _categoryData();
+    final total = data.fold<num>(0, (s, e) => s + e.value);
 
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _cardHeader('Statistics',
-            action: _headerIcon(Icons.insights)),
-          const SizedBox(height: 4),
-          Text('Last 30 days',
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 11),
-              color: AppTheme.secondaryText(context))),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _statTile('30d Revenue',
-                  Currency.formatWhole(totalRevenue),
-                  AppTheme.dashNavyColor(context), Icons.payments_outlined)),
-              const SizedBox(width: 10),
-              Expanded(child: _statTile('30d Profit',
-                  Currency.formatWhole(totalProfit),
-                  AppTheme.success, Icons.trending_up)),
-              const SizedBox(width: 10),
-              Expanded(child: _statTile('30d Sales', '$totalSales',
-                  AppTheme.dashOrange, Icons.receipt_long_outlined)),
-            ],
-          ),
+          _cardHeader('Stock by Category'),
           const SizedBox(height: 16),
-          Text('Revenue & Profit Trend',
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 13),
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textColor(context))),
-          const SizedBox(height: 10),
-          _trendChart(14),
-          const SizedBox(height: 16),
-          _panel(child: _topProductsChart()),
-          const SizedBox(height: 12),
-          _panel(child: _paymentBreakdownChart()),
-        ],
-      ),
-    );
-  }
-
-  Widget _topProductsChart() {
-    final products = (_data?['topProducts'] as List<dynamic>? ?? []);
-    if (products.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: Text('No product sales in the last 30 days',
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 12),
-              color: AppTheme.secondaryText(context))),
-        ),
-      );
-    }
-
-    final maxRevenue = products
-        .map((p) => (p['revenue'] ?? 0) as num)
-        .fold<num>(0, (a, b) => a > b ? a : b);
-    final maxValue = maxRevenue <= 0 ? 1 : maxRevenue;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Top Selling Products',
-          style: TextStyle(
-            fontSize: AppTheme.fontSize(context, 13),
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textColor(context))),
-        const SizedBox(height: 10),
-        for (var i = 0; i < products.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 90,
-                  child: Text('${products[i]['name'] ?? 'Unknown'}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 11),
-                      color: AppTheme.secondaryText(context))),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (products[i]['revenue'] ?? 0) / maxValue,
-                      minHeight: 10,
-                      backgroundColor: AppTheme.dividerColor(context),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.dashNavyColor(context))),
+          if (data.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text('No stock recorded yet',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 13),
+                    color: AppTheme.secondaryText(context))),
+              ),
+            )
+          else ...[
+            Center(
+              child: SizedBox(
+                width: 170,
+                height: 170,
+                child: CustomPaint(
+                  painter: _DonutPainter(
+                    segments: [
+                      for (var i = 0; i < data.length; i++)
+                        (
+                          fraction: data[i].value / total,
+                          color: _kCategoryColors[i % _kCategoryColors.length],
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(Currency.formatWhole(products[i]['revenue'] ?? 0),
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, 11),
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textColor(context))),
-              ],
+              ),
             ),
-          ),
-      ],
-    );
-  }
-
-  Widget _paymentBreakdownChart() {
-    final breakdown = (_data?['paymentBreakdown'] as Map<dynamic, dynamic>? ?? {});
-    final entries = breakdown.entries
-        .map((e) => MapEntry(e.key.toString(), (e.value ?? 0) as num))
-        .where((e) => e.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final total = entries.fold<num>(0, (s, e) => s + e.value);
-
-    final colors = {
-      'cash': AppTheme.success,
-      'card': AppTheme.blueBright(context),
-      'transfer': AppTheme.dashNavyColor(context),
-      'credit': AppTheme.warning,
-    };
-    const icons = {
-      'cash': Icons.payments_outlined,
-      'card': Icons.credit_card,
-      'transfer': Icons.swap_horiz,
-      'credit': Icons.receipt_long_outlined,
-    };
-
-    if (entries.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: Text('No payment data in the last 30 days',
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 12),
-              color: AppTheme.secondaryText(context))),
-        ),
-      );
-    }
-
-    Widget segment(double fraction, Color color) {
-      return Expanded(
-        flex: (fraction * 100).round().clamp(1, 100).toInt(),
-        child: Container(height: 12, color: color),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Payments (30 days)',
-          style: TextStyle(
-            fontSize: AppTheme.fontSize(context, 13),
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textColor(context))),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            for (final e in entries)
-              segment(e.value / total, colors[e.key]!),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 14,
-          runSpacing: 6,
-          children: [
-            for (final e in entries)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icons[e.key] ?? Icons.circle_outlined,
-                    size: 13, color: colors[e.key]!),
-                  const SizedBox(width: 4),
-                  Text('${e.key[0].toUpperCase()}${e.key.substring(1)}',
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 11),
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textColor(context))),
-                  const SizedBox(width: 4),
-                  Text('${(e.value / total * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, 11),
-                      color: AppTheme.secondaryText(context))),
-                ],
+            const SizedBox(height: 16),
+            for (var i = 0; i < data.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _kCategoryColors[i % _kCategoryColors.length],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(data[i].name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: AppTheme.fontSize(context, 13),
+                          color: AppTheme.textColor(context))),
+                    ),
+                    Text(
+                      '${(data[i].value / total * 100).toStringAsFixed(0)}%',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 13),
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.secondaryText(context))),
+                  ],
+                ),
               ),
           ],
-        ),
-      ],
-    );
-  }
-
-  // ---- Rows ----
-
-  Widget _summaryRow(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppTheme.dashNavyColor(context)),
-          const SizedBox(width: 10),
-          Expanded(child: Text(label,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 13),
-              color: AppTheme.secondaryText(context)))),
-          Text(value,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 15),
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textColor(context))),
         ],
       ),
     );
   }
 
-  Widget _detailChipRow(String label, String value, {required bool warning}) {
-    final color = warning ? AppTheme.warning : AppTheme.dashNavyColor(context);
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 13),
-              color: AppTheme.secondaryText(context)))),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
-          ),
-          child: Text(value,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 13),
-              fontWeight: FontWeight.w600,
-              color: color)),
-        ),
-      ],
+  // ---- Section 4: Recent Transactions ----
+
+  Widget _recentTransactionsCard() {
+    final txs = _recentTransactions();
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _cardHeader('Recent Transactions', action: _viewAll(0)),
+          const SizedBox(height: 12),
+          if (txs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('No transactions yet',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 13),
+                    color: AppTheme.secondaryText(context))),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, c) {
+                // The rows use Expanded cells, which need a finite width.
+                // Give the table the card's width when it fits, otherwise
+                // 620px and let it scroll horizontally.
+                final tableWidth = math.max(c.maxWidth, 620.0);
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: tableWidth,
+                    child: Column(
+                      children: [
+                        _txRow(['Date', 'Type', 'Reference', 'Party', 'Amount', 'Status'],
+                            isHeader: true),
+                        for (final t in txs) _txRow([
+                          _fmtTxDate(t.date),
+                          t.type,
+                          t.reference,
+                          t.party,
+                          Currency.formatWhole(t.amount),
+                          t.status,
+                        ]),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _sellingItem(String label, String value, Color color, IconData icon) {
+  String _fmtTxDate(String iso) {
+    final d = DateTime.tryParse(iso);
+    return d == null ? iso : DateFormat('d MMM yyyy').format(d);
+  }
+
+  Widget _txRow(List<String> cells, {bool isHeader = false}) {
+    const flexes = [3, 2, 3, 4, 3, 3];
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          bottom: BorderSide(color: AppTheme.dividerColor(context)),
+        ),
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(6),
+          for (var i = 0; i < cells.length; i++)
+            Expanded(
+              flex: flexes[i],
+              child: _txCell(cells[i], i, isHeader),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _txCell(String text, int col, bool isHeader) {
+    if (isHeader) {
+      return Text(text,
+        style: TextStyle(
+          fontSize: AppTheme.fontSize(context, 12),
+          fontWeight: FontWeight.w600,
+          color: AppTheme.secondaryText(context)));
+    }
+    switch (col) {
+      case 2: // Reference — blue accent
+        return Text(text,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: AppTheme.fontSize(context, 12),
+            fontWeight: FontWeight.w600,
+            color: _kChartBlue));
+      case 5: // Status chip
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 16),
+              color: _kGreen.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(text,
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 11),
+                fontWeight: FontWeight.w600,
+                color: _kGreen)),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(label,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 13),
-              color: AppTheme.secondaryText(context)))),
-          Text(value,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 15),
-              fontWeight: FontWeight.bold,
-              color: color)),
-        ],
-      ),
-    );
+        );
+      default:
+        return Text(text,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: AppTheme.fontSize(context, 12),
+            color: AppTheme.textColor(context)));
+    }
   }
 
-  Widget _orderRow(List<String> cells, {bool isHeader = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        children: cells.asMap().entries.map((e) => Expanded(
-          flex: e.key == 0 ? 2 : 1,
-          child: Text(e.value,
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, 12),
-              fontWeight: isHeader ? FontWeight.w600 : FontWeight.w500,
-              color: isHeader
-                  ? AppTheme.secondaryText(context)
-                  : AppTheme.textColor(context),
-            ),
-          ),
-        )).toList(),
-      ),
-    );
-  }
+  // ---- Section 5: Low Stock Alerts ----
 
-  // ---- Layouts ----
-
-  Widget _wideLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      children: [
-        _brandingCard(),
-        const SizedBox(height: 16),
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: _salesActivityCard(revenue, profit, products, employees,
-                  twoColumn: false, mRevenue: mRevenue, mProfit: mProfit, sales: sales),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: _inventorySummaryCard(products, lowStock, totalStock),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        _statisticsCard(),
-        const SizedBox(height: 16),
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: _productDetailsCard(d, products, lowStock, totalStock),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: _topSellingCard(revenue, mRevenue, mProfit),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: _purchaseOrderCard(totalStock, products),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 3,
-              child: _salesOrderCard(revenue, profit, sales, mRevenue, mProfit),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _mobileLayout(dynamic d, String revenue, String profit, String products, String employees, String mRevenue, String mProfit, String sales, String lowStock, String totalStock) {
-    final otherCards = <Widget>[
-      _inventorySummaryCard(products, lowStock, totalStock),
-      _productDetailsCard(d, products, lowStock, totalStock),
-      _topSellingCard(revenue, mRevenue, mProfit),
-      _purchaseOrderCard(totalStock, products),
-      _salesOrderCard(revenue, profit, sales, mRevenue, mProfit),
+  Widget _lowStockAlertsCard() {
+    final items = _lowStockItems();
+    const icons = [
+      Icons.headphones_outlined,
+      Icons.chair_outlined,
+      Icons.directions_run_outlined,
+      Icons.watch_outlined,
+      Icons.devices_other,
     ];
 
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16),
-      children: [
-        _brandingCard(),
-        const SizedBox(height: 12),
-
-        _salesActivityCard(revenue, profit, products, employees,
-            twoColumn: true, mRevenue: mRevenue, mProfit: mProfit, sales: sales),
-        const SizedBox(height: 12),
-
-        // Statistics: graphs (trend chart + top products + payments).
-        _statisticsCard(),
-        const SizedBox(height: 12),
-
-        // All other sections side-by-side in one horizontally scrollable strip.
-        SizedBox(
-          height: 380,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: otherCards.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => SizedBox(width: 280, child: otherCards[i]),
-          ),
-        ),
-      ],
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _cardHeader('Low Stock Alerts', action: _viewAll(1)),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        color: _kGreen, size: 18),
+                    const SizedBox(width: 6),
+                    Text('All products are well stocked',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, 13),
+                        color: AppTheme.secondaryText(context))),
+                  ],
+                ),
+              ),
+            )
+          else
+            for (var i = 0; i < items.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.dividerColor(context)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppTheme.panelColor(context),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(icons[i % icons.length],
+                          size: 22,
+                          color: AppTheme.secondaryText(context)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(items[i].name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, 13),
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textColor(context))),
+                            const SizedBox(height: 2),
+                            Text('SKU: ${items[i].sku}',
+                              style: TextStyle(
+                                fontSize: AppTheme.fontSize(context, 11),
+                                color: AppTheme.secondaryText(context))),
+                          ],
+                        ),
+                      ),
+                      Text('Stock: ${items[i].stock}',
+                        style: TextStyle(
+                          fontSize: AppTheme.fontSize(context, 12),
+                          fontWeight: FontWeight.w600,
+                          color: _kRed)),
+                    ],
+                  ),
+                ),
+              ),
+        ],
+      ),
     );
   }
+}
+
+// ---- Custom painters ----
+
+/// Smooth line chart with a gradient fill — no chart library needed.
+class _LineChartPainter extends CustomPainter {
+  final List<double> values;
+  final double yMax;
+  final Color lineColor;
+  final Color fillTop;
+  final Color gridColor;
+
+  _LineChartPainter({
+    required this.values,
+    required this.yMax,
+    required this.lineColor,
+    required this.fillTop,
+    required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+
+    Offset p(int i) => Offset(
+          size.width * i / (values.length - 1),
+          size.height -
+              (values[i].clamp(0, yMax) / yMax) * (size.height - 4) -
+              2,
+        );
+
+    // Horizontal grid lines.
+    final grid = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+    for (final f in [0.0, 0.25, 0.5, 0.75, 1.0]) {
+      canvas.drawLine(Offset(0, size.height * f),
+          Offset(size.width, size.height * f), grid);
+    }
+
+    // Smooth curve through midpoints.
+    final path = Path()..moveTo(p(0).dx, p(0).dy);
+    for (var i = 1; i < values.length; i++) {
+      final prev = p(i - 1);
+      final cur = p(i);
+      final mid = Offset((prev.dx + cur.dx) / 2, (prev.dy + cur.dy) / 2);
+      path.quadraticBezierTo(prev.dx, prev.dy, mid.dx, mid.dy);
+    }
+    final last = p(values.length - 1);
+    path.lineTo(last.dx, last.dy);
+
+    // Gradient fill under the curve.
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [fillTop, fillTop.withValues(alpha: 0.02)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(fillPath, fillPaint);
+
+    // The line itself.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = lineColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LineChartPainter old) =>
+      old.values.length != values.length ||
+      old.yMax != yMax ||
+      old.lineColor != lineColor;
+}
+
+/// Donut chart drawn with stroked arcs.
+class _DonutPainter extends CustomPainter {
+  final List<({double fraction, Color color})> segments;
+
+  _DonutPainter({required this.segments});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (segments.isEmpty) return;
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.22;
+    final inset = rect.deflate(paint.strokeWidth / 2);
+
+    var start = -math.pi / 2;
+    for (final seg in segments) {
+      final sweep = seg.fraction * 2 * math.pi;
+      paint.color = seg.color;
+      canvas.drawArc(inset, start, sweep, false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DonutPainter old) => true;
 }

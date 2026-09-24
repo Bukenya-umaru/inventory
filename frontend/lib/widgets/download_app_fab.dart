@@ -22,6 +22,9 @@ class DownloadAppFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      // No hero: several FABs share this route (IndexedStack keeps every tab
+      // alive), so the default hero tag would collide.
+      heroTag: null,
       mini: mini,
       tooltip: 'Get the mobile app',
       onPressed: () => showAppDownloadSheet(context),

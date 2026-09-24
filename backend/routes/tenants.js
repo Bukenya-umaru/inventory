@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Sale = require('../models/Sale');
+const Purchase = require('../models/Purchase');
 const { encryptPassword } = require('../utils/encryption');
 const { createAuditLog } = require('../utils/audit');
 const { authenticate, requireRole } = require('../middleware/auth');
@@ -350,6 +351,63 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
       const boxValue = (p.boxCostPrice || p.costPrice * (p.unitsPerBox || 1)) * (p.stockBoxes || 0);
       return sum + pieceValue + boxValue;
     }, 0);
+    const totalStockUnits = products.reduce((sum, p) =>
+      sum + (p.currentStock || 0) + (p.stockBoxes || 0) * (p.unitsPerBox || 1), 0);
+
+    // Stock value grouped by category (for the donut chart).
+    const stockByCategoryRaw = new Map();
+    for (const p of products) {
+      const pieceValue = p.costPrice * p.currentStock;
+      const boxValue = (p.boxCostPrice || p.costPrice * (p.unitsPerBox || 1)) * (p.stockBoxes || 0);
+      const key = p.categoryId ? p.categoryId.toString() : 'unknown';
+      stockByCategoryRaw.set(key, (stockByCategoryRaw.get(key) || 0) + pieceValue + boxValue);
+    }
+    const categoryDocs = await Category.find({ tenantId }).select('name');
+    const categoryNames = new Map(categoryDocs.map((c) => [c._id.toString(), c.name]));
+    const stockByCategory = [...stockByCategoryRaw.entries()]
+      .map(([id, value]) => ({ name: categoryNames.get(id) || 'Uncategorized', value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Low-stock alerts: products at/below their minimum, least stock first.
+    const lowStockItems = products
+      .filter((p) => p.currentStock <= p.minimumStock)
+      .sort((a, b) => a.currentStock - b.currentStock)
+      .slice(0, 5)
+      .map((p) => ({
+        name: p.name,
+        sku: p.sku || '-',
+        stock: p.currentStock
+      }));
+
+    // Recent transactions: latest sales + approved purchases merged.
+    const recentSales = await Sale.find({ tenantId })
+      .sort({ saleDate: -1 })
+      .limit(6)
+      .select('totalAmount customerName saleDate');
+    const recentPurchases = await Purchase.find({ tenantId, status: 'approved' })
+      .sort({ purchaseDate: -1 })
+      .limit(6)
+      .select('totalCost supplier invoiceNumber purchaseDate');
+    const recentTransactions = [
+      ...recentSales.map((s) => ({
+        date: s.saleDate,
+        type: 'Sale',
+        reference: `SO-${s._id.toString().slice(-5).toUpperCase()}`,
+        party: s.customerName || 'Walk-in customer',
+        amount: s.totalAmount,
+        status: 'Completed'
+      })),
+      ...recentPurchases.map((p) => ({
+        date: p.purchaseDate,
+        type: 'Purchase',
+        reference: p.invoiceNumber || `PO-${p._id.toString().slice(-5).toUpperCase()}`,
+        party: p.supplier || 'Supplier',
+        amount: p.totalCost,
+        status: 'Completed'
+      }))
+    ]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 6);
 
     res.json({
       success: true,
@@ -362,9 +420,13 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
         lowStockCount: lowStockProducts,
         categoryCount,
         totalStockValue,
+        totalStockUnits,
         trend: [...trendMap.values()],
         topProducts,
-        paymentBreakdown: paymentAgg
+        paymentBreakdown: paymentAgg,
+        stockByCategory,
+        lowStockItems,
+        recentTransactions
       }
     });
   } catch (error) {

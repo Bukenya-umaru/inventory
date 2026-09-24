@@ -96,11 +96,17 @@ class _AdminHomeState extends State<AdminHome> {
 
   static Widget _empty() => const SizedBox();
 
+  /// "View All" links on the dashboard: 0 opens Sales, 1 opens Stock.
+  void _openFromDashboard(int target) {
+    onItemTapLocal(target == 0 ? _transactionsIndex : 2,
+        childIndex: target == 0 ? 0 : null);
+  }
+
   /// Page stack order matches the drawer:
   /// 0 Dashboard | 1 Suppliers | 2 Employees | 3 Stock | 4 Categories
   /// 5 Sales | 6 History | 7 Damages | 8 Store | 9 Reports
-  late final List<Widget> _pages = const [
-    AdminDashboard(),
+  late final List<Widget> _pages = [
+    AdminDashboard(onSeeAll: _openFromDashboard),
     SuppliersScreen(),
     EmployeesScreen(),
     ProductsScreen(),
@@ -140,6 +146,44 @@ class _AdminHomeState extends State<AdminHome> {
     }
   }
 
+  /// Central navigation logic, shared by the nav wrapper and the
+  /// dashboard's "View All" links.
+  void onItemTapLocal(int i, {int? childIndex}) {
+    setState(() {
+      if (i == _transactionsIndex) {
+        // Tapping the parent toggles the branch; a child tap opens it.
+        if (childIndex != null) {
+          _transactionsChild = childIndex;
+          _transactionsExpanded = true;
+          _currentIndex = i;
+        } else {
+          _transactionsExpanded = !_transactionsExpanded;
+        }
+      } else if (i == _companyIndex) {
+        if (childIndex != null) {
+          _companyChild = childIndex;
+          _companyExpanded = true;
+          _currentIndex = i;
+        } else {
+          _companyExpanded = !_companyExpanded;
+        }
+      } else if (i == _reportsIndex) {
+        if (childIndex != null) {
+          _reportsChild = childIndex;
+          _reportsExpanded = true;
+          _currentIndex = i;
+        } else {
+          _reportsExpanded = !_reportsExpanded;
+        }
+      } else {
+        _currentIndex = i;
+        _transactionsExpanded = false;
+        _companyExpanded = false;
+        _reportsExpanded = false;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // The Employees screen (Company > Employees) hosts its own FAB that
@@ -148,41 +192,7 @@ class _AdminHomeState extends State<AdminHome> {
 
     return ResponsiveNavWrapper(
       selectedIndex: _currentIndex,
-      onItemTap: (i, {int? childIndex}) {
-        setState(() {
-          if (i == _transactionsIndex) {
-            // Tapping the parent toggles the branch; a child tap opens it.
-            if (childIndex != null) {
-              _transactionsChild = childIndex;
-              _transactionsExpanded = true;
-              _currentIndex = i;
-            } else {
-              _transactionsExpanded = !_transactionsExpanded;
-            }
-          } else if (i == _companyIndex) {
-            if (childIndex != null) {
-              _companyChild = childIndex;
-              _companyExpanded = true;
-              _currentIndex = i;
-            } else {
-              _companyExpanded = !_companyExpanded;
-            }
-          } else if (i == _reportsIndex) {
-            if (childIndex != null) {
-              _reportsChild = childIndex;
-              _reportsExpanded = true;
-              _currentIndex = i;
-            } else {
-              _reportsExpanded = !_reportsExpanded;
-            }
-          } else {
-            _currentIndex = i;
-            _transactionsExpanded = false;
-            _companyExpanded = false;
-            _reportsExpanded = false;
-          }
-        });
-      },
+      onItemTap: onItemTapLocal,
       items: _items,
       title: 'Business Dashboard',
       showThemeFab: !isEmployeesTab,
