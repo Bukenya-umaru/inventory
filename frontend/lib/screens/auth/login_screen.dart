@@ -426,7 +426,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Full-screen blue splash with the brand mark.
+  /// Full-screen blue splash with the brand mark and a loading spinner,
+  /// shown while the login form "loads".
   Widget _buildSplash(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -441,11 +442,29 @@ class _LoginScreenState extends State<LoginScreen> {
               : const [_kPageTop, _kBlueBottom],
         ),
       ),
-      child: const Center(
-        child: _BrandHeader(
-          iconSize: 92,
-          nameSize: 36,
-          taglineSize: 16,
+      child: SafeArea(
+        child: Column(
+          children: [
+            const Expanded(
+              child: Center(
+                child: _BrandHeader(
+                  iconSize: 92,
+                  nameSize: 36,
+                  taglineSize: 16,
+                ),
+              ),
+            ),
+            // Loading indicator — signals the app is preparing the login form.
+            const SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
+              ),
+            ),
+            const SizedBox(height: 48),
+          ],
         ),
       ),
     );
