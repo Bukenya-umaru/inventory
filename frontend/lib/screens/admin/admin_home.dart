@@ -7,6 +7,7 @@ import 'categories_screen.dart';
 import 'sales_screen.dart';
 import 'purchases_screen.dart';
 import 'expenses_screen.dart';
+import 'credits_screen.dart';
 import 'damages_screen.dart';
 import 'reports_screen.dart';
 import 'employees_screen.dart';
@@ -22,9 +23,9 @@ class _AdminHomeState extends State<AdminHome> {
   int _currentIndex = 0;
 
   /// Which branch under the Transactions tree is open.
-  /// Index 0 = Sales, index 1 = Expenses, index 2 = History,
-  /// index 3 = Damages.
-  int _transactionsChild = 2;
+  /// Index 0 = Sales, index 1 = Expenses, index 2 = Credits,
+  /// index 3 = History, index 4 = Damages.
+  int _transactionsChild = 3;
   bool _transactionsExpanded = false;
 
   /// Which branch under the Company tree is open.
@@ -56,6 +57,7 @@ class _AdminHomeState extends State<AdminHome> {
     children: const [
       DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
       DrawerChildItem(icon: Icons.payments_outlined, label: 'Expenses'),
+      DrawerChildItem(icon: Icons.credit_card_outlined, label: 'Credits'),
       DrawerChildItem(icon: Icons.history, label: 'History'),
       DrawerChildItem(icon: Icons.warning_amber_outlined, label: 'Damages'),
     ],
@@ -133,7 +135,7 @@ class _AdminHomeState extends State<AdminHome> {
   /// Page stack order matches the drawer:
   /// 0 Dashboard | 1 Suppliers | 2 Employees | 3 Stock
   /// 4 Product Categories | 5 Expense Categories | 6 Sales
-  /// 7 Expenses | 8 History | 9 Damages | 10 Store | 11 Reports
+  /// 7 Expenses | 8 Credits | 9 History | 10 Damages | 11 Store | 12 Reports
   late final List<Widget> _pages = [
     AdminDashboard(onSeeAll: _openFromDashboard),
     SuppliersScreen(),
@@ -143,6 +145,7 @@ class _AdminHomeState extends State<AdminHome> {
     CategoriesScreen(categoryType: 'expense'),
     SalesScreen(),
     ExpensesScreen(),
+    CreditsScreen(),
     PurchasesScreen(),
     DamagesScreen(),
     StoreScreen(),
@@ -170,12 +173,14 @@ class _AdminHomeState extends State<AdminHome> {
             : _transactionsChild == 1
             ? 7 // Expenses
             : _transactionsChild == 2
-            ? 8 // History
-            : 9; // Damages
+            ? 8 // Credits
+            : _transactionsChild == 3
+            ? 9 // History
+            : 10; // Damages
       case 5:
-        return 10; // Store
+        return 11; // Store
       case _reportsIndex:
-        return 11; // Reports (Sales Performance)
+        return 12; // Reports (Sales Performance)
       default:
         return 0;
     }

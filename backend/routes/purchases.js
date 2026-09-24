@@ -10,10 +10,13 @@ const { authenticate, requireActiveTenant, requirePermission } = require('../mid
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
-    const { page = 1, limit = 100, startDate, endDate, status } = req.query;
+    const { page = 1, limit = 100, startDate, endDate, status, paymentMethod, creditPaid } = req.query;
 
     const query = { tenantId };
     if (status === 'pending' || status === 'approved') query.status = status;
+    if (paymentMethod === 'credit') query.paymentMethod = 'credit';
+    if (creditPaid === 'true') query.creditPaid = true;
+    if (creditPaid === 'false') query.creditPaid = { $in: [false, null] };
     if (startDate || endDate) {
       query.purchaseDate = {};
       if (startDate) query.purchaseDate.$gte = new Date(startDate);
@@ -47,6 +50,7 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
 router.post('/', authenticate, requireActiveTenant, requirePermission('create_products'), async (req, res) => {
   try {
     const { productId, quantity, purchaseUnit: reqPurchaseUnit, unitCost, unitSellingPrice, supplier, supplierPhone, supplierEmail, invoiceNumber, paymentMethod, notes } = req.body;
+    const normalizedPaymentMethod = paymentMethod || 'cash';
 
     if (!productId || !quantity || quantity < 1) {
       return res.status(400).json({ success: false, message: 'Product and a quantity of at least 1 are required.' });
@@ -77,7 +81,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
       supplierPhone,
       supplierEmail,
       invoiceNumber,
-      paymentMethod,
+      paymentMethod: normalizedPaymentMethod,
+      creditPaid: false,
       notes,
       recordedBy: req.userId,
       status: 'pending'
@@ -189,7 +194,14 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('create_
     if (req.body.supplierPhone !== undefined) purchase.supplierPhone = req.body.supplierPhone;
     if (req.body.supplierEmail !== undefined) purchase.supplierEmail = req.body.supplierEmail;
     if (req.body.invoiceNumber !== undefined) purchase.invoiceNumber = req.body.invoiceNumber;
-    if (req.body.paymentMethod !== undefined) purchase.paymentMethod = req.body.paymentMethod;
+    if (req.body.paymentMethod !== undefined) {
+      purchase.paymentMethod = req.body.paymentMethod;
+      if (purchase.paymentMethod !== 'credit') {
+        purchase.creditPaid = false;
+        purchase.creditPaidAt = null;
+        purchase.creditPaidBy = null;
+      }
+    }
     if (req.body.notes !== undefined) purchase.notes = req.body.notes;
 
     // Recompute totalCost after quantity/cost edits
@@ -280,6 +292,45 @@ router.post('/:id/approve', authenticate, requireActiveTenant, requirePermission
     });
   } catch (error) {
     console.error('Approve purchase error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+// ── POST /api/purchases/:id/mark-paid ─────────────────────────────
+// Marks a credit stock purchase as fully paid.
+router.post('/:id/mark-paid', authenticate, requireActiveTenant, requirePermission('record_purchases'), async (req, res) => {
+  try {
+    const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
+    const purchase = await Purchase.findOne({
+      _id: req.params.id,
+      tenantId,
+      paymentMethod: 'credit'
+    });
+    if (!purchase) {
+      return res.status(404).json({ success: false, message: 'Credit purchase not found.' });
+    }
+    if (purchase.creditPaid) {
+      return res.status(400).json({ success: false, message: 'This credit has already been marked as paid.' });
+    }
+
+    purchase.creditPaid = true;
+    purchase.creditPaidAt = new Date();
+    purchase.creditPaidBy = req.userId;
+    await purchase.save();
+
+    await createAuditLog({
+      tenantId,
+      eventType: 'purchase_approved',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Marked credit purchase as fully paid: ${purchase.totalCost}`,
+      details: { purchaseId: purchase._id, totalCost: purchase.totalCost, creditPaid: true },
+      ipAddress: req.ip
+    });
+
+    res.json({ success: true, message: 'Credit marked as fully paid.', purchase });
+  } catch (error) {
+    console.error('Mark credit paid error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });

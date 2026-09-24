@@ -7,6 +7,7 @@ import '../admin/categories_screen.dart';
 import '../admin/sales_screen.dart';
 import '../admin/purchases_screen.dart';
 import '../admin/expenses_screen.dart';
+import '../admin/credits_screen.dart';
 import '../admin/damages_screen.dart';
 import '../admin/reports_screen.dart';
 import '../admin/suppliers_screen.dart';
@@ -21,9 +22,9 @@ class _EmployeeHomeState extends State<EmployeeHome> {
   int _currentIndex = 0;
 
   /// Which branch under the Transactions tree is open.
-  /// Index 0 = Sales, index 1 = Expenses, index 2 = History,
-  /// index 3 = Damages.
-  int _transactionsChild = 2;
+  /// Index 0 = Sales, index 1 = Expenses, index 2 = Credits,
+  /// index 3 = History, index 4 = Damages.
+  int _transactionsChild = 3;
   bool _transactionsExpanded = false;
 
   /// Which branch under the Company tree is open.
@@ -55,6 +56,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
     children: const [
       DrawerChildItem(icon: Icons.shopping_cart_outlined, label: 'Sales'),
       DrawerChildItem(icon: Icons.payments_outlined, label: 'Expenses'),
+      DrawerChildItem(icon: Icons.credit_card_outlined, label: 'Credits'),
       DrawerChildItem(icon: Icons.history, label: 'History'),
       DrawerChildItem(icon: Icons.warning_amber_outlined, label: 'Damages'),
     ],
@@ -123,7 +125,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
   /// Page stack order matches the drawer:
   /// 0 Dashboard | 1 Suppliers | 2 Stock | 3 Product Categories
   /// 4 Expense Categories | 5 Sales | 6 History | 7 Damages
-  /// 6 Expenses | 7 History | 8 Damages | 9 Store | 10 Reports
+  /// 6 Expenses | 7 Credits | 8 History | 9 Damages | 10 Store | 11 Reports
   late final List<Widget> _pages = const [
     EmployeeDashboard(),
     SuppliersScreen(),
@@ -132,6 +134,7 @@ class _EmployeeHomeState extends State<EmployeeHome> {
     CategoriesScreen(categoryType: 'expense'),
     SalesScreen(),
     ExpensesScreen(),
+    CreditsScreen(),
     PurchasesScreen(),
     DamagesScreen(),
     StoreScreen(),
@@ -159,12 +162,14 @@ class _EmployeeHomeState extends State<EmployeeHome> {
             : _transactionsChild == 1
             ? 6 // Expenses
             : _transactionsChild == 2
-            ? 7 // History
-            : 8; // Damages
+            ? 7 // Credits
+            : _transactionsChild == 3
+            ? 8 // History
+            : 9; // Damages
       case 5:
-        return 9; // Store
+        return 10; // Store
       case _reportsIndex:
-        return 10; // Reports (Sales Performance)
+        return 11; // Reports (Sales Performance)
       default:
         return 0;
     }

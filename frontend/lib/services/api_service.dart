@@ -525,11 +525,17 @@ class ApiService {
   static Future<Map<String, dynamic>> getPurchases({
     String? startDate,
     String? endDate,
+    String? paymentMethod,
+    bool? creditPaid,
   }) async {
     final params = <String, String>{};
     if (startDate != null && startDate.isNotEmpty)
       params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    if (paymentMethod != null && paymentMethod.isNotEmpty) {
+      params['paymentMethod'] = paymentMethod;
+    }
+    if (creditPaid != null) params['creditPaid'] = '$creditPaid';
     final uri = Uri.parse(
       '$baseUrl/purchases',
     ).replace(queryParameters: params);
@@ -590,6 +596,14 @@ class ApiService {
   static Future<Map<String, dynamic>> approvePurchase(String id) async {
     final response = await http.post(
       Uri.parse('$baseUrl/purchases/$id/approve'),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> markPurchaseCreditPaid(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/purchases/$id/mark-paid'),
       headers: _headers(),
     );
     return _handleResponse(response);

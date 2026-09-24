@@ -184,7 +184,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
           supplierPhone: resolved.supplierPhone,
           supplierEmail: resolved.supplierEmail,
           invoiceNumber,
-          paymentMethod,
+          paymentMethod: paymentMethod || 'cash',
+          creditPaid: false,
           notes,
           recordedBy: req.userId,
           status: 'pending'
@@ -279,7 +280,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         supplierPhone: resolved.supplierPhone,
         supplierEmail: resolved.supplierEmail,
         invoiceNumber,
-        paymentMethod,
+        paymentMethod: paymentMethod || 'cash',
+        creditPaid: false,
         notes,
         recordedBy: req.userId,
         status: 'pending'

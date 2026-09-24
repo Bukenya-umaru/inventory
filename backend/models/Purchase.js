@@ -80,6 +80,19 @@ const purchaseSchema = new mongoose.Schema({
     enum: ['cash', 'credit', 'bank_transfer', 'mobile_money', 'other'],
     default: 'cash'
   },
+  creditPaid: {
+    type: Boolean,
+    default: false
+  },
+  creditPaidAt: {
+    type: Date,
+    default: null
+  },
+  creditPaidBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   notes: {
     type: String
   },

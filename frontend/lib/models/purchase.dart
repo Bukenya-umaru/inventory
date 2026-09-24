@@ -37,6 +37,8 @@ class Purchase {
   final String? supplierEmail;
   final String? invoiceNumber;
   final String? paymentMethod;
+  final bool creditPaid;
+  final DateTime? creditPaidAt;
   final String? notes;
   final String? recordedByName;
   final String? recordedById;
@@ -61,6 +63,8 @@ class Purchase {
     this.supplierEmail,
     this.invoiceNumber,
     this.paymentMethod = 'cash',
+    this.creditPaid = false,
+    this.creditPaidAt,
     this.notes,
     this.recordedByName,
     this.recordedById,
@@ -96,6 +100,10 @@ class Purchase {
       supplierEmail: json['supplierEmail'],
       invoiceNumber: json['invoiceNumber'],
       paymentMethod: json['paymentMethod'] ?? 'cash',
+      creditPaid: json['creditPaid'] == true,
+      creditPaidAt: json['creditPaidAt'] != null
+          ? DateTime.parse(json['creditPaidAt'])
+          : null,
       notes: json['notes'],
       recordedByName: json['recordedBy'] is Map
           ? (json['recordedBy'] as Map)['name']
@@ -112,12 +120,13 @@ class Purchase {
           : null,
       editHistory: json['editHistory'] is List
           ? (json['editHistory'] as List)
-              .whereType<Map>()
-              .map((e) => PurchaseEdit.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => PurchaseEdit.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : [],
       purchaseDate: DateTime.parse(
-          json['purchaseDate'] ?? DateTime.now().toIso8601String()),
+        json['purchaseDate'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }
