@@ -7,6 +7,7 @@ import '../../utils/currency.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
+import '../../widgets/searchable_picker.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -19,6 +20,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   List<Map<String, dynamic>> _expenses = [];
   List<Category> _categories = [];
   bool _loading = true;
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime get _safeStart => _startDate ?? _today;
+  DateTime get _safeEnd => _endDate ?? _today;
 
   @override
   void initState() {
@@ -46,7 +57,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        ApiService.getExpenses(),
+        ApiService.getExpenses(
+          startDate: DateTime(
+            _safeStart.year,
+            _safeStart.month,
+            _safeStart.day,
+          ).toIso8601String(),
+          endDate: DateTime(
+            _safeEnd.year,
+            _safeEnd.month,
+            _safeEnd.day,
+            23,
+            59,
+            59,
+            999,
+          ).toIso8601String(),
+        ),
         _fetchExpenseCategories(),
       ]);
       final expenseResponse = results[0] as Map<String, dynamic>;
@@ -89,6 +115,26 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     (sum, e) => sum + ((e['amount'] as num?)?.toDouble() ?? 0),
   );
 
+  Future<void> _pickDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isStart ? _safeStart : _safeEnd,
+      firstDate: DateTime(2020),
+      lastDate: _today,
+    );
+    if (picked == null) return;
+    setState(() {
+      if (isStart) {
+        _startDate = picked;
+        if (_safeEnd.isBefore(picked)) _endDate = picked;
+      } else {
+        _endDate = picked;
+        if (_safeStart.isAfter(picked)) _startDate = picked;
+      }
+    });
+    _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -126,6 +172,40 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppTheme.pad(context, 16),
+            0,
+            AppTheme.pad(context, 16),
+            8,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _dateChip(
+                  label: DateFormat('MMM d, yyyy').format(_safeStart),
+                  icon: Icons.calendar_today,
+                  onTap: () => _pickDate(isStart: true),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '—',
+                  style: TextStyle(
+                    color: AppTheme.secondaryText(context),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                _dateChip(
+                  label: DateFormat('MMM d, yyyy').format(_safeEnd),
+                  icon: Icons.calendar_month,
+                  onTap: () => _pickDate(isStart: false),
+                ),
+              ],
+            ),
+          ),
+        ),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
@@ -148,6 +228,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _dateChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return ActionChip(
+      avatar: Icon(icon, size: 16),
+      label: Text(label),
+      onPressed: onTap,
     );
   }
 
@@ -221,6 +313,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     final descriptionCtrl = TextEditingController();
     String? categoryId;
     String paymentMethod = 'cash';
+    DateTime expenseDate = _today;
 
     showDialog(
       context: context,
@@ -231,19 +324,35 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Expense Category *',
-                  ),
-                  initialValue: categoryId,
-                  items: _categories
-                      .map(
-                        (c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)),
-                      )
-                      .toList(),
+                SearchablePicker<Category>(
+                  label: 'Expense Category *',
+                  selected: categoryId == null
+                      ? null
+                      : _categories
+                            .where((c) => c.id == categoryId)
+                            .firstOrNull,
+                  items: _categories,
+                  itemLabel: (category) => category.name,
                   onChanged: (value) =>
-                      setDialogState(() => categoryId = value),
+                      setDialogState(() => categoryId = value?.id),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: const Text('Expense Date'),
+                  subtitle: Text(DateFormat('MMM d, yyyy').format(expenseDate)),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: expenseDate,
+                      firstDate: DateTime(2020),
+                      lastDate: _today,
+                    );
+                    if (picked != null) {
+                      setDialogState(() => expenseDate = picked);
+                    }
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -312,6 +421,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   'amount': amount,
                   'description': descriptionCtrl.text.trim(),
                   'paymentMethod': paymentMethod,
+                  'expenseDate': expenseDate.toIso8601String(),
                 });
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
                 AppEvents.instance.emit('expenses');

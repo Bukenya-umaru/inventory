@@ -7,6 +7,7 @@ import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../models/supplier.dart';
 import '../../widgets/supplier_picker.dart';
+import '../../widgets/searchable_picker.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
@@ -1010,17 +1011,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   _duplicateBanner(ctx, duplicate!),
                 ],
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  value: selectedCategoryId,
-                  items: _categories
-                      .map(
-                        (c) =>
-                            DropdownMenuItem(value: c.id, child: Text(c.name)),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
-                      setDialogState(() => selectedCategoryId = v),
+                SearchablePicker<Category>(
+                  label: 'Category',
+                  selected: selectedCategoryId == null
+                      ? null
+                      : _categories
+                            .where((c) => c.id == selectedCategoryId)
+                            .firstOrNull,
+                  items: _categories,
+                  itemLabel: (category) => category.name,
+                  onChanged: (category) =>
+                      setDialogState(() => selectedCategoryId = category?.id),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(

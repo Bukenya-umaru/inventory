@@ -6,6 +6,7 @@ import '../../models/sale.dart';
 import '../../models/product.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
+import '../../widgets/searchable_picker.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -456,17 +457,16 @@ class _SalesScreenState extends State<SalesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<Product>(
-                  decoration: const InputDecoration(labelText: 'Product'),
-                  items: _products.map((p) {
-                    String stockInfo = p.sellsAsBox
+                SearchablePicker<Product>(
+                  label: 'Product',
+                  selected: selectedProduct,
+                  items: _products,
+                  itemLabel: (p) {
+                    final stockInfo = p.sellsAsBox
                         ? '${p.stockBoxes} bx, ${p.currentStock} pc'
                         : '${p.currentStock} pc';
-                    return DropdownMenuItem(
-                      value: p,
-                      child: Text('${p.name} ($stockInfo)'),
-                    );
-                  }).toList(),
+                    return '${p.name} ($stockInfo)';
+                  },
                   onChanged: (v) {
                     setDialogState(() {
                       selectedProduct = v;
