@@ -55,6 +55,17 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     setState(() {
       if (start) {
         _startDate = DateTime(selected.year, selected.month, selected.day);
+        if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+          _endDate = DateTime(
+            selected.year,
+            selected.month,
+            selected.day,
+            23,
+            59,
+            59,
+            999,
+          );
+        }
       } else {
         _endDate = DateTime(
           selected.year,
@@ -65,9 +76,36 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           59,
           999,
         );
+        if (_startDate != null && _startDate!.isAfter(_endDate!)) {
+          _startDate = DateTime(selected.year, selected.month, selected.day);
+        }
       }
     });
     _load();
+  }
+
+  Widget _emptyState() {
+    final hasDateFilter = _startDate != null || _endDate != null;
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 120),
+          const Icon(Icons.event_busy, size: 52, color: Colors.grey),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              hasDateFilter
+                  ? 'No activity found for the selected date range.'
+                  : 'No activity found.',
+              style: TextStyle(color: AppTheme.secondaryText(context)),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -130,6 +168,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
+              : _logs.isEmpty
+              ? _emptyState()
               : Padding(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppTheme.pad(context, 16),

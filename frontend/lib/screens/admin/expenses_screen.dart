@@ -22,6 +22,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   List<Map<String, dynamic>> _expenses = [];
   List<Category> _categories = [];
   bool _loading = true;
+  bool _showAll = false;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -60,20 +61,24 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     try {
       final results = await Future.wait([
         ApiService.getExpenses(
-          startDate: DateTime(
-            _safeStart.year,
-            _safeStart.month,
-            _safeStart.day,
-          ).toIso8601String(),
-          endDate: DateTime(
-            _safeEnd.year,
-            _safeEnd.month,
-            _safeEnd.day,
-            23,
-            59,
-            59,
-            999,
-          ).toIso8601String(),
+          startDate: _showAll
+              ? null
+              : DateTime(
+                  _safeStart.year,
+                  _safeStart.month,
+                  _safeStart.day,
+                ).toIso8601String(),
+          endDate: _showAll
+              ? null
+              : DateTime(
+                  _safeEnd.year,
+                  _safeEnd.month,
+                  _safeEnd.day,
+                  23,
+                  59,
+                  59,
+                  999,
+                ).toIso8601String(),
         ),
         _fetchExpenseCategories(),
       ]);
@@ -126,6 +131,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
     if (picked == null) return;
     setState(() {
+      _showAll = false;
       if (isStart) {
         _startDate = picked;
         if (_safeEnd.isBefore(picked)) _endDate = picked;
@@ -133,6 +139,21 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         _endDate = picked;
         if (_safeStart.isAfter(picked)) _startDate = picked;
       }
+    });
+    _load();
+  }
+
+  void _showAllExpenses() {
+    setState(() => _showAll = true);
+    _load();
+  }
+
+  void _showTodayExpenses() {
+    final today = _today;
+    setState(() {
+      _showAll = false;
+      _startDate = today;
+      _endDate = today;
     });
     _load();
   }
@@ -192,8 +213,27 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
+                _filterBtn(
+                  label: 'All',
+                  icon: Icons.all_inclusive,
+                  isActive: _showAll,
+                  onTap: _showAllExpenses,
+                ),
+                const SizedBox(width: 6),
+                _filterBtn(
+                  label: 'Today',
+                  icon: Icons.today,
+                  isActive:
+                      !_showAll &&
+                      _safeStart == _safeEnd &&
+                      _safeStart == _today,
+                  onTap: _showTodayExpenses,
+                ),
+                const SizedBox(width: 6),
                 _dateChip(
-                  label: DateFormat('MMM d, yyyy').format(_safeStart),
+                  label: _showAll
+                      ? 'Start date'
+                      : DateFormat('MMM d, yyyy').format(_safeStart),
                   icon: Icons.calendar_today,
                   onTap: () => _pickDate(isStart: true),
                 ),
@@ -207,7 +247,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 ),
                 const SizedBox(width: 4),
                 _dateChip(
-                  label: DateFormat('MMM d, yyyy').format(_safeEnd),
+                  label: _showAll
+                      ? 'End date'
+                      : DateFormat('MMM d, yyyy').format(_safeEnd),
                   icon: Icons.calendar_month,
                   onTap: () => _pickDate(isStart: false),
                 ),
@@ -249,6 +291,51 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       avatar: Icon(icon, size: 16),
       label: Text(label),
       onPressed: onTap,
+    );
+  }
+
+  Widget _filterBtn({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.primary : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? AppTheme.primary
+                : Theme.of(context).dividerColor.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? Colors.white : AppTheme.secondaryText(context),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive
+                    ? Colors.white
+                    : AppTheme.secondaryText(context),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
