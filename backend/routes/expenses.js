@@ -38,7 +38,7 @@ router.post(
   '/',
   authenticate,
   requireActiveTenant,
-  requirePermission('record_purchases'),
+  requirePermission('record_expenses'),
   async (req, res) => {
     try {
       const {

@@ -91,39 +91,8 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
       notes,
       recordedBy: req.userId
     });
+    sale.status = 'pending';
     await sale.save();
-
-    if (saleUnit === 'box') {
-      product.stockBoxes -= quantity;
-    } else {
-      let piecesNeeded = quantity;
-
-      const looseAvailable = product.currentStock || 0;
-      if (looseAvailable >= piecesNeeded) {
-        product.currentStock -= piecesNeeded;
-      } else {
-
-        piecesNeeded -= looseAvailable;
-        product.currentStock = 0;
-
-        while (piecesNeeded > 0 && (product.stockBoxes || 0) > 0) {
-          product.stockBoxes -= 1;
-          const piecesInBox = product.unitsPerBox || 1;
-          if (piecesInBox >= piecesNeeded) {
-            product.currentStock = piecesInBox - piecesNeeded;
-            piecesNeeded = 0;
-          } else {
-            piecesNeeded -= piecesInBox;
-          }
-          boxOpened = true;
-        }
-      }
-    }
-    await product.save();
-
-    // Notification: warn the whole business (admin + employees) if the product
-    // just dropped to/below its minimum stock level.
-    await notifyLowStock(product, { userId: req.userId, userRole: req.user.role }, { reason: 'sale' });
 
     await createAuditLog({
       tenantId,
@@ -137,7 +106,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
 
     res.status(201).json({
       success: true,
-      message: boxOpened ? 'Sale recorded. A box was opened to fulfill piece order.' : 'Sale recorded.',
+      message: 'Sale recorded and is awaiting approval.',
       sale: {
         id: sale._id,
         productName: product.name,
@@ -146,12 +115,59 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('record_sa
         unitPrice: price,
         totalAmount,
         profit,
-        boxOpened,
+        boxOpened: false,
         saleDate: sale.saleDate
       }
     });
+
   } catch (error) {
     console.error('Record sale error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.post('/:id/approve', authenticate, requireActiveTenant, requirePermission('approve_sales'), async (req, res) => {
+  try {
+    const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
+    const sale = await Sale.findOne({ _id: req.params.id, tenantId, status: 'pending' });
+    if (!sale) return res.status(404).json({ success: false, message: 'Pending sale not found.' });
+    const product = await Product.findOne({ _id: sale.productId, tenantId });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+    const available = sale.saleUnit === 'box'
+      ? (product.stockBoxes || 0)
+      : (product.currentStock || 0) + (product.stockBoxes || 0) * (product.unitsPerBox || 1);
+    if (available < sale.quantity) return res.status(400).json({ success: false, message: 'Insufficient stock to approve this sale.' });
+
+    if (sale.saleUnit === 'box') {
+      product.stockBoxes -= sale.quantity;
+    } else {
+      let remaining = sale.quantity;
+      const loose = product.currentStock || 0;
+      product.currentStock = Math.max(0, loose - remaining);
+      remaining = Math.max(0, remaining - loose);
+      while (remaining > 0 && (product.stockBoxes || 0) > 0) {
+        product.stockBoxes -= 1;
+        remaining -= product.unitsPerBox || 1;
+      }
+    }
+    await product.save();
+    sale.status = 'approved';
+    sale.approvedBy = req.userId;
+    sale.approvedAt = new Date();
+    await sale.save();
+    await notifyLowStock(product, { userId: req.userId, userRole: req.user.role }, { reason: 'sale' });
+    await createAuditLog({
+      tenantId,
+      eventType: 'sale_approved',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Approved sale: ${sale.quantity}x ${product.name}`,
+      details: { saleId: sale._id, productName: product.name, quantity: sale.quantity },
+      ipAddress: req.ip
+    });
+    res.json({ success: true, message: 'Sale approved.', sale });
+  } catch (error) {
+    console.error('Approve sale error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });

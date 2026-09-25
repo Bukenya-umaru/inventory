@@ -3,6 +3,7 @@ import '../../services/api_service.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
+import '../../widgets/compact_data_table.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -135,81 +136,63 @@ class _UsersScreenState extends State<UsersScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: AppTheme.pad(context, 16),
                     ),
-                    itemCount: _users.length,
-                    itemBuilder: (ctx, i) {
-                      final u = _users[i];
-                      final roleColor = u.isDeveloper
-                          ? const Color(0xFF7C3AED)
-                          : u.isAdmin
-                          ? AppTheme.primary
-                          : AppTheme.success;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: roleColor.withValues(alpha: 0.1),
-                            child: Text(
-                              u.name[0].toUpperCase(),
-                              style: TextStyle(
-                                color: roleColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            u.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: AppTheme.fontSize(context, 15),
-                            ),
-                          ),
-                          subtitle: Text(
-                            u.email,
-                            style: TextStyle(
-                              fontSize: AppTheme.fontSize(context, 13),
-                              color: AppTheme.secondaryText(context),
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: roleColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  u.role,
-                                  style: TextStyle(
-                                    fontSize: AppTheme.fontSize(context, 11),
-                                    fontWeight: FontWeight.w600,
-                                    color: roleColor,
-                                  ),
-                                ),
-                              ),
-                              if (u.role != 'developer')
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: AppTheme.danger,
-                                  ),
-                                  onPressed: () => _deleteUser(context, u),
-                                ),
-                            ],
-                          ),
+                    child: CompactDataTable(
+                      columns: const [
+                        CompactTableColumn('Name', flex: 3),
+                        CompactTableColumn('Email', flex: 4),
+                        CompactTableColumn('Role', flex: 2),
+                        CompactTableColumn(
+                          'Actions',
+                          flex: 2,
+                          rightAligned: true,
                         ),
-                      );
-                    },
+                      ],
+                      rows: _users.map((u) {
+                        final roleColor = u.isDeveloper
+                            ? const Color(0xFF7C3AED)
+                            : u.isAdmin
+                            ? AppTheme.primary
+                            : AppTheme.success;
+                        return CompactDataRow([
+                          CompactDataTable.accent(context, u.name),
+                          CompactDataTable.muted(context, u.email),
+                          CompactDataTable.chip(context, u.role, roleColor),
+                          u.role == 'developer'
+                              ? const SizedBox.shrink()
+                              : CompactDataTable.actions([
+                                  CompactDataTable.actionIcon(
+                                    icon: Icons.edit_outlined,
+                                    color: AppTheme.blueBright(context),
+                                    tooltip: 'Edit user',
+                                    onTap: () => _showEditUser(u),
+                                  ),
+                                  if (u.isEmployee)
+                                    CompactDataTable.actionIcon(
+                                      icon: u.accountStatus == 'suspended'
+                                          ? Icons.play_arrow
+                                          : Icons.pause,
+                                      color: u.accountStatus == 'suspended'
+                                          ? AppTheme.success
+                                          : AppTheme.warning,
+                                      tooltip: u.accountStatus == 'suspended'
+                                          ? 'Reactivate employee'
+                                          : 'Suspend employee',
+                                      onTap: () => _toggleEmployeeStatus(u),
+                                    ),
+                                  CompactDataTable.actionIcon(
+                                    icon: Icons.delete_outline,
+                                    color: AppTheme.danger,
+                                    tooltip: 'Delete user',
+                                    onTap: () => _deleteUser(context, u),
+                                  ),
+                                ]),
+                        ]);
+                      }).toList(),
+                    ),
                   ),
                 ),
         ),
@@ -230,6 +213,115 @@ class _UsersScreenState extends State<UsersScreen> {
         _load();
       },
     );
+  }
+
+  void _showEditUser(User user) {
+    final name = TextEditingController(text: user.name);
+    final email = TextEditingController(text: user.email);
+    final password = TextEditingController();
+    final department = TextEditingController(text: user.department ?? '');
+    final position = TextEditingController(text: user.position ?? '');
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Edit ${user.role == 'admin' ? 'Admin' : 'Employee'}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: email,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: password,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  helperText: 'Leave blank to keep the current password',
+                ),
+                obscureText: true,
+              ),
+              if (user.isEmployee) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: department,
+                  decoration: const InputDecoration(labelText: 'Department'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: position,
+                  decoration: const InputDecoration(labelText: 'Position'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          LoadingElevatedButton(
+            loadingChild: const Text('Saving...'),
+            onPressed: () async {
+              final data = <String, dynamic>{
+                'name': name.text.trim(),
+                'email': email.text.trim(),
+                if (user.isEmployee) ...{
+                  'department': department.text.trim(),
+                  'position': position.text.trim(),
+                },
+              };
+              if (password.text.isNotEmpty) data['password'] = password.text;
+              await ApiService.updateUser(user.id, data);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              _load();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _toggleEmployeeStatus(User user) async {
+    if (user.accountStatus == 'suspended') {
+      await ApiService.reactivateUser(user.id);
+      _load();
+      return;
+    }
+    final reason = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Suspend Employee'),
+        content: TextField(
+          controller: reason,
+          decoration: const InputDecoration(labelText: 'Reason'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Suspend'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ApiService.suspendUser(user.id, reason: reason.text.trim());
+      _load();
+    }
   }
 
   void _showCreateAdmin() {

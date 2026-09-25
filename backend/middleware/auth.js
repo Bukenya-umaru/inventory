@@ -11,7 +11,7 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-passwordHash -encryptedPassword -passwordIV');
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.accountStatus === 'suspended') {
       return res.status(401).json({ success: false, message: 'Invalid token or user inactive.' });
     }
 

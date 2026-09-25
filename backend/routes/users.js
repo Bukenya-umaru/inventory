@@ -199,6 +199,9 @@ router.delete('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
+    if (user.role !== 'employee') {
+      return res.status(403).json({ success: false, message: 'Only employee accounts can be deleted.' });
+    }
     if (req.user.role === 'admin') {
 
       if (user.tenantId.toString() !== req.user.tenantId.toString()) {
@@ -234,6 +237,102 @@ router.delete('/:id', authenticate, async (req, res) => {
 
     res.json({ success: true, message: 'Employee deleted.' });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.put('/:id', authenticate, requireRole('developer'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || !['admin', 'employee'].includes(user.role)) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    const { name, email, password, department, position, permissions, tenantId } = req.body;
+    if (email !== undefined) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+      if (existing) return res.status(400).json({ success: false, message: 'Email already registered.' });
+      user.email = normalizedEmail;
+    }
+    if (name !== undefined) user.name = String(name).trim();
+    if (department !== undefined) user.department = department;
+    if (position !== undefined) user.position = position;
+    if (permissions !== undefined && user.role === 'employee') user.permissions = permissions;
+    if (tenantId !== undefined) {
+      const tenant = await Tenant.findById(tenantId);
+      if (!tenant) return res.status(404).json({ success: false, message: 'Business not found.' });
+      user.tenantId = tenant._id;
+    }
+    if (password !== undefined && String(password).length > 0) {
+      if (String(password).length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+      const { encryptedPassword, iv } = encryptPassword(String(password));
+      user.encryptedPassword = encryptedPassword;
+      user.passwordIV = iv;
+      user.passwordHash = await bcrypt.hash(String(password), 12);
+    }
+    await user.save();
+    res.json({ success: true, message: 'User updated.', user });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.put('/:id/suspend', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || user.role !== 'employee' || !user.isActive) {
+      return res.status(404).json({ success: false, message: 'Active employee not found.' });
+    }
+    if (req.user.role === 'admin' && String(user.tenantId) !== String(req.user.tenantId)) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+    if (!['admin', 'developer'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Only admins and developers can suspend employees.' });
+    }
+    user.accountStatus = 'suspended';
+    user.suspendedAt = new Date();
+    user.suspendedBy = req.userId;
+    user.suspensionReason = req.body.reason || 'Account suspended';
+    await user.save();
+    await createAuditLog({
+      tenantId: user.tenantId,
+      eventType: 'employee_suspended',
+      severity: 'warning',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Suspended employee: ${user.name}`,
+      details: { reason: user.suspensionReason },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    res.json({ success: true, message: 'Employee suspended.' });
+  } catch (error) {
+    console.error('Suspend employee error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.put('/:id/reactivate', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || user.role !== 'employee' || !user.isActive) {
+      return res.status(404).json({ success: false, message: 'Employee not found.' });
+    }
+    if (req.user.role === 'admin' && String(user.tenantId) !== String(req.user.tenantId)) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+    if (!['admin', 'developer'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Only admins and developers can reactivate employees.' });
+    }
+    user.accountStatus = 'active';
+    user.suspendedAt = null;
+    user.suspendedBy = null;
+    user.suspensionReason = null;
+    await user.save();
+    res.json({ success: true, message: 'Employee reactivated.' });
+  } catch (error) {
+    console.error('Reactivate employee error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });

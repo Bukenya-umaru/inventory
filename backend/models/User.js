@@ -73,12 +73,31 @@ const userSchema = new mongoose.Schema({
     enum: [
       'manage_categories', 'create_products', 'edit_products', 'delete_products',
       'record_sales', 'record_purchases', 'record_damages', 'view_inventory',
-      'view_transactions', 'view_profits', 'adjust_inventory', 'view_reports'
+      'view_transactions', 'view_profits', 'adjust_inventory', 'view_reports',
+      'record_expenses', 'approve_sales', 'approve_credits'
     ]
   }],
   isActive: {
     type: Boolean,
     default: true
+  },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'suspended'],
+    default: 'active'
+  },
+  suspendedAt: {
+    type: Date,
+    default: null
+  },
+  suspendedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  suspensionReason: {
+    type: String,
+    default: null
   },
   deletedAt: {
     type: Date

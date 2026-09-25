@@ -23,7 +23,7 @@ const passwordViewLogSchema = new mongoose.Schema({
   },
   targetRole: {
     type: String,
-    enum: ['admin', 'employee'],
+    enum: ['developer', 'admin', 'employee'],
     required: true
   },
   viewReason: {

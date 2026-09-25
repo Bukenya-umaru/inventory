@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../models/tenant.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
+import '../../widgets/compact_data_table.dart';
 
 class BusinessesScreen extends StatefulWidget {
   const BusinessesScreen({super.key});
@@ -113,12 +114,49 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _tenants.length,
-                    itemBuilder: (ctx, i) =>
-                        _TenantCard(tenant: _tenants[i], onRefresh: _load),
+                    child: CompactDataTable(
+                      columns: const [
+                        CompactTableColumn('Business', flex: 3),
+                        CompactTableColumn('Owner', flex: 3),
+                        CompactTableColumn('Type', flex: 2),
+                        CompactTableColumn(
+                          'Users',
+                          flex: 1,
+                          rightAligned: true,
+                        ),
+                        CompactTableColumn('Status', flex: 2),
+                        CompactTableColumn(
+                          'Actions',
+                          flex: 3,
+                          rightAligned: true,
+                        ),
+                      ],
+                      rows: _tenants.map((tenant) {
+                        final statusColor = switch (tenant.status) {
+                          'active' => AppTheme.success,
+                          'suspended' => AppTheme.warning,
+                          _ => AppTheme.danger,
+                        };
+                        return CompactDataRow([
+                          CompactDataTable.accent(context, tenant.businessName),
+                          CompactDataTable.muted(context, tenant.ownerName),
+                          CompactDataTable.cell(context, tenant.businessType),
+                          CompactDataTable.cell(context, '${tenant.userCount}'),
+                          CompactDataTable.chip(
+                            context,
+                            tenant.status,
+                            statusColor,
+                          ),
+                          _TenantTableActions(
+                            tenant: tenant,
+                            onRefresh: _load,
+                            onEdit: () => _showEditBusiness(tenant),
+                          ),
+                        ]);
+                      }).toList(),
+                    ),
                   ),
                 ),
         ),
@@ -131,6 +169,159 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => _CreateBusinessScreen(onCreated: _load),
+      ),
+    );
+  }
+
+  void _showEditBusiness(Tenant tenant) {
+    final name = TextEditingController(text: tenant.businessName);
+    final owner = TextEditingController(text: tenant.ownerName);
+    final email = TextEditingController(text: tenant.email);
+    final phone = TextEditingController(text: tenant.phoneNumber);
+    final address = TextEditingController(text: tenant.address ?? '');
+    final taxId = TextEditingController(text: tenant.taxId ?? '');
+    var type = tenant.businessType;
+    XFile? logoFile;
+    Uint8List? logoBytes;
+    const types = ['Retail', 'Wholesale', 'Manufacturing', 'Service', 'Other'];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Edit Business'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 512,
+                      maxHeight: 512,
+                    );
+                    if (picked == null) return;
+                    final bytes = await picked.readAsBytes();
+                    setDialogState(() {
+                      logoFile = picked;
+                      logoBytes = bytes;
+                    });
+                  },
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: logoBytes != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.memory(logoBytes!, fit: BoxFit.cover),
+                          )
+                        : tenant.businessLogo != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(
+                              ApiService.fileUrl(tenant.businessLogo),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.add_a_photo_outlined,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.add_a_photo_outlined,
+                            color: AppTheme.primary,
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Click the logo to choose a new business logo',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 11),
+                    color: AppTheme.secondaryText(context),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: name,
+                  decoration: const InputDecoration(labelText: 'Business Name'),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: types.contains(type) ? type : types.first,
+                  items: types
+                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() => type = v ?? type),
+                  decoration: const InputDecoration(labelText: 'Business Type'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: owner,
+                  decoration: const InputDecoration(labelText: 'Owner Name'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: email,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Email',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: phone,
+                  decoration: const InputDecoration(labelText: 'Phone Number'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: address,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: taxId,
+                  decoration: const InputDecoration(labelText: 'Tax ID'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            LoadingElevatedButton(
+              loadingChild: const Text('Saving...'),
+              onPressed: () async {
+                await ApiService.updateTenantWithLogo(
+                  tenant.id,
+                  {
+                    'businessName': name.text.trim(),
+                    'businessType': type,
+                    'ownerName': owner.text.trim(),
+                    'email': email.text.trim(),
+                    'phoneNumber': phone.text.trim(),
+                    'address': address.text.trim(),
+                    'taxId': taxId.text.trim(),
+                  },
+                  logoBytes,
+                  logoFile?.name,
+                );
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                _load();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -447,6 +638,95 @@ class _CreateBusinessScreenState extends State<_CreateBusinessScreen> {
         const Divider(),
       ],
     );
+  }
+}
+
+class _TenantTableActions extends StatelessWidget {
+  final Tenant tenant;
+  final VoidCallback onRefresh;
+  final VoidCallback onEdit;
+
+  const _TenantTableActions({
+    required this.tenant,
+    required this.onRefresh,
+    required this.onEdit,
+  });
+
+  Future<void> _changeStatus(BuildContext context) async {
+    try {
+      if (tenant.status == 'active') {
+        await ApiService.suspendTenant(tenant.id, 'Developer action');
+      } else if (tenant.status == 'suspended') {
+        await ApiService.reactivateTenant(tenant.id);
+      } else {
+        return;
+      }
+      onRefresh();
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $error')));
+      }
+    }
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Business Account'),
+        content: Text('Permanently delete "${tenant.businessName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ApiService.deleteTenant(tenant.id);
+      onRefresh();
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $error')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (tenant.status == 'deleted') return const SizedBox.shrink();
+    final isActive = tenant.status == 'active';
+    return CompactDataTable.actions([
+      CompactDataTable.actionIcon(
+        icon: Icons.edit_outlined,
+        color: AppTheme.blueBright(context),
+        tooltip: 'Edit business',
+        onTap: onEdit,
+      ),
+      CompactDataTable.actionIcon(
+        icon: isActive ? Icons.pause : Icons.play_arrow,
+        color: isActive ? AppTheme.warning : AppTheme.success,
+        tooltip: isActive ? 'Suspend business' : 'Reactivate business',
+        onTap: () => _changeStatus(context),
+      ),
+      CompactDataTable.actionIcon(
+        icon: Icons.delete_outline,
+        color: AppTheme.danger,
+        tooltip: 'Delete business',
+        onTap: () => _delete(context),
+      ),
+    ]);
   }
 }
 

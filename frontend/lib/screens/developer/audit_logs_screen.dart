@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../models/audit_log.dart';
 import '../../utils/theme.dart';
+import '../../widgets/compact_data_table.dart';
 
 class AuditLogsScreen extends StatefulWidget {
   const AuditLogsScreen({super.key});
@@ -14,17 +15,59 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   List<AuditLog> _logs = [];
   bool _loading = true;
   String _severityFilter = '';
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getAuditLogs(severity: _severityFilter.isNotEmpty ? _severityFilter : null);
-      final list = (res['logs'] as List).map((l) => AuditLog.fromJson(l)).toList();
-      setState(() { _logs = list; _loading = false; });
-    } catch (e) { setState(() => _loading = false); }
+      final res = await ApiService.getAuditLogs(
+        severity: _severityFilter.isNotEmpty ? _severityFilter : null,
+        startDate: _startDate?.toIso8601String(),
+        endDate: _endDate?.toIso8601String(),
+      );
+      final list = (res['logs'] as List)
+          .map((l) => AuditLog.fromJson(l))
+          .toList();
+      setState(() {
+        _logs = list;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _pickDate({required bool start}) async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: (start ? _startDate : _endDate) ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (selected == null) return;
+    setState(() {
+      if (start) {
+        _startDate = DateTime(selected.year, selected.month, selected.day);
+      } else {
+        _endDate = DateTime(
+          selected.year,
+          selected.month,
+          selected.day,
+          23,
+          59,
+          59,
+          999,
+        );
+      }
+    });
+    _load();
   }
 
   @override
@@ -35,7 +78,15 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           padding: EdgeInsets.all(AppTheme.pad(context, 16)),
           child: Row(
             children: [
-              Expanded(child: Text('Audit Logs', style: TextStyle(fontSize: AppTheme.fontSize(context, 20), fontWeight: FontWeight.bold))),
+              Expanded(
+                child: Text(
+                  'Audit Logs',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, 20),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
               DropdownButton<String>(
                 value: _severityFilter,
                 hint: const Text('All Severity'),
@@ -46,55 +97,72 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   DropdownMenuItem(value: 'error', child: Text('Error')),
                   DropdownMenuItem(value: 'critical', child: Text('Critical')),
                 ],
-                onChanged: (v) { _severityFilter = v ?? ''; _load(); },
+                onChanged: (v) {
+                  _severityFilter = v ?? '';
+                  _load();
+                },
               ),
+              IconButton(
+                icon: const Icon(Icons.date_range),
+                tooltip: 'Select date range',
+                onPressed: () => _pickDate(start: true),
+              ),
+              IconButton(
+                icon: const Icon(Icons.event),
+                tooltip: 'Select end date',
+                onPressed: () => _pickDate(start: false),
+              ),
+              if (_startDate != null || _endDate != null)
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: 'Clear dates',
+                  onPressed: () {
+                    setState(() {
+                      _startDate = null;
+                      _endDate = null;
+                    });
+                    _load();
+                  },
+                ),
             ],
           ),
         ),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
-                  itemCount: _logs.length,
-                  itemBuilder: (ctx, i) {
-                    final log = _logs[i];
-                    final sevColor = switch (log.severity) {
-                      'warning' => AppTheme.warning,
-                      'error' => Colors.orange,
-                      'critical' => AppTheme.danger,
-                      _ => AppTheme.primary,
-                    };
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      child: ListTile(
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                        leading: Container(
-                          width: 4,
-                          decoration: BoxDecoration(color: sevColor, borderRadius: BorderRadius.circular(2)),
+              : Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppTheme.pad(context, 16),
+                  ),
+                  child: CompactDataTable(
+                    columns: const [
+                      CompactTableColumn('Event', flex: 3),
+                      CompactTableColumn('Action', flex: 5),
+                      CompactTableColumn('Severity', flex: 2),
+                      CompactTableColumn('Date', flex: 2, rightAligned: true),
+                    ],
+                    rows: _logs.map((log) {
+                      final sevColor = switch (log.severity) {
+                        'warning' => AppTheme.warning,
+                        'error' => Colors.orange,
+                        'critical' => AppTheme.danger,
+                        _ => AppTheme.primary,
+                      };
+                      return CompactDataRow([
+                        CompactDataTable.cell(
+                          context,
+                          log.eventType.replaceAll('_', ' ').toUpperCase(),
+                          weight: FontWeight.w600,
                         ),
-                        title: Text(log.eventType.replaceAll('_', ' ').toUpperCase(),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: AppTheme.fontSize(context, 12), fontWeight: FontWeight.w600)),
-                        subtitle: Text(log.action ?? '', maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: AppTheme.fontSize(context, 11), color: AppTheme.secondaryText(context))),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(color: sevColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                              child: Text(log.severity, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: sevColor)),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(DateFormat('MMM d').format(log.timestamp),
-                              style: TextStyle(fontSize: 10, color: AppTheme.secondaryText(context))),
-                          ],
+                        CompactDataTable.muted(context, log.action ?? ''),
+                        CompactDataTable.chip(context, log.severity, sevColor),
+                        CompactDataTable.cell(
+                          context,
+                          DateFormat('MMM d').format(log.timestamp),
                         ),
-                      ),
-                    );
-                  },
+                      ]);
+                    }).toList(),
+                  ),
                 ),
         ),
       ],

@@ -41,6 +41,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
     setState(() => _loading = true);
     try {
       final response = await ApiService.getPurchases(
+        status: 'approved',
         paymentMethod: 'credit',
         creditPaid: false,
       );
@@ -68,7 +69,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
         user != null &&
         (user.isAdmin ||
             user.isDeveloper ||
-            user.hasPermission('record_purchases'));
+            user.hasPermission('approve_credits'));
 
     return Column(
       children: [

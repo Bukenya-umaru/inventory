@@ -16,6 +16,9 @@ const _allPermissions = [
   'record_sales',
   'record_purchases',
   'record_damages',
+  'record_expenses',
+  'approve_sales',
+  'approve_credits',
   'view_inventory',
   'view_transactions',
   'view_profits',
@@ -31,6 +34,9 @@ const _permLabels = {
   'record_sales': 'Record Sales',
   'record_purchases': 'Record Purchases',
   'record_damages': 'Record Damages',
+  'record_expenses': 'Record Expenses',
+  'approve_sales': 'Approve Sales',
+  'approve_credits': 'Approve Credits',
   'view_inventory': 'View Inventory',
   'view_transactions': 'View Transactions',
   'view_profits': 'View Profits',
@@ -243,6 +249,18 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               color: AppTheme.dangerBright(context),
               tooltip: 'Delete',
               onTap: () => _deleteEmployee(e),
+            ),
+            CompactDataTable.actionIcon(
+              icon: e.accountStatus == 'suspended'
+                  ? Icons.play_arrow
+                  : Icons.pause,
+              color: e.accountStatus == 'suspended'
+                  ? AppTheme.success
+                  : AppTheme.warning,
+              tooltip: e.accountStatus == 'suspended'
+                  ? 'Reactivate employee'
+                  : 'Suspend employee',
+              onTap: () => _toggleEmployeeStatus(e),
             ),
           ]),
         ]),
@@ -457,5 +475,38 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _toggleEmployeeStatus(User employee) async {
+    if (employee.accountStatus == 'suspended') {
+      await ApiService.reactivateUser(employee.id);
+      _load();
+      return;
+    }
+    final reason = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Suspend Employee'),
+        content: TextField(
+          controller: reason,
+          decoration: const InputDecoration(labelText: 'Reason'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Suspend'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ApiService.suspendUser(employee.id, reason: reason.text.trim());
+      _load();
+    }
   }
 }

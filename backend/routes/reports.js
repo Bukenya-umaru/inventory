@@ -31,6 +31,7 @@ router.get('/profit', authenticate, requireActiveTenant, requirePermission('view
 
     const sales = await Sale.find({
       tenantId,
+      status: { $in: ['approved', null] },
       saleDate: { $gte: start, $lte: end }
     });
 
@@ -93,6 +94,7 @@ router.get('/summary', authenticate, requireActiveTenant, async (req, res) => {
 
     const trendSales = await Sale.find({
       tenantId,
+      status: { $in: ['approved', null] },
       saleDate: { $gte: trendStart }
     }).select('totalAmount profit saleDate productId quantity paymentMethod');
 
@@ -189,7 +191,7 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
       end = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
     }
 
-    const sales = await Sale.find({ tenantId, saleDate: { $gte: start, $lte: end } })
+    const sales = await Sale.find({ tenantId, status: { $in: ['approved', null] }, saleDate: { $gte: start, $lte: end } })
       .populate('productId', 'name')
       .populate('recordedBy', 'name')
       .sort({ saleDate: -1 });

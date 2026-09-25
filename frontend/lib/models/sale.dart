@@ -11,6 +11,7 @@ class Sale {
   final String? customerName;
   final String? recordedByName;
   final DateTime saleDate;
+  final String status;
 
   Sale({
     required this.id,
@@ -25,6 +26,7 @@ class Sale {
     this.customerName,
     this.recordedByName,
     required this.saleDate,
+    this.status = 'approved',
   });
 
   factory Sale.fromJson(Map<String, dynamic> json) {
@@ -44,7 +46,10 @@ class Sale {
       recordedByName: json['recordedBy'] is Map
           ? (json['recordedBy'] as Map)['name']
           : null,
-      saleDate: DateTime.parse(json['saleDate'] ?? DateTime.now().toIso8601String()),
+      saleDate: DateTime.parse(
+        json['saleDate'] ?? DateTime.now().toIso8601String(),
+      ),
+      status: json['status'] ?? 'approved',
     );
   }
 }

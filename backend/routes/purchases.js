@@ -298,13 +298,14 @@ router.post('/:id/approve', authenticate, requireActiveTenant, requirePermission
 
 // ── POST /api/purchases/:id/mark-paid ─────────────────────────────
 // Marks a credit stock purchase as fully paid.
-router.post('/:id/mark-paid', authenticate, requireActiveTenant, requirePermission('record_purchases'), async (req, res) => {
+router.post('/:id/mark-paid', authenticate, requireActiveTenant, requirePermission('approve_credits'), async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.body.tenantId : req.user.tenantId;
     const purchase = await Purchase.findOne({
       _id: req.params.id,
       tenantId,
-      paymentMethod: 'credit'
+      paymentMethod: 'credit',
+      status: 'approved'
     });
     if (!purchase) {
       return res.status(404).json({ success: false, message: 'Credit purchase not found.' });

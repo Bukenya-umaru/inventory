@@ -50,6 +50,20 @@ const saleSchema = new mongoose.Schema({
   notes: {
     type: String
   },
+  status: {
+    type: String,
+    enum: ['pending', 'approved'],
+    default: 'approved'
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  approvedAt: {
+    type: Date,
+    default: null
+  },
   recordedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

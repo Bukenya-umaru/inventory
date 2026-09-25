@@ -285,7 +285,8 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todaySales = await Sale.find({ tenantId, saleDate: { $gte: today } });
+    const approvedSalesQuery = { status: { $in: ['approved', null] } };
+    const todaySales = await Sale.find({ tenantId, ...approvedSalesQuery, saleDate: { $gte: today } });
     const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalAmount, 0);
     const todayProfit = todaySales.reduce((sum, s) => sum + s.profit, 0);
 
@@ -295,7 +296,7 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     const lowStockProducts = products.filter(p => p.currentStock <= p.minimumStock).length;
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlySales = await Sale.find({ tenantId, saleDate: { $gte: monthStart } });
+    const monthlySales = await Sale.find({ tenantId, ...approvedSalesQuery, saleDate: { $gte: monthStart } });
     const monthlyRevenue = monthlySales.reduce((sum, s) => sum + s.totalAmount, 0);
     const monthlyProfit = monthlySales.reduce((sum, s) => sum + s.profit, 0);
 
@@ -314,6 +315,7 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
 
     const trendSales = await Sale.find({
       tenantId,
+      ...approvedSalesQuery,
       saleDate: { $gte: trendStart, $lte: trendEnd }
     }).select('totalAmount profit saleDate productId quantity paymentMethod');
 
@@ -393,7 +395,7 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
       }));
 
     // Recent transactions: latest sales + approved purchases merged.
-    const recentSales = await Sale.find({ tenantId })
+    const recentSales = await Sale.find({ tenantId, ...approvedSalesQuery })
       .sort({ saleDate: -1 })
       .limit(6)
       .select('totalAmount customerName saleDate');
@@ -464,6 +466,48 @@ router.put('/:id/branding', authenticate, requireRole('developer'), upload.singl
     await tenant.save();
     res.json({ success: true, message: 'Branding updated.', tenant });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.put('/:id', authenticate, requireRole('developer'), upload.single('businessLogo'), async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ success: false, message: 'Business not found.' });
+    }
+
+    const editableFields = ['businessName', 'businessType', 'phoneNumber', 'address', 'taxId', 'email', 'ownerName'];
+    const changes = {};
+    for (const field of editableFields) {
+      if (req.body[field] !== undefined && String(tenant[field] ?? '') !== String(req.body[field] ?? '')) {
+        changes[field] = { from: tenant[field] ?? null, to: req.body[field] };
+        tenant[field] = req.body[field];
+      }
+    }
+    if (req.body.email !== undefined) tenant.email = String(req.body.email).trim().toLowerCase();
+    if (req.file) {
+      changes.businessLogo = { from: tenant.businessLogo ?? null, to: `/uploads/logos/${req.file.filename}` };
+      tenant.businessLogo = `/uploads/logos/${req.file.filename}`;
+    }
+    if (!Object.keys(changes).length) {
+      return res.status(400).json({ success: false, message: 'No changes detected.' });
+    }
+
+    await tenant.save();
+    await createAuditLog({
+      tenantId: tenant._id,
+      eventType: 'business_updated',
+      userId: req.userId,
+      userRole: 'developer',
+      action: `Updated business: ${tenant.businessName}`,
+      details: { changes },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+    res.json({ success: true, message: 'Business updated.', tenant });
+  } catch (error) {
+    console.error('Update tenant error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });

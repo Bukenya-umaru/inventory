@@ -269,6 +269,46 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  static Future<Map<String, dynamic>> updateTenant(
+    String tenantId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/tenants/$tenantId'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateTenantWithLogo(
+    String tenantId,
+    Map<String, dynamic> data,
+    List<int>? logoBytes,
+    String? logoName,
+  ) async {
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('$baseUrl/tenants/$tenantId'),
+    );
+    request.headers['Authorization'] = '******';
+    data.forEach((key, value) {
+      request.fields[key] = value?.toString() ?? '';
+    });
+    if (logoBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'businessLogo',
+          logoBytes,
+          filename: logoName ?? 'logo.png',
+        ),
+      );
+    }
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    return _handleResponse(response);
+  }
+
   static Future<Map<String, dynamic>> updateBrandingWithLogo(
     String tenantId,
     Map<String, dynamic> data,
@@ -314,6 +354,38 @@ class ApiService {
       Uri.parse('$baseUrl/users'),
       headers: _headers(),
       body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateUser(
+    String userId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: _headers(),
+      body: json.encode(data),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> suspendUser(
+    String userId, {
+    String? reason,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId/suspend'),
+      headers: _headers(),
+      body: json.encode({'reason': reason ?? 'Account suspended'}),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> reactivateUser(String userId) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId/reactivate'),
+      headers: _headers(),
     );
     return _handleResponse(response);
   }
@@ -525,6 +597,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getPurchases({
     String? startDate,
     String? endDate,
+    String? status,
     String? paymentMethod,
     bool? creditPaid,
   }) async {
@@ -532,6 +605,7 @@ class ApiService {
     if (startDate != null && startDate.isNotEmpty)
       params['startDate'] = startDate;
     if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    if (status != null && status.isNotEmpty) params['status'] = status;
     if (paymentMethod != null && paymentMethod.isNotEmpty) {
       params['paymentMethod'] = paymentMethod;
     }
@@ -596,6 +670,14 @@ class ApiService {
   static Future<Map<String, dynamic>> approvePurchase(String id) async {
     final response = await http.post(
       Uri.parse('$baseUrl/purchases/$id/approve'),
+      headers: _headers(),
+    );
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> approveSale(String id) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/sales/$id/approve'),
       headers: _headers(),
     );
     return _handleResponse(response);
@@ -694,11 +776,16 @@ class ApiService {
   static Future<Map<String, dynamic>> getAuditLogs({
     String? eventType,
     String? severity,
+    String? startDate,
+    String? endDate,
   }) async {
     final params = <String, String>{};
     if (eventType != null && eventType.isNotEmpty)
       params['eventType'] = eventType;
     if (severity != null && severity.isNotEmpty) params['severity'] = severity;
+    if (startDate != null && startDate.isNotEmpty)
+      params['startDate'] = startDate;
+    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
     final uri = Uri.parse('$baseUrl/audit').replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);

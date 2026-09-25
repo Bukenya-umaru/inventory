@@ -9,6 +9,8 @@ import '../../widgets/loading_button.dart';
 import '../../widgets/searchable_picker.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
+import '../../services/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
@@ -143,8 +145,9 @@ class _SalesScreenState extends State<SalesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalRev = _sales.fold(0.0, (s, sale) => s + sale.totalAmount);
-    final totalProfit = _sales.fold(0.0, (s, sale) => s + sale.profit);
+    final approvedSales = _sales.where((sale) => sale.status == 'approved');
+    final totalRev = approvedSales.fold(0.0, (s, sale) => s + sale.totalAmount);
+    final totalProfit = approvedSales.fold(0.0, (s, sale) => s + sale.profit);
 
     String filterLabel;
     if (_showAll) {
@@ -312,6 +315,12 @@ class _SalesScreenState extends State<SalesScreen> {
 
   /// Compact table view for wide screens.
   Widget _salesTable() {
+    final user = context.watch<AuthProvider>().user;
+    final canApprove =
+        user != null &&
+        (user.isAdmin ||
+            user.isDeveloper ||
+            user.hasPermission('approve_sales'));
     final rows = <CompactDataRow>[];
     for (var i = 0; i < _sales.length; i++) {
       final s = _sales[i];
@@ -339,6 +348,21 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
           CompactDataTable.muted(context, s.customerName ?? 'Walk-in'),
           CompactDataTable.muted(context, s.recordedByName ?? '—'),
+          CompactDataTable.chip(
+            context,
+            s.status == 'pending' ? 'Pending' : 'Approved',
+            s.status == 'pending'
+                ? AppTheme.warningBright(context)
+                : AppTheme.successBright(context),
+          ),
+          canApprove && s.status == 'pending'
+              ? CompactDataTable.actionIcon(
+                  icon: Icons.check_circle_outline,
+                  color: AppTheme.successBright(context),
+                  tooltip: 'Approve sale',
+                  onTap: () => _approveSale(s),
+                )
+              : const SizedBox.shrink(),
         ]),
       );
     }
@@ -355,10 +379,34 @@ class _SalesScreenState extends State<SalesScreen> {
           CompactTableColumn('Profit', flex: 2),
           CompactTableColumn('Customer', flex: 2),
           CompactTableColumn('Recorded By', flex: 2),
+          CompactTableColumn('Status', flex: 2),
+          CompactTableColumn('Actions', flex: 2, rightAligned: true),
         ],
         rows: rows,
       ),
     );
+  }
+
+  Future<void> _approveSale(Sale sale) async {
+    try {
+      await ApiService.approveSale(sale.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sale approved.'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+      AppEvents.instance.emit('sales');
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          backgroundColor: AppTheme.danger,
+        ),
+      );
+    }
   }
 
   Widget _filterBtn({

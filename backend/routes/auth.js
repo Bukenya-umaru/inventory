@@ -28,6 +28,9 @@ router.post('/login', async (req, res) => {
     if (!user.isActive) {
       return res.status(401).json({ success: false, message: 'Account is deactivated.' });
     }
+    if (user.accountStatus === 'suspended') {
+      return res.status(403).json({ success: false, message: 'Employee account is suspended.' });
+    }
 
     if (user.role !== 'developer' && user.tenantId) {
       if (user.tenantId.status === 'suspended') {

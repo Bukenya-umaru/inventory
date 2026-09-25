@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../models/category.dart';
 import '../../services/api_service.dart';
 import '../../services/app_events.dart';
+import '../../services/auth_provider.dart';
 import '../../utils/currency.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
@@ -137,6 +139,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    final canRecord =
+        user != null &&
+        (user.isAdmin ||
+            user.isDeveloper ||
+            user.hasPermission('record_expenses'));
     return Column(
       children: [
         Padding(
@@ -164,11 +172,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: _showExpenseForm,
-                icon: const Icon(Icons.add),
-                tooltip: 'Record Expense',
-              ),
+              if (canRecord)
+                IconButton(
+                  onPressed: _showExpenseForm,
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Record Expense',
+                ),
             ],
           ),
         ),
