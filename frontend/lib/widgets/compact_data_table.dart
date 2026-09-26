@@ -149,9 +149,16 @@ class _CompactDataTableState extends State<CompactDataTable> {
         final w = c.maxWidth.isFinite
             ? math.max(c.maxWidth, widget.minWidth)
             : widget.minWidth;
+        final table = c.maxHeight.isFinite
+            ? SizedBox(
+                width: w,
+                height: c.maxHeight,
+                child: SingleChildScrollView(child: _table(context)),
+              )
+            : SizedBox(width: w, child: _table(context));
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: SizedBox(width: w, child: _table(context)),
+          child: table,
         );
       },
     );

@@ -208,6 +208,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              IconButton(
+                onPressed: () {
+                  _searchTimer?.cancel();
+                  _load();
+                },
+                icon: const Icon(Icons.search),
+                tooltip: 'Search products',
+              ),
+              const SizedBox(width: 4),
               Container(
                 decoration: BoxDecoration(
                   color: _lowStockOnly

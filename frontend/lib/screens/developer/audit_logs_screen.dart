@@ -4,9 +4,12 @@ import '../../services/api_service.dart';
 import '../../models/audit_log.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/section_search_bar.dart';
 
 class AuditLogsScreen extends StatefulWidget {
-  const AuditLogsScreen({super.key});
+  final bool systemAudit;
+
+  const AuditLogsScreen({super.key, this.systemAudit = false});
   @override
   State<AuditLogsScreen> createState() => _AuditLogsScreenState();
 }
@@ -17,6 +20,20 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   String _severityFilter = '';
   DateTime? _startDate;
   DateTime? _endDate;
+  int _page = 1;
+  int _pages = 1;
+  int _total = 0;
+  String _searchQuery = '';
+
+  List<AuditLog> get _visibleLogs => _logs
+      .where((log) => matchesSectionSearch(_searchQuery, [
+            log.eventType,
+            log.userName,
+            log.userRole,
+            log.action,
+            log.businessName,
+          ]))
+      .toList();
 
   @override
   void initState() {
@@ -24,19 +41,36 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({int page = 1}) async {
     setState(() => _loading = true);
     try {
-      final res = await ApiService.getAuditLogs(
-        severity: _severityFilter.isNotEmpty ? _severityFilter : null,
-        startDate: _startDate?.toIso8601String(),
-        endDate: _endDate?.toIso8601String(),
-      );
+      final severity = _severityFilter.isNotEmpty ? _severityFilter : null;
+      final startDate = _startDate?.toIso8601String();
+      final endDate = _endDate?.toIso8601String();
+      final res = widget.systemAudit
+          ? await ApiService.getAuditLogs(
+              severity: severity,
+              startDate: startDate,
+              endDate: endDate,
+              search: _searchQuery,
+              page: page,
+            )
+          : await ApiService.getBusinessActivityLogs(
+              severity: severity,
+              startDate: startDate,
+              endDate: endDate,
+              search: _searchQuery,
+              page: page,
+            );
       final list = (res['logs'] as List)
           .map((l) => AuditLog.fromJson(l))
           .toList();
+      final pagination = res['pagination'] as Map<String, dynamic>? ?? {};
       setState(() {
         _logs = list;
+        _page = pagination['page'] ?? page;
+        _pages = pagination['pages'] ?? 1;
+        _total = pagination['total'] ?? list.length;
         _loading = false;
       });
     } catch (e) {
@@ -118,7 +152,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Audit Logs',
+                  widget.systemAudit ? 'System Audit Logs' : 'Business Activity',
                   style: TextStyle(
                     fontSize: AppTheme.fontSize(context, 20),
                     fontWeight: FontWeight.bold,
@@ -165,10 +199,18 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             ],
           ),
         ),
+        SectionSearchBar(
+          hintText: 'Search activity...',
+          onSearch: (query) {
+            setState(() => _searchQuery = query);
+            _load();
+          },
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _logs.isEmpty
+              : _visibleLogs.isEmpty
               ? _emptyState()
               : Padding(
                   padding: EdgeInsets.symmetric(
@@ -176,35 +218,56 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   child: CompactDataTable(
                     columns: const [
-                      CompactTableColumn('Event', flex: 3),
+                      CompactTableColumn('Event', flex: 2),
+                      CompactTableColumn('Who', flex: 2),
                       CompactTableColumn('Action', flex: 5),
-                      CompactTableColumn('Severity', flex: 2),
-                      CompactTableColumn('Date', flex: 2, rightAligned: true),
+                      CompactTableColumn('When', flex: 2, rightAligned: true),
                     ],
-                    rows: _logs.map((log) {
-                      final sevColor = switch (log.severity) {
-                        'warning' => AppTheme.warning,
-                        'error' => Colors.orange,
-                        'critical' => AppTheme.danger,
-                        _ => AppTheme.primary,
-                      };
+                    rows: _visibleLogs.map((log) {
                       return CompactDataRow([
                         CompactDataTable.cell(
                           context,
                           log.eventType.replaceAll('_', ' ').toUpperCase(),
                           weight: FontWeight.w600,
                         ),
-                        CompactDataTable.muted(context, log.action ?? ''),
-                        CompactDataTable.chip(context, log.severity, sevColor),
                         CompactDataTable.cell(
                           context,
-                          DateFormat('MMM d').format(log.timestamp),
+                          '${log.userName ?? 'System'}${log.userRole == null ? '' : ' (${log.userRole})'}',
+                        ),
+                        CompactDataTable.muted(context, log.action ?? ''),
+                        CompactDataTable.cell(
+                          context,
+                          DateFormat('MMM d, HH:mm').format(log.timestamp),
                         ),
                       ]);
                     }).toList(),
                   ),
                 ),
         ),
+        if (!_loading && _logs.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppTheme.pad(context, 16),
+              vertical: 8,
+            ),
+            child: Row(
+              children: [
+                Text('$_total activities'),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Previous page',
+                  onPressed: _page > 1 ? () => _load(page: _page - 1) : null,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Text('$_page / $_pages'),
+                IconButton(
+                  tooltip: 'Next page',
+                  onPressed: _page < _pages ? () => _load(page: _page + 1) : null,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

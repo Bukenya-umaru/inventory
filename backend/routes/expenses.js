@@ -84,7 +84,7 @@ router.post(
 
       await createAuditLog({
         tenantId,
-        eventType: 'purchase_recorded',
+        eventType: 'expense_recorded',
         userId: req.userId,
         userRole: req.user.role,
         action: `Recorded expense: ${category.name} — ${numericAmount}`,

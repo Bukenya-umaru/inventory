@@ -6,6 +6,7 @@ class AuditLog {
   final String? userRole;
   final String? businessName;
   final String? action;
+  final Map<String, dynamic>? details;
   final DateTime timestamp;
 
   AuditLog({
@@ -16,6 +17,7 @@ class AuditLog {
     this.userRole,
     this.businessName,
     this.action,
+    this.details,
     required this.timestamp,
   });
 
@@ -26,9 +28,16 @@ class AuditLog {
       severity: json['severity'] ?? 'info',
       userName: json['userId'] is Map ? (json['userId'] as Map)['name'] : null,
       userRole: json['userRole'],
-      businessName: json['tenantId'] is Map ? (json['tenantId'] as Map)['businessName'] : null,
+      businessName: json['tenantId'] is Map
+          ? (json['tenantId'] as Map)['businessName']
+          : null,
       action: json['action'],
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      details: json['details'] is Map
+          ? Map<String, dynamic>.from(json['details'])
+          : null,
+      timestamp: DateTime.parse(
+        json['timestamp'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 }

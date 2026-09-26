@@ -6,6 +6,7 @@ import '../../models/tenant.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/section_search_bar.dart';
 
 class BusinessesScreen extends StatefulWidget {
   const BusinessesScreen({super.key});
@@ -17,6 +18,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   List<Tenant> _tenants = [];
   bool _loading = true;
   String _statusFilter = '';
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -29,6 +31,7 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
     try {
       final res = await ApiService.getTenants(
         status: _statusFilter.isNotEmpty ? _statusFilter : null,
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
       );
       final list = (res['tenants'] as List)
           .map((t) => Tenant.fromJson(t))
@@ -67,6 +70,15 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
             ],
           ),
         ),
+
+        SectionSearchBar(
+          hintText: 'Search businesses...',
+          onSearch: (query) {
+            _searchQuery = query;
+            _load();
+          },
+        ),
+        const SizedBox(height: 8),
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

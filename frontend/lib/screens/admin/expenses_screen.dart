@@ -10,6 +10,7 @@ import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/searchable_picker.dart';
+import '../../widgets/section_search_bar.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -23,6 +24,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   List<Category> _categories = [];
   bool _loading = true;
   bool _showAll = false;
+  String _searchQuery = '';
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -202,6 +204,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ],
           ),
         ),
+        SectionSearchBar(
+          hintText: 'Search expenses...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
@@ -260,7 +267,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _expenses.isEmpty
+              : _visibleExpenses.isEmpty
               ? _emptyState()
               : RefreshIndicator(
                   onRefresh: _load,
@@ -340,7 +347,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   Widget _table() {
-    final rows = _expenses.map((expense) {
+    final rows = _visibleExpenses.map((expense) {
       final category = expense['categoryId'];
       final categoryName = category is Map
           ? category['name']?.toString() ?? 'Unknown'
@@ -377,6 +384,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       rows: rows,
     );
   }
+
+  List<Map<String, dynamic>> get _visibleExpenses => _expenses.where((expense) {
+    final category = expense['categoryId'];
+    final categoryName = category is Map ? category['name'] : null;
+    return matchesSectionSearch(_searchQuery, [
+      categoryName,
+      expense['description'],
+      expense['paymentMethod'],
+      expense['amount'],
+      expense['expenseDate'],
+    ]);
+  }).toList();
 
   Widget _emptyState() {
     return RefreshIndicator(

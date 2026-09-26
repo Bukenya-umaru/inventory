@@ -9,13 +9,15 @@ const auditLogSchema = new mongoose.Schema({
   eventType: {
     type: String,
     enum: [
-      'business_created', 'business_suspended', 'business_reactivated', 'business_deleted',
+      'business_created', 'business_suspended', 'business_reactivated', 'business_deleted', 'business_updated',
       'admin_created', 'employee_created_primary', 'employee_created_backup',
       'employee_deleted', 'employee_permissions_updated',
+      'employee_suspended', 'employee_reactivated',
       'password_viewed', 'password_changed',
       'category_created', 'category_updated', 'category_deleted',
       'product_created', 'product_updated', 'product_deleted',
       'sale_recorded', 'sale_approved', 'damage_recorded', 'purchase_recorded', 'purchase_edited', 'purchase_approved', 'stock_merged',
+      'expense_recorded', 'credit_paid',
       'low_stock_alert',
       'supplier_created', 'supplier_updated', 'supplier_deleted',
       'login_success', 'login_failed'

@@ -11,6 +11,7 @@ import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
+import '../../widgets/section_search_bar.dart';
 
 class PurchasesScreen extends StatefulWidget {
   const PurchasesScreen({super.key});
@@ -23,6 +24,7 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   bool _loading = true;
   bool _showAll = false;
   bool _showPendingOnly = false;
+  String _searchQuery = '';
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -189,6 +191,12 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
         ),
 
+        SectionSearchBar(
+          hintText: 'Search stock history...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
+
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
@@ -282,8 +290,18 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
   }
 
   List<Purchase> _filteredPurchases() {
-    if (!_showPendingOnly) return _purchases;
-    return _purchases.where((p) => p.isPending).toList();
+    return _purchases.where((purchase) {
+      if (_showPendingOnly && !purchase.isPending) return false;
+      return matchesSectionSearch(_searchQuery, [
+        purchase.productName,
+        purchase.supplier,
+        purchase.supplierPhone,
+        purchase.invoiceNumber,
+        purchase.recordedByName,
+        purchase.notes,
+        purchase.status,
+      ]);
+    }).toList();
   }
 
   int get _pendingCount => _purchases.where((p) => p.isPending).length;

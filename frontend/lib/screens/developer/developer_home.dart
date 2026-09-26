@@ -30,7 +30,7 @@ class _DeveloperHomeState extends State<DeveloperHome> {
     const BusinessesScreen(),
     const UsersScreen(),
     const PasswordManagerScreen(),
-    const AuditLogsScreen(),
+    const AuditLogsScreen(systemAudit: true),
   ];
 
   @override

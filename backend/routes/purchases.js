@@ -321,7 +321,7 @@ router.post('/:id/mark-paid', authenticate, requireActiveTenant, requirePermissi
 
     await createAuditLog({
       tenantId,
-      eventType: 'purchase_approved',
+      eventType: 'credit_paid',
       userId: req.userId,
       userRole: req.user.role,
       action: `Marked credit purchase as fully paid: ${purchase.totalCost}`,

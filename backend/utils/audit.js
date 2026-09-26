@@ -11,23 +11,19 @@ const createAuditLog = async ({
   ipAddress = '',
   userAgent = ''
 }) => {
-  try {
-    const log = new AuditLog({
-      tenantId,
-      eventType,
-      severity,
-      userId,
-      userRole,
-      action,
-      details,
-      ipAddress,
-      userAgent
-    });
-    await log.save();
-    return log;
-  } catch (error) {
-    console.error('Audit log error:', error);
-  }
+  const log = new AuditLog({
+    tenantId,
+    eventType,
+    severity,
+    userId,
+    userRole,
+    action,
+    details,
+    ipAddress,
+    userAgent
+  });
+  await log.save();
+  return log;
 };
 
 module.exports = { createAuditLog };

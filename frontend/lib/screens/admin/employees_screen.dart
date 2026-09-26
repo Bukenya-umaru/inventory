@@ -7,6 +7,7 @@ import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab;
 import '../../widgets/download_app_fab.dart' show DownloadAppFab;
+import '../../widgets/section_search_bar.dart';
 
 const _allPermissions = [
   'manage_categories',
@@ -57,6 +58,17 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   String? _revealedPassword;
   int _countdown = 0;
   Timer? _timer;
+  String _searchQuery = '';
+
+  List<User> get _visibleEmployees => _employees
+      .where((employee) => matchesSectionSearch(_searchQuery, [
+            employee.name,
+            employee.email,
+            employee.employeeId,
+            employee.department,
+            employee.position,
+          ]))
+      .toList();
 
   @override
   void initState() {
@@ -135,28 +147,47 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _employees.isEmpty
-          ? RefreshIndicator(
-              onRefresh: _load,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 220),
-                  Center(child: Text('No employees found')),
-                ],
-              ),
-            )
-          : RefreshIndicator(onRefresh: _load, child: _employeesTable()),
+      body: Column(
+        children: [
+          const SizedBox(height: 12),
+          SectionSearchBar(
+            hintText: 'Search employees...',
+            onSearch: (query) => setState(() => _searchQuery = query),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _visibleEmployees.isEmpty
+                ? RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: 220),
+                        Center(
+                          child: Text(
+                            _searchQuery.isEmpty
+                                ? 'No employees found'
+                                : 'No employees match your search',
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(onRefresh: _load, child: _employeesTable()),
+          ),
+        ],
+      ),
     );
   }
 
   /// Compact table view.
   Widget _employeesTable() {
     final rows = <CompactDataRow>[];
-    for (var i = 0; i < _employees.length; i++) {
-      final e = _employees[i];
+    final employees = _visibleEmployees;
+    for (var i = 0; i < employees.length; i++) {
+      final e = employees[i];
       final isRevealed = _viewingUserId == e.id && _revealedPassword != null;
       rows.add(
         CompactDataRow([

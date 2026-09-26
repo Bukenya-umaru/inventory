@@ -8,6 +8,7 @@ import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 import '../../utils/download_helper.dart';
 import '../../utils/pdf_report_builder.dart';
+import '../../widgets/section_search_bar.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -23,6 +24,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _perfExpanded = true;
   bool _perfShowAllSales = false;
   bool _perfShowAllDamages = false;
+  String _searchQuery = '';
 
   Map<String, dynamic>? _report;
   Map<String, dynamic>? _inventory;
@@ -164,8 +166,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final auth = context.watch<AuthProvider>();
     final branding = auth.branding;
     final r = _report ?? {};
-    final sales = (r['sales'] as List?) ?? [];
-    final damages = (r['damages'] as List?) ?? [];
+    final sales = ((r['sales'] as List?) ?? [])
+        .where((item) => matchesSectionSearch(_searchQuery, [item]))
+        .toList();
+    final damages = ((r['damages'] as List?) ?? [])
+        .where((item) => matchesSectionSearch(_searchQuery, [item]))
+        .toList();
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -206,6 +212,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ],
           ),
+          SectionSearchBar(
+            hintText: 'Search report activity...',
+            onSearch: (query) => setState(() => _searchQuery = query),
+          ),
+          SizedBox(height: AppTheme.pad(context, 8)),
           SizedBox(height: AppTheme.pad(context, 12)),
 
           SingleChildScrollView(

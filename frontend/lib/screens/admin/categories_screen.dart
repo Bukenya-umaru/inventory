@@ -4,6 +4,7 @@ import '../../services/app_events.dart';
 import '../../models/category.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
+import '../../widgets/section_search_bar.dart';
 
 class CategoriesScreen extends StatefulWidget {
   final String categoryType;
@@ -16,6 +17,14 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   List<Category> _categories = [];
   bool _loading = true;
+  String _searchQuery = '';
+
+  List<Category> get _visibleCategories => _categories
+      .where((category) => matchesSectionSearch(_searchQuery, [
+            category.name,
+            category.description,
+          ]))
+      .toList();
 
   @override
   void initState() {
@@ -137,10 +146,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
         ),
 
+        SectionSearchBar(
+          hintText: 'Search categories...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
+
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _categories.isEmpty
+              : _visibleCategories.isEmpty
               ? RefreshIndicator(
                   onRefresh: _load,
                   child: LayoutBuilder(
@@ -189,7 +204,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            widget.categoryType == 'expense'
+            _searchQuery.isNotEmpty
+                ? 'No matching categories'
+                : widget.categoryType == 'expense'
                 ? 'No expense categories yet'
                 : 'No product categories yet',
             style: TextStyle(
@@ -200,7 +217,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            widget.categoryType == 'expense'
+            _searchQuery.isNotEmpty
+                ? 'Try a different search'
+                : widget.categoryType == 'expense'
                 ? 'Create categories to organize your expenses'
                 : 'Create categories to organize your products',
             style: TextStyle(
@@ -222,8 +241,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         crossAxisSpacing: 10,
         childAspectRatio: 1.5,
       ),
-      itemCount: _categories.length,
-      itemBuilder: (ctx, i) => _categoryCard(_categories[i], i, isSmall),
+      itemCount: _visibleCategories.length,
+      itemBuilder: (ctx, i) => _categoryCard(_visibleCategories[i], i, isSmall),
     );
   }
 
@@ -237,8 +256,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         crossAxisSpacing: 8,
         childAspectRatio: isSmall ? 1.2 : 1.4,
       ),
-      itemCount: _categories.length,
-      itemBuilder: (ctx, i) => _categoryCard(_categories[i], i, isSmall),
+      itemCount: _visibleCategories.length,
+      itemBuilder: (ctx, i) => _categoryCard(_visibleCategories[i], i, isSmall),
     );
   }
 

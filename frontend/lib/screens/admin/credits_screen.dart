@@ -8,6 +8,7 @@ import '../../services/auth_provider.dart';
 import '../../utils/currency.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/section_search_bar.dart';
 
 class CreditsScreen extends StatefulWidget {
   const CreditsScreen({super.key});
@@ -22,6 +23,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   bool _showAll = false;
   bool _showUnpaidOnly = false;
   bool _showPaidOnly = false;
+  String _searchQuery = '';
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -141,13 +143,19 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   List<Purchase> get _visibleCredits {
-    if (_showUnpaidOnly) {
-      return _credits.where((purchase) => !purchase.creditPaid).toList();
-    }
-    if (_showPaidOnly) {
-      return _credits.where((purchase) => purchase.creditPaid).toList();
-    }
-    return _credits;
+    return _credits.where((purchase) {
+      if (_showUnpaidOnly && purchase.creditPaid) return false;
+      if (_showPaidOnly && !purchase.creditPaid) return false;
+      return matchesSectionSearch(_searchQuery, [
+        purchase.productName,
+        purchase.supplier,
+        purchase.supplierPhone,
+        purchase.invoiceNumber,
+        purchase.recordedByName,
+        purchase.totalCost,
+        purchase.creditPaid ? 'paid' : 'unpaid',
+      ]);
+    }).toList();
   }
 
   double get _outstanding => _visibleCredits
@@ -202,6 +210,11 @@ class _CreditsScreenState extends State<CreditsScreen> {
             ],
           ),
         ),
+        SectionSearchBar(
+          hintText: 'Search credits...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),

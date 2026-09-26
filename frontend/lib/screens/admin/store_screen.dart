@@ -76,8 +76,14 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   int get _totalStock => _filtered.fold(0, (s, p) => s + p.totalStockPieces);
-  double get _totalValue =>
-      _filtered.fold(0.0, (s, p) => s + (p.sellingPrice * p.totalStockPieces));
+  double get _inventoryValue => _filtered.fold(
+    0.0,
+    (sum, product) =>
+        sum +
+        product.currentStock * product.costPrice +
+        product.stockBoxes *
+            (product.boxCostPrice ?? product.costPrice * product.unitsPerBox),
+  );
   int get _totalBoxes =>
       _filtered.fold(0, (s, p) => s + (p.sellsAsBox ? p.stockBoxes : 0));
 
@@ -109,10 +115,18 @@ class _StoreScreenState extends State<StoreScreen> {
                       ),
                     ),
                     Text(
-                      '${_filtered.length} items • $_totalBoxes bx • $_totalStock pcs • ${Currency.formatWhole(_totalValue)}',
+                      '${_filtered.length} items • $_totalBoxes bx • $_totalStock pcs',
                       style: TextStyle(
                         fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
                         color: AppTheme.secondaryText(context),
+                      ),
+                    ),
+                    Text(
+                      'Inventory value (at cost): ${Currency.formatWhole(_inventoryValue)}',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 11 : 13),
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryBright(context),
                       ),
                     ),
                   ],
@@ -129,32 +143,47 @@ class _StoreScreenState extends State<StoreScreen> {
             isSmall ? 10 : AppTheme.pad(context, 16),
             0,
           ),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search store...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: isSmall ? 10 : 14,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search store...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: isSmall ? 10 : 14,
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                  ),
+                  onChanged: (v) {
+                    _search = v;
+                    _searchTimer?.cancel();
+                    _searchTimer = Timer(
+                      const Duration(milliseconds: 350),
+                      () => _load(),
+                    );
+                  },
+                ),
               ),
-              filled: true,
-              fillColor: Theme.of(context).cardColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _searchTimer?.cancel();
+                  _load();
+                },
+                icon: const Icon(Icons.search),
+                label: const Text('Search'),
               ),
-            ),
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-            ),
-            onChanged: (v) {
-              _search = v;
-              _searchTimer?.cancel();
-              _searchTimer = Timer(
-                const Duration(milliseconds: 350),
-                () => _load(),
-              );
-            },
+            ],
           ),
         ),
 

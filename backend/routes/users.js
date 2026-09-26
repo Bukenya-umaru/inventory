@@ -330,6 +330,15 @@ router.put('/:id/reactivate', authenticate, async (req, res) => {
     user.suspendedBy = null;
     user.suspensionReason = null;
     await user.save();
+    await createAuditLog({
+      tenantId: user.tenantId,
+      eventType: 'employee_reactivated',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Reactivated employee: ${user.name}`,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
     res.json({ success: true, message: 'Employee reactivated.' });
   } catch (error) {
     console.error('Reactivate employee error:', error);

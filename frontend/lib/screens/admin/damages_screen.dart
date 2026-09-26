@@ -7,6 +7,7 @@ import '../../models/product.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/searchable_picker.dart';
+import '../../widgets/section_search_bar.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 
@@ -21,6 +22,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
   List<Product> _products = [];
   bool _loading = true;
   bool _showAll = false;
+  String _searchQuery = '';
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -205,6 +207,12 @@ class _DamagesScreenState extends State<DamagesScreen> {
           ),
         ),
 
+        SectionSearchBar(
+          hintText: 'Search damage reports...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
+
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
@@ -280,7 +288,7 @@ class _DamagesScreenState extends State<DamagesScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _damages.isEmpty
+              : _visibleDamages.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -294,7 +302,9 @@ class _DamagesScreenState extends State<DamagesScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No damages for this date',
+                        _searchQuery.isEmpty
+                            ? 'No damages for this date'
+                            : 'No damage reports match your search',
                         style: TextStyle(
                           color: AppTheme.secondaryText(context),
                           fontSize: 15,
@@ -310,10 +320,18 @@ class _DamagesScreenState extends State<DamagesScreen> {
   }
 
   /// Compact table view for wide screens.
+  List<Damage> get _visibleDamages => _damages
+      .where((damage) => matchesSectionSearch(_searchQuery, [
+            damage.productName,
+            damage.reason,
+            damage.reportedByName,
+            damage.quantity,
+          ]))
+      .toList();
+
   Widget _damagesTable() {
     final rows = <CompactDataRow>[];
-    for (var i = 0; i < _damages.length; i++) {
-      final d = _damages[i];
+    for (final d in _visibleDamages) {
       rows.add(
         CompactDataRow([
           CompactDataTable.cell(

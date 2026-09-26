@@ -755,9 +755,13 @@ class ApiService {
   static Future<Map<String, dynamic>> getActivity({
     int limit = 50,
     List<String>? types,
+    String? search,
   }) async {
     final params = <String, String>{'limit': '$limit'};
     if (types != null && types.isNotEmpty) params['types'] = types.join(',');
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
     final response = await http.get(
       Uri.parse('$baseUrl/audit/activity').replace(queryParameters: params),
       headers: _headers(),
@@ -778,15 +782,58 @@ class ApiService {
     String? severity,
     String? startDate,
     String? endDate,
+    String? search,
+    int page = 1,
+    int limit = 50,
   }) async {
-    final params = <String, String>{};
-    if (eventType != null && eventType.isNotEmpty)
+    final params = <String, String>{'page': '$page', 'limit': '$limit'};
+    if (eventType != null && eventType.isNotEmpty) {
       params['eventType'] = eventType;
-    if (severity != null && severity.isNotEmpty) params['severity'] = severity;
-    if (startDate != null && startDate.isNotEmpty)
+    }
+    if (severity != null && severity.isNotEmpty) {
+      params['severity'] = severity;
+    }
+    if (startDate != null && startDate.isNotEmpty) {
       params['startDate'] = startDate;
-    if (endDate != null && endDate.isNotEmpty) params['endDate'] = endDate;
+    }
+    if (endDate != null && endDate.isNotEmpty) {
+      params['endDate'] = endDate;
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
     final uri = Uri.parse('$baseUrl/audit').replace(queryParameters: params);
+    final response = await http.get(uri, headers: _headers());
+    return _handleResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getBusinessActivityLogs({
+    String? eventType,
+    String? severity,
+    String? startDate,
+    String? endDate,
+    String? search,
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final params = <String, String>{'page': '$page', 'limit': '$limit'};
+    if (eventType != null && eventType.isNotEmpty) {
+      params['eventType'] = eventType;
+    }
+    if (severity != null && severity.isNotEmpty) {
+      params['severity'] = severity;
+    }
+    if (startDate != null && startDate.isNotEmpty) {
+      params['startDate'] = startDate;
+    }
+    if (endDate != null && endDate.isNotEmpty) {
+      params['endDate'] = endDate;
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
+    final uri = Uri.parse('$baseUrl/audit/business-activity')
+        .replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }

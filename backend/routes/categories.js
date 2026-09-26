@@ -53,6 +53,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('manage_ca
       userId: req.userId,
       userRole: req.user.role,
       action: `Created category: ${name}`,
+      details: { categoryId: category._id, type: category.type },
       ipAddress: req.ip
     });
 
@@ -74,6 +75,17 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('manage_
     category.description = req.body.description || category.description;
     await category.save();
 
+    await createAuditLog({
+      tenantId,
+      eventType: 'category_updated',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Updated category: ${category.name}`,
+      details: { categoryId: category._id, type: category.type },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
     res.json({ success: true, message: 'Category updated.', category });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -90,6 +102,17 @@ router.delete('/:id', authenticate, requireActiveTenant, requirePermission('mana
 
     category.isActive = false;
     await category.save();
+
+    await createAuditLog({
+      tenantId,
+      eventType: 'category_deleted',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Deleted category: ${category.name}`,
+      details: { categoryId: category._id, type: category.type },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({ success: true, message: 'Category deleted.' });
   } catch (error) {

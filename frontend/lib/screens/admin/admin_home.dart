@@ -12,6 +12,7 @@ import 'damages_screen.dart';
 import 'reports_screen.dart';
 import 'employees_screen.dart';
 import 'suppliers_screen.dart';
+import '../developer/audit_logs_screen.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -39,7 +40,7 @@ class _AdminHomeState extends State<AdminHome> {
   bool _categoriesExpanded = false;
 
   /// Which branch under the Reports tree is open.
-  /// Index 0 = Sales Performance.
+  /// Index 0 = Sales Performance, index 1 = Activity Log.
   int _reportsChild = 0;
   bool _reportsExpanded = false;
 
@@ -83,6 +84,7 @@ class _AdminHomeState extends State<AdminHome> {
     builder: _empty,
     children: const [
       DrawerChildItem(icon: Icons.insights, label: 'Sales Performance'),
+      DrawerChildItem(icon: Icons.manage_search, label: 'Business Activity'),
     ],
     activeChildIndex: _reportsChild,
     initiallyExpanded: _reportsExpanded,
@@ -135,7 +137,7 @@ class _AdminHomeState extends State<AdminHome> {
   /// Page stack order matches the drawer:
   /// 0 Dashboard | 1 Suppliers | 2 Employees | 3 Stock
   /// 4 Product Categories | 5 Expense Categories | 6 Sales
-  /// 7 Expenses | 8 Credits | 9 History | 10 Damages | 11 Store | 12 Reports
+  /// 7 Expenses | 8 Credits | 9 History | 10 Damages | 11 Store | 12 Reports | 13 Activity Log
   late final List<Widget> _pages = [
     AdminDashboard(onSeeAll: _openFromDashboard),
     SuppliersScreen(),
@@ -150,6 +152,7 @@ class _AdminHomeState extends State<AdminHome> {
     DamagesScreen(),
     StoreScreen(),
     ReportsScreen(),
+    const AuditLogsScreen(),
   ];
 
   /// Maps the selected drawer item to the [IndexedStack] page index.
@@ -180,7 +183,7 @@ class _AdminHomeState extends State<AdminHome> {
       case 5:
         return 11; // Store
       case _reportsIndex:
-        return 12; // Reports (Sales Performance)
+        return _reportsChild == 0 ? 12 : 13; // Reports / Activity Log
       default:
         return 0;
     }

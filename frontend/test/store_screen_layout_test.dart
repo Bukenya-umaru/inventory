@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:inventory_app/screens/admin/store_screen.dart';
+import 'package:inventory_app/utils/currency.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const List<Map<String, dynamic>> _testProducts = [
@@ -84,9 +85,7 @@ Future<void> _pumpStoreAt(
 
   await http.runWithClient(() async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: StoreScreen()),
-      ),
+      const MaterialApp(home: Scaffold(body: StoreScreen())),
     );
 
     await tester.pump();
@@ -106,11 +105,25 @@ void main() {
 
     expect(find.text('ITEM NAME'), findsOneWidget);
     final summary = tester.widget<Text>(find.textContaining('items')).data!;
-    expect(summary, contains('• 12 bx •'), reason: 'header must show box total');
-    expect(find.text('12 bx, 5 pc'), findsOneWidget,
-        reason: 'box-sold product card shows boxes + loose pieces');
-    expect(find.text('50 pcs'), findsOneWidget,
-        reason: 'piece-sold product card unchanged');
+    expect(
+      summary,
+      contains('• 12 bx •'),
+      reason: 'header must show box total',
+    );
+    expect(
+      find.text('12 bx, 5 pc'),
+      findsOneWidget,
+      reason: 'box-sold product card shows boxes + loose pieces',
+    );
+    expect(
+      find.text('50 pcs'),
+      findsOneWidget,
+      reason: 'piece-sold product card unchanged',
+    );
+    expect(
+      find.text('Inventory value (at cost): ${Currency.formatWhole(5910000)}'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('header and table fit at 360x800 (common phone)', (tester) async {
@@ -135,8 +148,9 @@ void main() {
     expect(summary, contains('• 12 bx •'));
   });
 
-  testWidgets('header fits at 320x640 with large text scale 1.3',
-      (tester) async {
+  testWidgets('header fits at 320x640 with large text scale 1.3', (
+    tester,
+  ) async {
     await _pumpStoreAt(tester, size: const Size(320, 640), textScale: 1.3);
 
     final summary = tester.widget<Text>(find.textContaining('items')).data!;

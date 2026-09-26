@@ -197,7 +197,7 @@ router.post('/', authenticate, requireActiveTenant, requirePermission('create_pr
         ? `buy ${existingProduct.costPrice}, sell ${existingProduct.sellingPrice}`
         : null;        await createAuditLog({
           tenantId,
-          eventType: 'purchase_recorded',
+          eventType: 'stock_merged',
           userId: req.userId,
           userRole: req.user.role,
           action: `Merged stock: ${qtyToAdd}x ${existingProduct.name} (${purchaseUnit}) — pending approval${priceChange ? ` — prices updated (${priceChange})` : ''}`,
@@ -322,6 +322,12 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('edit_pr
     const updates = req.body;
     delete updates.tenantId;
     delete updates.createdBy;
+    const changes = {};
+    for (const [field, value] of Object.entries(updates)) {
+      if (String(product[field] ?? '') !== String(value ?? '')) {
+        changes[field] = { from: product[field] ?? null, to: value };
+      }
+    }
 
     // Detect price changes before applying the update so we can record history
     const priceFields = ['costPrice', 'sellingPrice', 'boxCostPrice', 'boxSellingPrice', 'unitsPerBox'];
@@ -352,6 +358,17 @@ router.put('/:id', authenticate, requireActiveTenant, requirePermission('edit_pr
         console.error('Price history error:', histErr);
       }
     }
+
+    await createAuditLog({
+      tenantId,
+      eventType: 'product_updated',
+      userId: req.userId,
+      userRole: req.user.role,
+      action: `Updated product: ${product.name}`,
+      details: { productId: product._id, changes },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({ success: true, message: 'Product updated.', product });
   } catch (error) {

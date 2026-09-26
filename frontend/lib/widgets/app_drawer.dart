@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../models/audit_log.dart';
 
 import '../services/api_service.dart';
 import '../services/app_events.dart';
@@ -158,8 +159,7 @@ class _ExpandableNavItem extends StatelessWidget {
                         color: isActive
                             ? AppTheme.dashNavyColor(context)
                             : AppTheme.secondaryText(context),
-                        fontSize: AppTheme.fontSize(
-                            context, isSmall ? 13 : 14),
+                        fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -198,8 +198,9 @@ class _ExpandableNavItem extends StatelessWidget {
               ],
             ),
           ),
-          crossFadeState:
-              isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState: isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 150),
           sizeCurve: Curves.easeOut,
         ),
@@ -253,11 +254,7 @@ class _BranchChild extends StatelessWidget {
                 color: AppTheme.borderColor(context),
               ),
               const SizedBox(width: 6),
-              Icon(
-                child.icon,
-                size: isSmall ? 15 : 16,
-                color: color,
-              ),
+              Icon(child.icon, size: isSmall ? 15 : 16, color: color),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -299,7 +296,6 @@ class _DrawerContent extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(isSmall ? 14 : 20),
@@ -312,23 +308,28 @@ class _DrawerContent extends StatelessWidget {
                       ApiService.fileUrl(branding!.businessLogo),
                       height: isSmall ? 28 : 32,
                       errorBuilder: (_, _, _) => Icon(
-                          Icons.storefront,
-                          size: 28,
-                          color: AppTheme.dashNavyColor(context)),
+                        Icons.storefront,
+                        size: 28,
+                        color: AppTheme.dashNavyColor(context),
+                      ),
                     ),
                   )
                 else
-                  Icon(Icons.storefront,
-                      size: 28, color: AppTheme.dashNavyColor(context)),
+                  Icon(
+                    Icons.storefront,
+                    size: 28,
+                    color: AppTheme.dashNavyColor(context),
+                  ),
                 SizedBox(width: isSmall ? 8 : 10),
                 Expanded(
                   child: Text(
                     branding?.businessName ?? 'Inventory',
                     softWrap: true,
                     style: TextStyle(
-                        fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.dashNavyColor(context)),
+                      fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.dashNavyColor(context),
+                    ),
                   ),
                 ),
               ],
@@ -402,7 +403,9 @@ class _DrawerContent extends StatelessWidget {
                                         ? AppTheme.dashNavyColor(context)
                                         : AppTheme.secondaryText(context),
                                     fontSize: AppTheme.fontSize(
-                                        context, isSmall ? 13 : 14),
+                                      context,
+                                      isSmall ? 13 : 14,
+                                    ),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -441,8 +444,10 @@ class ThemeToggleFab extends StatelessWidget {
       mini: mini,
       tooltip: isDark ? 'Switch to light mode' : 'Switch to dark mode',
       onPressed: () => context.read<ThemeProvider>().toggle(),
-      child: Icon(isDark ? Icons.light_mode : Icons.dark_mode,
-          size: mini ? 20 : null),
+      child: Icon(
+        isDark ? Icons.light_mode : Icons.dark_mode,
+        size: mini ? 20 : null,
+      ),
     );
   }
 }
@@ -493,7 +498,6 @@ class ResponsiveNavWrapper extends StatelessWidget {
         : null;
 
     if (isWide) {
-
       return Scaffold(
         backgroundColor: AppTheme.canvasColor(context),
         body: Row(
@@ -507,25 +511,33 @@ class ResponsiveNavWrapper extends StatelessWidget {
               child: Scaffold(
                 backgroundColor: AppTheme.canvasColor(context),
                 floatingActionButton: fab,
-                appBar: appBar ?? AppBar(
-                  backgroundColor: AppTheme.appBarColor(context),
-                  elevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                  title: Row(
-                    children: [
-                      Text(title ?? '',
-                        style: TextStyle(
-                          fontSize: AppTheme.fontSize(context, 18),
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textColor(context))),
-                    ],
-                  ),
-                  actions: [
-                    const _NotificationBell(),
-                    _SettingsMenu(),
-                    const SizedBox(width: 8),
-                  ],
-                ),
+                appBar:
+                    appBar ??
+                    AppBar(
+                      backgroundColor: AppTheme.appBarColor(context),
+                      elevation: 0,
+                      surfaceTintColor: Colors.transparent,
+                      title: Row(
+                        children: [
+                          Text(
+                            title ?? '',
+                            style: TextStyle(
+                              fontSize: AppTheme.fontSize(context, 18),
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textColor(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        _NotificationBell(
+                          onActivitySelected: (log) =>
+                              _openActivityLocation(context, log),
+                        ),
+                        _SettingsMenu(),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
                 body: body,
               ),
             ),
@@ -536,14 +548,19 @@ class ResponsiveNavWrapper extends StatelessWidget {
 
     return Scaffold(
       floatingActionButton: fab,
-      appBar: appBar ?? AppBar(
-        title: Text(title ?? ''),
-        actions: [
-          const _NotificationBell(),
-          _SettingsMenu(),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar:
+          appBar ??
+          AppBar(
+            title: Text(title ?? ''),
+            actions: [
+              _NotificationBell(
+                onActivitySelected: (log) =>
+                    _openActivityLocation(context, log),
+              ),
+              _SettingsMenu(),
+              const SizedBox(width: 8),
+            ],
+          ),
       drawer: AppDrawer(
         selectedIndex: selectedIndex,
         onItemTap: onItemTap,
@@ -552,10 +569,61 @@ class ResponsiveNavWrapper extends StatelessWidget {
       body: body,
     );
   }
+
+  void _openActivityLocation(BuildContext context, AuditLog log) {
+    final role = context.read<AuthProvider>().user?.role;
+    switch (log.eventType) {
+      case 'sale_recorded':
+      case 'sale_approved':
+        onItemTap(4, childIndex: 0);
+        break;
+      case 'expense_recorded':
+        onItemTap(4, childIndex: 1);
+        break;
+      case 'credit_paid':
+        onItemTap(4, childIndex: 2);
+        break;
+      case 'purchase_recorded':
+      case 'purchase_edited':
+      case 'purchase_approved':
+      case 'stock_merged':
+        onItemTap(4, childIndex: 3);
+        break;
+      case 'damage_recorded':
+        onItemTap(4, childIndex: 4);
+        break;
+      case 'product_created':
+      case 'product_updated':
+      case 'product_deleted':
+      case 'low_stock_alert':
+        onItemTap(2);
+        break;
+      case 'category_created':
+      case 'category_updated':
+      case 'category_deleted':
+        onItemTap(3, childIndex: log.details?['type'] == 'expense' ? 1 : 0);
+        break;
+      case 'supplier_created':
+      case 'supplier_updated':
+      case 'supplier_deleted':
+        onItemTap(1, childIndex: 0);
+        break;
+      case 'employee_created_primary':
+      case 'employee_created_backup':
+      case 'employee_deleted':
+      case 'employee_permissions_updated':
+      case 'employee_suspended':
+      case 'employee_reactivated':
+        if (role == 'admin') onItemTap(1, childIndex: 1);
+        break;
+    }
+  }
 }
 
 class _NotificationBell extends StatefulWidget {
-  const _NotificationBell();
+  final ValueChanged<AuditLog> onActivitySelected;
+
+  const _NotificationBell({required this.onActivitySelected});
 
   @override
   State<_NotificationBell> createState() => _NotificationBellState();
@@ -590,7 +658,13 @@ class _NotificationBellState extends State<_NotificationBell> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (['sales', 'purchases', 'damages', 'products', 'categories'].contains(event)) {
+    if ([
+      'sales',
+      'purchases',
+      'damages',
+      'products',
+      'categories',
+    ].contains(event)) {
       _fetchUnread();
     }
   }
@@ -599,18 +673,18 @@ class _NotificationBellState extends State<_NotificationBell> {
     try {
       final res = await ApiService.getActivity(limit: 1);
       if (mounted) setState(() => _unread = (res['unreadCount'] ?? 0) as int);
-    } catch (_) {
-
-    }
+    } catch (_) {}
   }
 
   Future<void> _open() async {
-    await Navigator.push(
+    final log = await Navigator.push<AuditLog>(
       context,
       MaterialPageRoute(builder: (_) => const ActivityNotificationsScreen()),
     );
-    _fetchUnread(); 
-    await ActivityWatcher.instance.resync(); 
+    if (!mounted) return;
+    if (log != null) widget.onActivitySelected(log);
+    _fetchUnread();
+    await ActivityWatcher.instance.resync();
   }
 
   @override
@@ -623,7 +697,10 @@ class _NotificationBellState extends State<_NotificationBell> {
     return Stack(
       children: [
         IconButton(
-          icon: Icon(Icons.notifications_outlined, color: AppTheme.mutedIcon(context)),
+          icon: Icon(
+            Icons.notifications_outlined,
+            color: AppTheme.mutedIcon(context),
+          ),
           tooltip: 'Activity',
           onPressed: _open,
         ),
@@ -642,7 +719,10 @@ class _NotificationBellState extends State<_NotificationBell> {
               child: Text(
                 _unread > 99 ? '99+' : '$_unread',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -659,7 +739,11 @@ class _SettingsMenu extends StatelessWidget {
     return PopupMenuButton<String>(
       offset: const Offset(0, 36),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      icon: Icon(Icons.settings_outlined, color: AppTheme.mutedIcon(context), size: 22),
+      icon: Icon(
+        Icons.settings_outlined,
+        color: AppTheme.mutedIcon(context),
+        size: 22,
+      ),
       onSelected: (value) {
         if (value == 'profile') {
           Navigator.push(
@@ -677,8 +761,11 @@ class _SettingsMenu extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.account_circle_outlined,
-                  size: 16, color: AppTheme.dashNavy),
+              const Icon(
+                Icons.account_circle_outlined,
+                size: 16,
+                color: AppTheme.dashNavy,
+              ),
               const SizedBox(width: 8),
               Text(
                 'My Profile',
@@ -698,17 +785,19 @@ class _SettingsMenu extends StatelessWidget {
             children: [
               const Icon(Icons.logout, size: 16, color: AppTheme.danger),
               const SizedBox(width: 8),
-              Text('Logout',
+              Text(
+                'Logout',
                 style: TextStyle(
                   fontSize: AppTheme.fontSize(context, 13),
-                  color: AppTheme.danger)),
+                  color: AppTheme.danger,
+                ),
+              ),
             ],
           ),
         ),
       ],
     );
   }
-
 }
 
 class DrawerItem {
@@ -726,9 +815,14 @@ class DrawerItem {
   /// Whether the branch starts expanded. Defaults to expanded when active.
   final bool? initiallyExpanded;
 
-  const DrawerItem(
-      {required this.icon, required this.label, required this.builder,
-       this.children, this.activeChildIndex, this.initiallyExpanded});
+  const DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.builder,
+    this.children,
+    this.activeChildIndex,
+    this.initiallyExpanded,
+  });
 
   bool get hasChildren => children != null && children!.isNotEmpty;
 }

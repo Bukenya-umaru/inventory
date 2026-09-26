@@ -7,6 +7,7 @@ import '../../models/product.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/searchable_picker.dart';
+import '../../widgets/section_search_bar.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 import '../../services/auth_provider.dart';
@@ -23,6 +24,7 @@ class _SalesScreenState extends State<SalesScreen> {
   List<Product> _products = [];
   bool _loading = true;
   bool _showAll = false;
+  String _searchQuery = '';
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -209,6 +211,12 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
         ),
 
+        SectionSearchBar(
+          hintText: 'Search sales by product, customer, employee...',
+          onSearch: (query) => setState(() => _searchQuery = query),
+        ),
+        const SizedBox(height: 8),
+
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
@@ -284,7 +292,7 @@ class _SalesScreenState extends State<SalesScreen> {
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _sales.isEmpty
+              : _visibleSales.isEmpty
               ? Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -298,7 +306,9 @@ class _SalesScreenState extends State<SalesScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No sales for this date',
+                        _searchQuery.isEmpty
+                            ? 'No sales for this date'
+                            : 'No sales match your search',
                         style: TextStyle(
                           color: AppTheme.secondaryText(context),
                           fontSize: 15,
@@ -314,6 +324,18 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   /// Compact table view for wide screens.
+  List<Sale> get _visibleSales => _sales
+      .where((sale) => matchesSectionSearch(_searchQuery, [
+            sale.productName,
+            sale.customerName,
+            sale.recordedByName,
+            sale.paymentMethod,
+            sale.status,
+            sale.quantity,
+            sale.totalAmount,
+          ]))
+      .toList();
+
   Widget _salesTable() {
     final user = context.watch<AuthProvider>().user;
     final canApprove =
@@ -322,8 +344,9 @@ class _SalesScreenState extends State<SalesScreen> {
             user.isDeveloper ||
             user.hasPermission('approve_sales'));
     final rows = <CompactDataRow>[];
-    for (var i = 0; i < _sales.length; i++) {
-      final s = _sales[i];
+    final sales = _visibleSales;
+    for (var i = 0; i < sales.length; i++) {
+      final s = sales[i];
       rows.add(
         CompactDataRow([
           CompactDataTable.cell(
