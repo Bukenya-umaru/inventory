@@ -44,7 +44,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'purchases') {
+    if (event == 'purchases' || event == 'sales' || event == 'expenses' || event == 'damages') {
       _load(silent: true); 
     }
   }
@@ -245,11 +245,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  /// Tappable "Sales Performance" subsection. Shows, for the currently
-  /// selected period/date range, the products sold and the damages recorded.
+  /// Tappable "Sales Performance" subsection. Shows totals for the currently
+  /// selected period/date range, plus the products sold and damages recorded.
   Widget _buildSalesPerformance(Map r, List sales, List damages) {
     final totalSold = sales.fold<num>(0, (sum, s) => sum + ((s['quantity'] ?? 0) as num)).toInt();
     final totalDamaged = damages.fold<num>(0, (sum, d) => sum + ((d['quantity'] ?? 0) as num)).toInt();
+    final totalRevenue = (r['totalRevenue'] ?? 0) as num;
+    final totalProfit = (r['totalProfit'] ?? 0) as num;
+    final totalExpenses = (r['totalExpenses'] ?? 0) as num;
+    final totalDamageLoss = (r['totalDamageLoss'] ?? 0) as num;
 
     final visiblePerfSales = _perfShowAllSales ? sales : sales.take(5).toList();
     final visiblePerfDamages = _perfShowAllDamages ? damages : damages.take(5).toList();
@@ -301,9 +305,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: _miniCard('Products Sold', '$totalSold', color: AppTheme.success)),
+                      Expanded(child: _miniCard('Total Sales', Currency.formatWhole(totalRevenue), color: AppTheme.success)),
                       const SizedBox(width: 8),
-                      Expanded(child: _miniCard('Damaged Items', '$totalDamaged', color: AppTheme.danger)),
+                      Expanded(child: _miniCard('Total Profits', Currency.formatWhole(totalProfit), color: AppTheme.blueBright(context))),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: _miniCard('Total Expenses', Currency.formatWhole(totalExpenses), color: AppTheme.warning)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _miniCard('Damages Recorded', Currency.formatWhole(totalDamageLoss), color: AppTheme.danger)),
                     ],
                   ),
                   const SizedBox(height: 12),

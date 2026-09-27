@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
 const Damage = require('../models/Damage');
+const Expense = require('../models/Expense');
 const Product = require('../models/Product');
 const { authenticate, requireActiveTenant, requirePermission } = require('../middleware/auth');
 
@@ -201,6 +202,8 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
       .populate('reportedBy', 'name')
       .sort({ reportDate: -1 });
 
+    const expenses = await Expense.find({ tenantId, expenseDate: { $gte: start, $lte: end } });
+
     const products = await Product.find({ tenantId, isActive: true }).populate('categoryId', 'name');
 
     const allProductsMap = {};
@@ -300,6 +303,7 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
 
     const totalRevenue = sales.reduce((sum, s) => sum + s.totalAmount, 0);
     const totalProfit = sales.reduce((sum, s) => sum + s.profit, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const totalDamageLoss = damages.reduce((sum, d) => sum + d.estimatedLoss, 0);
 
     res.json({
@@ -310,6 +314,7 @@ router.get('/detailed', authenticate, requireActiveTenant, async (req, res) => {
         endDate: end,
         totalRevenue,
         totalProfit,
+        totalExpenses,
         totalDamageLoss,
         netProfit: totalProfit - totalDamageLoss,
         totalSales: sales.length,
