@@ -61,6 +61,7 @@ class Product {
   final int stockBoxes;
   final double? boxSellingPrice;
   final double? boxCostPrice;
+  final DateTime? createdAt;
   final List<PriceHistoryEntry> priceHistory;
 
   Product({
@@ -80,6 +81,7 @@ class Product {
     this.stockBoxes = 0,
     this.boxSellingPrice,
     this.boxCostPrice,
+    this.createdAt,
     this.priceHistory = const [],
   });
 
@@ -105,6 +107,9 @@ class Product {
       stockBoxes: (json['stockBoxes'] as num?)?.toInt() ?? 0,
       boxSellingPrice: (json['boxSellingPrice'] as num?)?.toDouble(),
       boxCostPrice: (json['boxCostPrice'] as num?)?.toDouble(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
       priceHistory: (json['priceHistory'] as List?)
               ?.map((h) => PriceHistoryEntry.fromJson(h as Map<String, dynamic>))
               .toList() ??

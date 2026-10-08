@@ -28,7 +28,7 @@ async function resolveSupplier(tenantId, body) {
 router.get('/', authenticate, requireActiveTenant, async (req, res) => {
   try {
     const tenantId = req.user.role === 'developer' ? req.query.tenantId : req.user.tenantId;
-    const { category, search, lowStock, page = 1, limit = 50 } = req.query;
+    const { category, search, lowStock, purchaseDate, page = 1, limit = 50 } = req.query;
 
     const query = { tenantId, isActive: true };
     if (category) query.categoryId = category;
@@ -40,6 +40,17 @@ router.get('/', authenticate, requireActiveTenant, async (req, res) => {
     }
     if (lowStock === 'true') {
       query.$expr = { $lte: ['$currentStock', '$minimumStock'] };
+    }
+    if (purchaseDate) {
+      const start = new Date(purchaseDate);
+      const end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+      const purchases = await Purchase.find({
+        tenantId,
+        status: 'approved',
+        purchaseDate: { $gte: start, $lte: end }
+      }).select('productId');
+      query._id = { $in: purchases.map((purchase) => purchase.productId) };
     }
 
     const total = await Product.countDocuments(query);

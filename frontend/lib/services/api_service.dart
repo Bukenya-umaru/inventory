@@ -417,10 +417,14 @@ class ApiService {
   static Future<Map<String, dynamic>> getProducts({
     String? search,
     bool? lowStock,
+    String? purchaseDate,
   }) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (lowStock == true) params['lowStock'] = 'true';
+    if (purchaseDate != null && purchaseDate.isNotEmpty) {
+      params['purchaseDate'] = purchaseDate;
+    }
     final uri = Uri.parse('$baseUrl/products').replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);

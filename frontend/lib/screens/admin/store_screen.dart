@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../services/app_events.dart';
 import '../../models/product.dart';
@@ -20,6 +21,7 @@ class _StoreScreenState extends State<StoreScreen> {
   bool _loading = true;
   String _search = '';
   String? _selectedCategoryId;
+  DateTime? _selectedPurchaseDate;
   Timer? _searchTimer;
 
   @override
@@ -49,7 +51,12 @@ class _StoreScreenState extends State<StoreScreen> {
     if (!silent) setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        ApiService.getProducts(search: _search.isNotEmpty ? _search : null),
+        ApiService.getProducts(
+          search: _search.isNotEmpty ? _search : null,
+          purchaseDate: _selectedPurchaseDate == null
+              ? null
+              : DateFormat('yyyy-MM-dd').format(_selectedPurchaseDate!),
+        ),
         ApiService.getCategories(),
       ]);
       final res = results[0];
@@ -73,6 +80,20 @@ class _StoreScreenState extends State<StoreScreen> {
   List<Product> get _filtered {
     if (_selectedCategoryId == null) return _products;
     return _products.where((p) => p.categoryId == _selectedCategoryId).toList();
+  }
+
+  Future<void> _pickAddedDate() async {
+    final today = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedPurchaseDate ?? today,
+      firstDate: DateTime(2020),
+      lastDate: today,
+      helpText: 'Select product purchase date',
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _selectedPurchaseDate = picked);
+    _load();
   }
 
   int get _totalStock => _filtered.fold(0, (s, p) => s + p.totalStockPieces);
@@ -199,6 +220,7 @@ class _StoreScreenState extends State<StoreScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
+                _purchaseDateChip(),
                 _catChip('All', null),
                 for (final cat in _categories) _catChip(cat.name, cat.id),
               ],
@@ -227,6 +249,31 @@ class _StoreScreenState extends State<StoreScreen> {
               : RefreshIndicator(onRefresh: _load, child: _storeTable()),
         ),
       ],
+    );
+  }
+
+  Widget _purchaseDateChip() {
+    final selected = _selectedPurchaseDate;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: InputChip(
+        avatar: const Icon(Icons.calendar_today, size: 16),
+        label: Text(
+          selected == null
+              ? 'Bought date'
+              : DateFormat('MMM d, yyyy').format(selected),
+          style: const TextStyle(fontSize: 12),
+        ),
+        selected: selected != null,
+        selectedColor: AppTheme.primary.withValues(alpha: 0.12),
+        onPressed: _pickAddedDate,
+        onDeleted: selected == null
+            ? null
+            : () {
+                setState(() => _selectedPurchaseDate = null);
+                _load();
+              },
+      ),
     );
   }
 
@@ -418,6 +465,11 @@ class _StoreScreenState extends State<StoreScreen> {
               _detailRow('Units per Box', '${p.unitsPerBox}'),
             ],
             _detailRow('Minimum Stock', '${p.minimumStock} pcs'),
+            if (p.createdAt != null)
+              _detailRow(
+                'Added',
+                DateFormat('MMM d, yyyy').format(p.createdAt!.toLocal()),
+              ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
