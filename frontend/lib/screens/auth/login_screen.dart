@@ -9,40 +9,22 @@ import '../../utils/theme.dart';
 /// Duration the blue splash is shown before revealing the login page.
 const Duration _kSplashDuration = Duration(seconds: 2);
 
-/// Brand palette for splash + login, matching the Inventar design:
-/// deep charcoal page background with a vivid green card header.
-const Color _kGreenTop = Color(0xFF189048);
-const Color _kGreenBottom = Color(0xFF30D878);
-const Color _kPageTop = Color(0xFF0C1112);
-const Color _kPageBottom = Color(0xFF141E22);
-const Color _kPageTopDark = Color(0xFF080B0C);
-const Color _kPageBottomDark = Color(0xFF0F171B);
+const Color _kStoreGreen = Color(0xFF155D2B);
+const Color _kFieldGreen = Color(0xFF4D9E5A);
+const Color _kPageCream = Color(0xFFFFF8D8);
 
-const LinearGradient _kBlueGradient = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [_kGreenTop, _kGreenBottom],
-);
-
-/// Logo square + "Inventory" wordmark + tagline. Shown on the login card
-/// header and on the phone splash.
+/// Store House mark shown while the login screen is loading.
 class _BrandHeader extends StatelessWidget {
   final double iconSize;
   final double nameSize;
-  final double taglineSize;
 
-  const _BrandHeader({
-    required this.iconSize,
-    required this.nameSize,
-    required this.taglineSize,
-  });
+  const _BrandHeader({required this.iconSize, required this.nameSize});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Frosted rounded-square holding the boxes logo.
         Container(
           width: iconSize,
           height: iconSize,
@@ -55,28 +37,19 @@ class _BrandHeader extends StatelessWidget {
             ),
           ),
           child: Icon(
-            Icons.view_in_ar,
-            size: iconSize * 0.55,
+            Icons.warehouse_outlined,
+            size: iconSize * 0.58,
             color: Colors.white,
           ),
         ),
         SizedBox(height: iconSize * 0.22),
         Text(
-          'Inventory',
+          'Store House',
           style: TextStyle(
             color: Colors.white,
             fontSize: nameSize,
             fontWeight: FontWeight.w800,
-            letterSpacing: nameSize * 0.08,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Smart Inventory, Total Control',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.85),
-            fontSize: taglineSize,
-            letterSpacing: 0.5,
+            letterSpacing: 0.4,
           ),
         ),
       ],
@@ -84,8 +57,6 @@ class _BrandHeader extends StatelessWidget {
   }
 }
 
-/// Gradient page with the centered login card: blue brand header on top and
-/// the white "Welcome back" form below.
 class _LoginFormView extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController emailCtrl;
@@ -107,21 +78,6 @@ class _LoginFormView extends StatelessWidget {
     required this.onSubmit,
   });
 
-  OutlineInputBorder _border(Color c, {double width = 1}) => OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12),
-    borderSide: BorderSide(color: c, width: width),
-  );
-
-  Widget _fieldLabel(BuildContext context, String text, bool isSmall) => Text(
-    text,
-    style: TextStyle(
-      fontSize: AppTheme.fontSize(context, isSmall ? 11.5 : 13),
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.1,
-      color: AppTheme.secondaryText(context),
-    ),
-  );
-
   Widget _buildForm(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.height < 600;
 
@@ -131,17 +87,18 @@ class _LoginFormView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Heading
-          Text(
-            'Welcome back',
-            style: TextStyle(
-              fontSize: AppTheme.fontSize(context, isSmall ? 22 : 26),
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textColor(context),
-              height: 1.1,
+          Center(
+            child: Text(
+              'Login',
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, isSmall ? 26 : 32),
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.1,
+              ),
             ),
           ),
-          SizedBox(height: isSmall ? 14 : 22),
+          SizedBox(height: isSmall ? 22 : 32),
 
           if (error != null)
             Container(
@@ -149,17 +106,15 @@ class _LoginFormView extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppTheme.danger.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AppTheme.danger.withValues(alpha: 0.2),
-                ),
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.error_outline,
-                    color: AppTheme.danger,
+                    color: Color(0xFFFFD2C9),
                     size: 18,
                   ),
                   const SizedBox(width: 10),
@@ -167,7 +122,7 @@ class _LoginFormView extends StatelessWidget {
                     child: Text(
                       error!,
                       style: TextStyle(
-                        color: AppTheme.danger,
+                        color: Colors.white,
                         fontSize: AppTheme.fontSize(context, 13),
                       ),
                     ),
@@ -176,90 +131,112 @@ class _LoginFormView extends StatelessWidget {
               ),
             ),
 
-          // Email
-          _fieldLabel(context, 'EMAIL ADDRESS', isSmall),
-          const SizedBox(height: 8),
           TextFormField(
             controller: emailCtrl,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-              color: AppTheme.textColor(context),
+              color: Colors.white,
             ),
             decoration: InputDecoration(
-              hintText: 'name@gmail.com',
+              hintText: 'Email',
               hintStyle: TextStyle(
-                color: AppTheme.secondaryText(context),
+                color: Colors.white.withValues(alpha: 0.82),
                 fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
               ),
               filled: true,
-              fillColor: AppTheme.cardColor(context),
+              fillColor: _kFieldGreen,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: isSmall ? 14 : 16,
+                horizontal: 20,
+                vertical: isSmall ? 13 : 16,
               ),
-              prefixIcon: Icon(
-                Icons.mail_outline,
-                color: AppTheme.secondaryText(context),
+              suffixIcon: const Icon(
+                Icons.person,
+                color: Colors.white,
                 size: 20,
               ),
-              enabledBorder: _border(AppTheme.borderColor(context)),
-              focusedBorder: _border(_kGreenBottom, width: 1.5),
-              errorBorder: _border(AppTheme.danger),
-              focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: Colors.white, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: Color(0xFFFFD2C9)),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFFD2C9),
+                  width: 1.5,
+                ),
+              ),
             ),
+            textAlignVertical: TextAlignVertical.center,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Email is required';
               if (!v.contains('@')) return 'Enter a valid email';
               return null;
             },
           ),
-          SizedBox(height: isSmall ? 14 : 20),
+          SizedBox(height: isSmall ? 16 : 22),
 
-          // Password
-          _fieldLabel(context, 'PASSWORD', isSmall),
-          const SizedBox(height: 8),
           TextFormField(
             controller: passCtrl,
             obscureText: obscure,
             textInputAction: TextInputAction.done,
             style: TextStyle(
               fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-              color: AppTheme.textColor(context),
+              color: Colors.white,
             ),
             decoration: InputDecoration(
               hintText: 'Password',
               hintStyle: TextStyle(
-                color: AppTheme.secondaryText(context),
+                color: Colors.white.withValues(alpha: 0.82),
                 fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
               ),
               filled: true,
-              fillColor: AppTheme.cardColor(context),
+              fillColor: _kFieldGreen,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: isSmall ? 14 : 16,
+                horizontal: 20,
+                vertical: isSmall ? 13 : 16,
               ),
-              prefixIcon: Icon(
-                Icons.lock_outline,
-                color: AppTheme.secondaryText(context),
-                size: 20,
+              suffixIconColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
               ),
-              enabledBorder: _border(AppTheme.borderColor(context)),
-              focusedBorder: _border(_kGreenBottom, width: 1.5),
-              errorBorder: _border(AppTheme.danger),
-              focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: Colors.white, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: Color(0xFFFFD2C9)),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(
+                  color: Color(0xFFFFD2C9),
+                  width: 1.5,
+                ),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   obscure
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: AppTheme.secondaryText(context),
+                  color: Colors.white,
                   size: 20,
                 ),
                 onPressed: onToggleObscure,
               ),
             ),
+            textAlignVertical: TextAlignVertical.center,
             validator: (v) {
               if (v == null || v.isEmpty) return 'Password is required';
               return null;
@@ -268,69 +245,34 @@ class _LoginFormView extends StatelessWidget {
           ),
           SizedBox(height: isSmall ? 20 : 28),
 
-          // Sign in button (blue gradient)
           SizedBox(
             width: double.infinity,
-            height: isSmall ? 48 : 54,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: _kBlueGradient,
-                borderRadius: BorderRadius.circular(14),
+            height: isSmall ? 48 : 52,
+            child: ElevatedButton(
+              onPressed: loading ? null : onSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                disabledBackgroundColor: Colors.white70,
+                foregroundColor: _kStoreGreen,
+                elevation: 0,
+                shape: const StadiumBorder(),
               ),
-              child: ElevatedButton(
-                onPressed: loading ? null : onSubmit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  disabledBackgroundColor: Colors.transparent,
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
-                  shadowColor: Colors.transparent,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.login, size: 22),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Sign In',
-                            style: TextStyle(
-                              fontSize: AppTheme.fontSize(
-                                context,
-                                isSmall ? 15 : 17,
-                              ),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: _kStoreGreen,
+                        strokeWidth: 2.5,
                       ),
-              ),
-            ),
-          ),
-          SizedBox(height: isSmall ? 20 : 28),
-
-          // Footer note (no link, per design).
-          Divider(color: AppTheme.dividerColor(context), height: 1),
-          SizedBox(height: isSmall ? 14 : 18),
-          Center(
-            child: Text(
-              'Contact your administrator for access',
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, 13),
-                color: AppTheme.secondaryText(context),
-              ),
+                    )
+                  : Text(
+                      'Login',
+                      style: TextStyle(
+                        fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -340,88 +282,156 @@ class _LoginFormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSmall = MediaQuery.of(context).size.height < 600;
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [_kPageTopDark, _kPageBottomDark]
-              : const [_kPageTop, _kPageBottom],
-        ),
-      ),
-      child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.cardColor(context),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.45 : 0.3,
-                      ),
-                      blurRadius: 30,
-                      offset: const Offset(0, 12),
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmall ? 18 : 24,
+                vertical: 20,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 470),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _kStoreGreen,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF102716).withValues(alpha: 0.4),
+                          blurRadius: 25,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Blue brand header
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: isSmall ? 24 : 34,
-                        ),
-                        decoration: const BoxDecoration(
-                          gradient: _kBlueGradient,
-                        ),
-                        child: _BrandHeader(
-                          iconSize: isSmall ? 64 : 78,
-                          nameSize: AppTheme.fontSize(
-                            context,
-                            isSmall ? 26 : 30,
-                          ),
-                          taglineSize: AppTheme.fontSize(
-                            context,
-                            isSmall ? 13 : 15,
-                          ),
-                        ),
-                      ),
-                      // White form body
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          24,
-                          isSmall ? 20 : 28,
-                          24,
-                          isSmall ? 20 : 24,
-                        ),
-                        child: _buildForm(context),
-                      ),
-                    ],
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmall ? 24 : 46,
+                      vertical: isSmall ? 28 : 40,
+                    ),
+                    child: _buildForm(context),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              'Contact your administrator for access',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 13),
+                color: _kStoreGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _WarehouseBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawColor(_kPageCream, BlendMode.src);
+    final wallPaint = Paint()..color = const Color(0xFFEEDDA8);
+    final shelfPaint = Paint()
+      ..color = const Color(0xFFD8A765)
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+    final boxPaint = Paint()..color = const Color(0xFFDFA66B);
+    final boxLightPaint = Paint()..color = const Color(0xFFF1BF7C);
+    final boxLinePaint = Paint()
+      ..color = const Color(0xFFB97942)
+      ..strokeWidth = 2;
+
+    final wallHeight = size.height * 0.72;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, wallHeight), wallPaint);
+
+    final beamPaint = Paint()
+      ..color = const Color(0xFFE4CB8E)
+      ..strokeWidth = 3;
+    for (var i = 0; i < 6; i++) {
+      final y = size.height * (0.12 + i * 0.085);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), beamPaint);
+    }
+
+    void drawShelf(double left, double top, double width) {
+      canvas.drawLine(Offset(left, top), Offset(left + width, top), shelfPaint);
+      canvas.drawLine(
+        Offset(left, top + 78),
+        Offset(left + width, top + 78),
+        shelfPaint,
+      );
+      canvas.drawLine(
+        Offset(left + 5, top - 4),
+        Offset(left + 5, top + 85),
+        shelfPaint,
+      );
+      canvas.drawLine(
+        Offset(left + width - 5, top - 4),
+        Offset(left + width - 5, top + 85),
+        shelfPaint,
+      );
+      final crateWidth = width * 0.36;
+      for (var i = 0; i < 2; i++) {
+        final x = left + 14 + i * (crateWidth + 12);
+        final rect = Rect.fromLTWH(x, top - 48, crateWidth, 43);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+          boxPaint,
+        );
+        canvas.drawLine(
+          Offset(x + crateWidth * 0.5, top - 46),
+          Offset(x + crateWidth * 0.5, top - 7),
+          boxLinePaint,
+        );
+      }
+      final lower = Rect.fromLTWH(left + 18, top + 31, width * 0.48, 42);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(lower, const Radius.circular(3)),
+        boxLightPaint,
+      );
+      canvas.drawLine(
+        Offset(lower.left + lower.width * 0.5, lower.top + 2),
+        Offset(lower.left + lower.width * 0.5, lower.bottom - 2),
+        boxLinePaint,
+      );
+    }
+
+    final shelfTop = size.height * 0.59;
+    drawShelf(-size.width * 0.12, shelfTop, size.width * 0.4);
+    drawShelf(size.width * 0.72, shelfTop, size.width * 0.4);
+
+    final hill = Path()
+      ..moveTo(0, size.height * 0.76)
+      ..quadraticBezierTo(
+        size.width * 0.2,
+        size.height * 0.66,
+        size.width * 0.43,
+        size.height * 0.75,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.75,
+        size.height * 0.84,
+        size.width,
+        size.height * 0.72,
+      )
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(hill, Paint()..color = const Color(0xFF0B6A2D));
+  }
+
+  @override
+  bool shouldRepaint(covariant _WarehouseBackgroundPainter oldDelegate) =>
+      false;
 }
 
 class LoginScreen extends StatefulWidget {
@@ -476,68 +486,62 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Full-screen blue splash with the brand mark and a loading spinner,
+  /// Full-screen brand splash with the mark and a loading spinner,
   /// shown while the login form "loads".
   Widget _buildSplash(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [_kPageTopDark, _kGreenTop]
-              : const [_kPageTop, _kGreenBottom],
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            const Expanded(
-              child: Center(
-                child: _BrandHeader(
-                  iconSize: 92,
-                  nameSize: 36,
-                  taglineSize: 16,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(painter: _WarehouseBackgroundPainter()),
+        SafeArea(
+          child: Column(
+            children: [
+              const Expanded(
+                child: Center(child: _BrandHeader(iconSize: 76, nameSize: 32)),
+              ),
+              const SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  color: _kStoreGreen,
+                  strokeWidth: 2.5,
                 ),
               ),
-            ),
-            // Loading indicator — signals the app is preparing the login form.
-            const SizedBox(
-              width: 30,
-              height: 30,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.5,
-              ),
-            ),
-            const SizedBox(height: 48),
-          ],
+              const SizedBox(height: 48),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Phones only show the blue splash before the login form.
     final isPhone = AppTheme.isPhoneScreen(context);
     return Scaffold(
       floatingActionButton: const ThemeToggleFab(),
-      body: (isPhone && _showSplash)
-          ? _buildSplash(context)
-          : _LoginFormView(
-              formKey: _formKey,
-              emailCtrl: _emailCtrl,
-              passCtrl: _passCtrl,
-              loading: _loading,
-              obscure: _obscure,
-              error: _error,
-              onToggleObscure: () => setState(() => _obscure = !_obscure),
-              onSubmit: _login,
-            ),
+      backgroundColor: _kPageCream,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (isPhone && _showSplash)
+            _buildSplash(context)
+          else
+            ...[
+              CustomPaint(painter: _WarehouseBackgroundPainter()),
+              _LoginFormView(
+                formKey: _formKey,
+                emailCtrl: _emailCtrl,
+                passCtrl: _passCtrl,
+                loading: _loading,
+                obscure: _obscure,
+                error: _error,
+                onToggleObscure: () => setState(() => _obscure = !_obscure),
+                onSubmit: _login,
+              ),
+            ],
+        ],
+      ),
     );
   }
 }

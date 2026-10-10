@@ -1,11 +1,11 @@
 {
-    "name": "Inventory",
-    "short_name": "Inventory",
+    "name": "Store House",
+    "short_name": "Store House",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#F3F5F7",
-    "theme_color": "#1DBF73",
-    "description": "Inventory management for your business.",
+    "background_color": "#FFF8D8",
+    "theme_color": "#155D2B",
+    "description": "Store House inventory and warehouse management.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -40,7 +40,7 @@ class InventoryApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) => MaterialApp(
-          title: 'Inventory Management',
+          title: 'Store House',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.theme.copyWith(
             colorScheme: AppTheme.theme.colorScheme.copyWith(

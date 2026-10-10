@@ -18,19 +18,19 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Inventory management for your business.">
-  <meta name="theme-color" content="#1DBF73">
+  <meta name="description" content="Store House inventory and warehouse management.">
+  <meta name="theme-color" content="#155D2B">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Inventory">
+  <meta name="apple-mobile-web-app-title" content="Store House">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Inventory</title>
+  <title>Store House</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -44,8 +44,8 @@
     >
       <button class="pwa-prompt-close" type="button" aria-label="Not now">&times;</button>
       <img class="pwa-prompt-icon" src="icons/Icon-192.png" alt="">
-      <h1 id="pwa-prompt-title">Install Inventory</h1>
-      <p id="pwa-prompt-message">Install the app for quick access to your inventory.</p>
+      <h1 id="pwa-prompt-title">Install Store House</h1>
+      <p id="pwa-prompt-message">Install Store House for quick access to your stock and warehouse.</p>
       <p id="pwa-prompt-help" class="pwa-prompt-help" hidden></p>
       <button id="pwa-install-button" class="pwa-install-button" type="button">
         Install app
@@ -184,7 +184,7 @@
             closePrompt();
           } catch (error) {
             console.error('Unable to open the app install prompt.', error);
-            message.textContent = 'You can install Inventory from your browser menu.';
+            message.textContent = 'You can install Store House from your browser menu.';
             help.textContent = 'Open the browser menu and choose “Install app” or “Add to Home screen”.';
             help.hidden = false;
             installButton.textContent = 'Got it';
@@ -193,10 +193,10 @@
         }
 
         if (isIos()) {
-          message.textContent = 'Add Inventory to your Home Screen for app-like access.';
+          message.textContent = 'Add Store House to your Home Screen for app-like access.';
           help.textContent = 'Tap Share in your browser, then choose “Add to Home Screen”.';
         } else {
-          message.textContent = 'You can install Inventory from your browser menu.';
+          message.textContent = 'You can install Store House from your browser menu.';
           help.textContent = 'Open the browser menu and choose “Install app” or “Add to Home screen”.';
         }
         help.hidden = false;
