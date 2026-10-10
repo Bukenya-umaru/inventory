@@ -71,12 +71,12 @@ class CompactDataTable extends StatefulWidget {
     ),
   );
 
-  /// Blue accent text — item names / primary links.
+  /// Accent text — item names / primary links (green in the Inventar look).
   static Widget accent(BuildContext context, String text, {double size = 12}) =>
       cell(
         context,
         text,
-        color: AppTheme.blueBright(context),
+        color: AppTheme.primaryBright(context),
         weight: FontWeight.w600,
         size: size,
       );
@@ -85,25 +85,28 @@ class CompactDataTable extends StatefulWidget {
   static Widget muted(BuildContext context, String text, {double size = 12}) =>
       cell(context, text, color: AppTheme.secondaryText(context), size: size);
 
-  /// Pill status chip, tinted with [color].
-  static Widget chip(BuildContext context, String text, Color color) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
+  /// Pill status chip, tinted with [color]. On the white Inventar tables the
+  /// chips sit on light tinted backgrounds; on dark cards they stay translucent.
+  static Widget chip(BuildContext context, String text, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.15 : 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: AppTheme.fontSize(context, 10.5),
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
-        child: Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: AppTheme.fontSize(context, 10.5),
-            fontWeight: FontWeight.w600,
-            color: color,
-          ),
-        ),
-      );
+      ),
+    );
+  }
 
   /// A row of small action icon buttons for the trailing column.
   static Widget actions(List<Widget> children) => FittedBox(
@@ -175,7 +178,7 @@ class _CompactDataTableState extends State<CompactDataTable> {
     return Material(
       color: AppTheme.cardColor(context),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: AppTheme.dividerColor(context)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -198,10 +201,13 @@ class _CompactDataTableState extends State<CompactDataTable> {
   }
 
   Widget _header(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.panelColor(context),
+        // Inventar look: the table header band is dark even on the white
+        // card (light mode), matching the design's dark band atop white tables.
+        color: isDark ? const Color(0xFF0F191D) : const Color(0xFF141E22),
         border: Border(
           bottom: BorderSide(color: AppTheme.dividerColor(context)),
         ),
@@ -224,7 +230,9 @@ class _CompactDataTableState extends State<CompactDataTable> {
                     fontSize: AppTheme.fontSize(context, 10),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
-                    color: AppTheme.secondaryText(context),
+                    color: isDark
+                        ? AppTheme.darkTextSecondary
+                        : Colors.white.withValues(alpha: 0.75),
                   ),
                 ),
               ),
@@ -353,11 +361,11 @@ class _CompactDataTableState extends State<CompactDataTable> {
           height: 26,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isCurrent ? AppTheme.blueBright(context) : null,
+            color: isCurrent ? AppTheme.primaryBright(context) : null,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isCurrent
-                  ? AppTheme.blueBright(context)
+                  ? AppTheme.primaryBright(context)
                   : AppTheme.borderColor(context),
             ),
           ),

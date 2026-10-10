@@ -36,6 +36,7 @@ class _SectionSearchBarState extends State<SectionSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
       child: Row(
@@ -45,19 +46,48 @@ class _SectionSearchBarState extends State<SectionSearchBar> {
               controller: _controller,
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
+              onChanged: (_) => _search(),
+              style: TextStyle(
+                fontSize: AppTheme.fontSize(context, 13),
+                color: AppTheme.textColor(context),
+              ),
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(
+                  fontSize: AppTheme.fontSize(context, 13),
+                  color: AppTheme.secondaryText(context),
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: AppTheme.secondaryText(context),
+                ),
                 isDense: true,
-                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: isDark
+                    ? const Color(0xFF1A262D)
+                    : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: BorderSide(color: AppTheme.borderColor(context)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: BorderSide(color: AppTheme.borderColor(context)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  borderSide: const BorderSide(
+                    color: AppTheme.primary,
+                    width: 1.5,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
-            onPressed: _search,
-            icon: const Icon(Icons.search, size: 18),
-            label: const Text('Search'),
           ),
         ],
       ),

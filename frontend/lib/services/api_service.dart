@@ -240,8 +240,12 @@ class ApiService {
     String id, {
     DateTime? startDate,
     DateTime? endDate,
+    bool allTime = false,
   }) async {
     final params = <String, String>{};
+    if (allTime) {
+      params['allTime'] = 'true';
+    }
     if (startDate != null) {
       params['startDate'] = startDate.toIso8601String();
     }
@@ -836,8 +840,9 @@ class ApiService {
     if (search != null && search.trim().isNotEmpty) {
       params['search'] = search.trim();
     }
-    final uri = Uri.parse('$baseUrl/audit/business-activity')
-        .replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$baseUrl/audit/business-activity',
+    ).replace(queryParameters: params);
     final response = await http.get(uri, headers: _headers());
     return _handleResponse(response);
   }

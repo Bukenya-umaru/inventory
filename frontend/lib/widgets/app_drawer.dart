@@ -25,12 +25,14 @@ class AppDrawer extends StatelessWidget {
   final int selectedIndex;
   final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
+  final bool darkSidebar;
 
   const AppDrawer({
     super.key,
     required this.selectedIndex,
     required this.onItemTap,
     required this.items,
+    this.darkSidebar = false,
   });
 
   @override
@@ -40,7 +42,9 @@ class AppDrawer extends StatelessWidget {
 
     return Drawer(
       width: size.width < 400 ? size.width * 0.82 : 260,
-      backgroundColor: AppTheme.sidebarColor(context),
+      backgroundColor: darkSidebar
+          ? const Color(0xFF181A1B)
+          : AppTheme.sidebarColor(context),
       child: _DrawerContent(
         selectedIndex: selectedIndex,
         // Parent taps only toggle the branch open/closed (drawer stays open
@@ -54,6 +58,7 @@ class AppDrawer extends StatelessWidget {
         },
         items: items,
         isSmall: isSmall,
+        darkSidebar: darkSidebar,
       ),
     );
   }
@@ -63,21 +68,29 @@ class AppSidebar extends StatelessWidget {
   final int selectedIndex;
   final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
+  final bool darkSidebar;
 
   const AppSidebar({
     super.key,
     required this.selectedIndex,
     required this.onItemTap,
     required this.items,
+    this.darkSidebar = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.sidebarColor(context),
+        color: darkSidebar
+            ? const Color(0xFF181A1B)
+            : AppTheme.sidebarColor(context),
         border: Border(
-          right: BorderSide(color: AppTheme.dividerColor(context)),
+          right: BorderSide(
+            color: darkSidebar
+                ? const Color(0xFF292C2E)
+                : AppTheme.dividerColor(context),
+          ),
         ),
       ),
       child: SizedBox(
@@ -89,6 +102,7 @@ class AppSidebar extends StatelessWidget {
             onItemTap: onItemTap,
             items: items,
             isSmall: false,
+            darkSidebar: darkSidebar,
           ),
         ),
       ),
@@ -106,6 +120,7 @@ class _ExpandableNavItem extends StatelessWidget {
   final int? activeChildIndex;
   final ValueChanged<int> onChildTap;
   final bool isSmall;
+  final bool darkSidebar;
 
   const _ExpandableNavItem({
     required this.item,
@@ -115,10 +130,17 @@ class _ExpandableNavItem extends StatelessWidget {
     required this.activeChildIndex,
     required this.onChildTap,
     required this.isSmall,
+    required this.darkSidebar,
   });
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = darkSidebar
+        ? const Color(0xFF1DBF73)
+        : AppTheme.dashNavyColor(context);
+    final inactiveColor = darkSidebar
+        ? const Color(0xFFABB2B7)
+        : AppTheme.secondaryText(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -135,7 +157,9 @@ class _ExpandableNavItem extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: isActive
-                    ? AppTheme.sidebarActive.withValues(alpha: 0.10)
+                    ? darkSidebar
+                          ? const Color(0xFF073A2C)
+                          : AppTheme.sidebarActive.withValues(alpha: 0.16)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -143,9 +167,7 @@ class _ExpandableNavItem extends StatelessWidget {
                 children: [
                   Icon(
                     item.icon,
-                    color: isActive
-                        ? AppTheme.dashNavyColor(context)
-                        : AppTheme.mutedIcon(context),
+                    color: isActive ? activeColor : inactiveColor,
                     size: isSmall ? 18 : 20,
                   ),
                   SizedBox(width: isSmall ? 10 : 12),
@@ -156,9 +178,7 @@ class _ExpandableNavItem extends StatelessWidget {
                         fontWeight: isActive
                             ? FontWeight.w600
                             : FontWeight.w400,
-                        color: isActive
-                            ? AppTheme.dashNavyColor(context)
-                            : AppTheme.secondaryText(context),
+                        color: isActive ? activeColor : inactiveColor,
                         fontSize: AppTheme.fontSize(context, isSmall ? 13 : 14),
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -170,9 +190,7 @@ class _ExpandableNavItem extends StatelessWidget {
                     child: Icon(
                       Icons.expand_more,
                       size: isSmall ? 16 : 18,
-                      color: isActive
-                          ? AppTheme.dashNavyColor(context)
-                          : AppTheme.mutedIcon(context),
+                      color: isActive ? activeColor : inactiveColor,
                     ),
                   ),
                 ],
@@ -194,6 +212,7 @@ class _ExpandableNavItem extends StatelessWidget {
                     isActive: activeChildIndex == ci && isActive,
                     onTap: () => onChildTap(ci),
                     isSmall: isSmall,
+                    darkSidebar: darkSidebar,
                   ),
               ],
             ),
@@ -215,18 +234,24 @@ class _BranchChild extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
   final bool isSmall;
+  final bool darkSidebar;
 
   const _BranchChild({
     required this.child,
     required this.isActive,
     required this.onTap,
     required this.isSmall,
+    required this.darkSidebar,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = isActive
-        ? AppTheme.dashNavyColor(context)
+        ? darkSidebar
+              ? const Color(0xFF1DBF73)
+              : AppTheme.dashNavyColor(context)
+        : darkSidebar
+        ? const Color(0xFFABB2B7)
         : AppTheme.secondaryText(context);
 
     return Material(
@@ -241,7 +266,9 @@ class _BranchChild extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isActive
-                ? AppTheme.sidebarActive.withValues(alpha: 0.08)
+                ? darkSidebar
+                      ? const Color(0xFF073A2C)
+                      : AppTheme.sidebarActive.withValues(alpha: 0.12)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -251,7 +278,9 @@ class _BranchChild extends StatelessWidget {
               Container(
                 width: 10,
                 height: 1,
-                color: AppTheme.borderColor(context),
+                color: darkSidebar
+                    ? const Color(0xFF3C4144)
+                    : AppTheme.borderColor(context),
               ),
               const SizedBox(width: 6),
               Icon(child.icon, size: isSmall ? 15 : 16, color: color),
@@ -280,12 +309,14 @@ class _DrawerContent extends StatelessWidget {
   final Function(int, {int? childIndex}) onItemTap;
   final List<DrawerItem> items;
   final bool isSmall;
+  final bool darkSidebar;
 
   const _DrawerContent({
     required this.selectedIndex,
     required this.onItemTap,
     required this.items,
     required this.isSmall,
+    required this.darkSidebar,
   });
 
   @override
@@ -310,7 +341,9 @@ class _DrawerContent extends StatelessWidget {
                       errorBuilder: (_, _, _) => Icon(
                         Icons.storefront,
                         size: 28,
-                        color: AppTheme.dashNavyColor(context),
+                        color: darkSidebar
+                            ? const Color(0xFF1DBF73)
+                            : AppTheme.dashNavyColor(context),
                       ),
                     ),
                   )
@@ -318,18 +351,39 @@ class _DrawerContent extends StatelessWidget {
                   Icon(
                     Icons.storefront,
                     size: 28,
-                    color: AppTheme.dashNavyColor(context),
+                    color: darkSidebar
+                        ? const Color(0xFF1DBF73)
+                        : AppTheme.dashNavyColor(context),
                   ),
                 SizedBox(width: isSmall ? 8 : 10),
                 Expanded(
-                  child: Text(
-                    branding?.businessName ?? 'Inventory',
-                    softWrap: true,
-                    style: TextStyle(
-                      fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.dashNavyColor(context),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        branding?.businessName ?? 'Inventory',
+                        softWrap: true,
+                        style: TextStyle(
+                          fontSize: AppTheme.fontSize(
+                            context,
+                            isSmall ? 15 : 17,
+                          ),
+                          fontWeight: FontWeight.bold,
+                          color: darkSidebar
+                              ? Colors.white
+                              : AppTheme.dashNavyColor(context),
+                        ),
+                      ),
+                      if (darkSidebar)
+                        const Text(
+                          'Admin Panel',
+                          style: TextStyle(
+                            color: Color(0xFF9AA2A6),
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -338,7 +392,9 @@ class _DrawerContent extends StatelessWidget {
 
           Expanded(
             child: Container(
-              color: AppTheme.sidebarColor(context),
+              color: darkSidebar
+                  ? const Color(0xFF181A1B)
+                  : AppTheme.sidebarColor(context),
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 itemCount: items.length,
@@ -359,6 +415,7 @@ class _DrawerContent extends StatelessWidget {
                         activeChildIndex: item.activeChildIndex,
                         onChildTap: (ci) => onItemTap(index, childIndex: ci),
                         isSmall: isSmall,
+                        darkSidebar: darkSidebar,
                       ),
                     );
                   }
@@ -378,7 +435,11 @@ class _DrawerContent extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isActive
-                                ? AppTheme.sidebarActive.withValues(alpha: 0.10)
+                                ? darkSidebar
+                                      ? const Color(0xFF073A2C)
+                                      : AppTheme.sidebarActive.withValues(
+                                          alpha: 0.16,
+                                        )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -387,7 +448,11 @@ class _DrawerContent extends StatelessWidget {
                               Icon(
                                 item.icon,
                                 color: isActive
-                                    ? AppTheme.dashNavyColor(context)
+                                    ? darkSidebar
+                                          ? const Color(0xFF1DBF73)
+                                          : AppTheme.dashNavyColor(context)
+                                    : darkSidebar
+                                    ? const Color(0xFFABB2B7)
                                     : AppTheme.mutedIcon(context),
                                 size: isSmall ? 18 : 20,
                               ),
@@ -400,7 +465,11 @@ class _DrawerContent extends StatelessWidget {
                                         ? FontWeight.w600
                                         : FontWeight.w400,
                                     color: isActive
-                                        ? AppTheme.dashNavyColor(context)
+                                        ? darkSidebar
+                                              ? const Color(0xFF1DBF73)
+                                              : AppTheme.dashNavyColor(context)
+                                        : darkSidebar
+                                        ? const Color(0xFFABB2B7)
                                         : AppTheme.secondaryText(context),
                                     fontSize: AppTheme.fontSize(
                                       context,
@@ -464,6 +533,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
   /// composes a [ThemeToggleFab] (e.g. the Employees tab), to avoid two
   /// toggles stacked in the same corner.
   final bool showThemeFab;
+  final bool darkSidebar;
 
   const ResponsiveNavWrapper({
     super.key,
@@ -474,6 +544,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
     this.appBar,
     this.title,
     this.showThemeFab = true,
+    this.darkSidebar = false,
   });
 
   @override
@@ -506,6 +577,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
               selectedIndex: selectedIndex,
               onItemTap: onItemTap,
               items: items,
+              darkSidebar: darkSidebar,
             ),
             Expanded(
               child: Scaffold(
@@ -565,6 +637,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
         selectedIndex: selectedIndex,
         onItemTap: onItemTap,
         items: items,
+        darkSidebar: darkSidebar,
       ),
       body: body,
     );

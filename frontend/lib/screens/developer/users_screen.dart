@@ -148,7 +148,7 @@ class _UsersScreenState extends State<UsersScreen> {
                       ],
                       rows: _users.map((u) {
                         final roleColor = u.isDeveloper
-                            ? const Color(0xFF7C3AED)
+                            ? const Color(0xFF30D8C0)
                             : u.isAdmin
                             ? AppTheme.primary
                             : AppTheme.success;

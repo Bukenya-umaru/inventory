@@ -10,19 +10,19 @@ import '../../utils/theme.dart';
 /// Duration the blue splash is shown before revealing the login page.
 const Duration _kSplashDuration = Duration(seconds: 2);
 
-/// Brand palette for splash + login, matching the design mock:
-/// deep-navy page background with a vivid blue card header.
-const Color _kBlueTop = Color(0xFF1C5AA8);
-const Color _kBlueBottom = Color(0xFF2F7CD1);
-const Color _kPageTop = Color(0xFF102E52);
-const Color _kPageBottom = Color(0xFF1D4B80);
-const Color _kPageTopDark = Color(0xFF0A1B31);
-const Color _kPageBottomDark = Color(0xFF123253);
+/// Brand palette for splash + login, matching the Inventar design:
+/// deep charcoal page background with a vivid green card header.
+const Color _kGreenTop = Color(0xFF189048);
+const Color _kGreenBottom = Color(0xFF30D878);
+const Color _kPageTop = Color(0xFF0C1112);
+const Color _kPageBottom = Color(0xFF141E22);
+const Color _kPageTopDark = Color(0xFF080B0C);
+const Color _kPageBottomDark = Color(0xFF0F171B);
 
 const LinearGradient _kBlueGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [_kBlueTop, _kBlueBottom],
+  colors: [_kGreenTop, _kGreenBottom],
 );
 
 /// Logo square + "Inventory" wordmark + tagline. Shown on the login card
@@ -194,7 +194,7 @@ class _LoginFormView extends StatelessWidget {
                 size: 20,
               ),
               enabledBorder: _border(AppTheme.borderColor(context)),
-              focusedBorder: _border(_kBlueBottom, width: 1.5),
+              focusedBorder: _border(_kGreenBottom, width: 1.5),
               errorBorder: _border(AppTheme.danger),
               focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
             ),
@@ -234,7 +234,7 @@ class _LoginFormView extends StatelessWidget {
                 size: 20,
               ),
               enabledBorder: _border(AppTheme.borderColor(context)),
-              focusedBorder: _border(_kBlueBottom, width: 1.5),
+              focusedBorder: _border(_kGreenBottom, width: 1.5),
               errorBorder: _border(AppTheme.danger),
               focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
               suffixIcon: IconButton(
@@ -436,10 +436,9 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [_kPageTopDark, _kBlueTop]
-              : const [_kPageTop, _kBlueBottom],
+          end: Alignment.bottomRight,              colors: isDark
+                  ? const [_kPageTopDark, _kGreenTop]
+                  : const [_kPageTop, _kGreenBottom],
         ),
       ),
       child: SafeArea(

@@ -2,39 +2,43 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
 
-  // Splash / login accent (blue).
-  static const Color splashBlue = Color(0xFF1565C0);
-  static const Color splashBlueDark = Color(0xFF0D47A1);
+  // Brand green (primary actions, active nav, success) — Inviro look.
+  static const Color primary = Color(0xFF1DBF73);
+  static const Color primaryDark = Color(0xFF14995B);
+  // Inviro secondary accents.
+  static const Color teal = Color(0xFF1DBF73);
+  // Blue accent (links, references).
+  static const Color linkBlue = Color(0xFF4C8DDB);
 
-  static const Color primary = Color(0xFFE53935);
-  static const Color primaryDark = Color(0xFFC62828);
+  // Splash / login accent (green family).
+  static const Color splashBlue = Color(0xFF1DBF73);
+  static const Color splashBlueDark = Color(0xFF14995B);
 
-  // Dashboard design language: white rounded cards on a light gray canvas,
-  // pill accents and outlined status chips (see dashboard mock).
-  static const Color canvas = Color(0xFFEFF2F6);
-  static const Color panelBg = Color(0xFFF1F4F8);
+  // Dark-mode tokens (charcoal counterparts; light Inviro look is default).
+  static const Color darkCanvas = Color(0xFF16191D);
+  static const Color darkSurface = Color(0xFF16191D);
+  static const Color darkCard = Color(0xFF1E2429);
+  static const Color darkPanelBg = Color(0xFF1E2429);
+  static const Color darkSidebarBg = Color(0xFF111417);
+  static const Color darkTextPrimary = Color(0xFFE8EEF2);
+  static const Color darkTextSecondary = Color(0xFF8CA0AB);
+
+  // Light-mode tokens — the Inviro look (default): white surfaces,
+  // light gray-blue canvas, green brand accent.
+  static const Color canvas = Color(0xFFF3F5F7);
+  static const Color panelBg = Color(0xFFF6F8FA);
   static const Color sidebarBg = Color(0xFFFFFFFF);
-  static const Color sidebarActive = Color(0xFF123F57);
-  static const Color dashNavy = Color(0xFF123F57);
-  static const Color dashOrange = Color(0xFFF97316);
-  static const Color success = Color(0xFF16A34A);
-  static const Color warning = Color(0xFFD97706);
-  static const Color danger = Color(0xFFDC2626);
+  static const Color sidebarActive = Color(0xFF1DBF73);
+  static const Color dashNavy = Color(0xFF14995B);
+  static const Color dashOrange = Color(0xFFFDA23B);
+  static const Color success = Color(0xFF1DBF73);
+  static const Color warning = Color(0xFFFDA23B);
+  static const Color danger = Color(0xFFE03B30);
 
-  static const Color surface = Color(0xFFF5F5F5);
+  static const Color surface = Color(0xFFF3F5F7);
   static const Color card = Colors.white;
-  static const Color textPrimary = Colors.black87;
-  static const Color textSecondary = Color(0xFF757575);
-
-  static const Color darkSurface = Color(0xFF121212);
-  static const Color darkCard = Color(0xFF1E1E1E);
-  static const Color darkTextPrimary = Color(0xFFE0E0E0);
-  static const Color darkTextSecondary = Color(0xFF9E9E9E);
-
-  // Dark-mode counterparts for the light design-system constants.
-  static const Color darkCanvas = Color(0xFF0D0D0D);
-  static const Color darkPanelBg = Color(0xFF181818);
-  static const Color darkSidebarBg = Color(0xFF161616);
+  static const Color textPrimary = Color(0xFF232A2F);
+  static const Color textSecondary = Color(0xFF6B7A83);
 
   static bool _isDark(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark;
@@ -69,40 +73,40 @@ class AppTheme {
       _isDark(context) ? darkSidebarBg : sidebarBg;
 
   static Color dashNavyColor(BuildContext context) =>
-      _isDark(context) ? const Color(0xFF7EB6D9) : dashNavy;
+      _isDark(context) ? const Color(0xFF2BD98A) : dashNavy;
 
   static Color dividerColor(BuildContext context) =>
-      _isDark(context) ? Colors.grey.shade800 : Colors.grey.shade200;
+      _isDark(context) ? const Color(0xFF263238) : Colors.grey.shade200;
 
   static Color borderColor(BuildContext context) =>
-      _isDark(context) ? Colors.grey.shade800 : Colors.grey.shade300;
+      _isDark(context) ? const Color(0xFF2C3A42) : Colors.grey.shade300;
 
   static Color appBarColor(BuildContext context) =>
       _isDark(context) ? darkSurface : Colors.white;
 
   static Color passwordRevealedBg(BuildContext context) =>
-      _isDark(context) ? success.withValues(alpha: 0.15) : const Color(0xFFE8F5E9);
+      _isDark(context) ? primary.withValues(alpha: 0.15) : const Color(0xFFE8F5E9);
 
   static Color passwordHiddenBg(BuildContext context) =>
       _isDark(context) ? Colors.grey.shade800 : Colors.grey.shade100;
 
   static Color mutedIcon(BuildContext context) =>
-      _isDark(context) ? Colors.grey.shade400 : Colors.grey;
+      _isDark(context) ? const Color(0xFF7A8C96) : Colors.grey;
 
   static Color primaryBright(BuildContext context) =>
-      _isDark(context) ? const Color(0xFFEF5350) : primary;
+      _isDark(context) ? const Color(0xFF2BD98A) : primary;
 
   static Color successBright(BuildContext context) =>
-      _isDark(context) ? const Color(0xFF4CAF50) : success;
+      _isDark(context) ? const Color(0xFF2BD98A) : success;
 
   static Color warningBright(BuildContext context) =>
-      _isDark(context) ? const Color(0xFFFFB74D) : warning;
+      _isDark(context) ? const Color(0xFFFDB55F) : warning;
 
   static Color dangerBright(BuildContext context) =>
-      _isDark(context) ? const Color(0xFFEF5350) : danger;
+      _isDark(context) ? const Color(0xFFFF6B61) : danger;
 
   static Color blueBright(BuildContext context) =>
-      _isDark(context) ? const Color(0xFF42A5F5) : const Color(0xFF1565C0);
+      _isDark(context) ? const Color(0xFF6FA9E8) : linkBlue;
 
   static double fontSize(BuildContext context, double base) {
     final w = MediaQuery.of(context).size.width;
@@ -122,7 +126,7 @@ class AppTheme {
 
   static ThemeData get theme => ThemeData(
     brightness: Brightness.light,
-    primarySwatch: Colors.red,
+    primarySwatch: Colors.green,
     primaryColor: primary,
     scaffoldBackgroundColor: surface,
     dividerColor: Colors.grey.shade200,
@@ -146,15 +150,15 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide(color: Colors.grey.shade300),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -164,17 +168,17 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
   );
 
   static ThemeData get darkTheme => ThemeData(
     brightness: Brightness.dark,
-    primarySwatch: Colors.red,
+    primarySwatch: Colors.green,
     primaryColor: primary,
     scaffoldBackgroundColor: darkSurface,
-    dividerColor: Colors.grey.shade800,
+    dividerColor: const Color(0xFF263238),
     appBarTheme: const AppBarTheme(
       backgroundColor: darkSurface,
       foregroundColor: darkTextPrimary,
@@ -190,20 +194,20 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade800),
+        side: BorderSide(color: const Color(0xFF263238)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF2C3A42)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey.shade700),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF2C3A42)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -211,9 +215,9 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0C1112),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
   );

@@ -126,8 +126,12 @@ class _AdminHomeState extends State<AdminHome> {
 
   static Widget _empty() => const SizedBox();
 
-  /// "View All" links on the dashboard: 0 opens Sales, 1 opens Stock.
+  /// Dashboard shortcuts: 0 opens Sales, 1 opens Stock, 2 opens Reports.
   void _openFromDashboard(int target) {
+    if (target == 2) {
+      onItemTapLocal(_reportsIndex, childIndex: 0);
+      return;
+    }
     onItemTapLocal(
       target == 0 ? _transactionsIndex : 2,
       childIndex: target == 0 ? 0 : null,
@@ -248,6 +252,7 @@ class _AdminHomeState extends State<AdminHome> {
       items: _items,
       title: 'Business Dashboard',
       showThemeFab: !isEmployeesTab,
+      darkSidebar: true,
       body: IndexedStack(index: _stackIndex, children: _pages),
     );
   }

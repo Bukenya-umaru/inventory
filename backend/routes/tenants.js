@@ -308,9 +308,21 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
       !Number.isNaN(requestedStart.getTime()) &&
       !Number.isNaN(requestedEnd.getTime()) &&
       requestedStart <= requestedEnd;
-    const trendStart = hasValidRange ? requestedStart : new Date(today);
-    const trendEnd = hasValidRange ? requestedEnd : new Date(today);
-    if (!hasValidRange) trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+    let trendStart;
+    if (req.query.allTime === 'true') {
+      const firstSale = await Sale.findOne({
+        tenantId,
+        ...approvedSalesQuery
+      }).sort({ saleDate: 1 }).select('saleDate');
+      trendStart = firstSale ? new Date(firstSale.saleDate) : new Date(today);
+      trendStart.setHours(0, 0, 0, 0);
+    } else {
+      trendStart = hasValidRange ? requestedStart : new Date(today);
+      if (!hasValidRange) trendStart.setDate(trendStart.getDate() - 29); // 30 days incl. today
+    }
+    const trendEnd = hasValidRange && req.query.allTime !== 'true'
+      ? requestedEnd
+      : new Date(today);
     trendEnd.setHours(23, 59, 59, 999);
 
     const trendSales = await Sale.find({
@@ -320,20 +332,34 @@ router.get('/:id/dashboard', authenticate, requireRole('admin'), async (req, res
     }).select('totalAmount profit saleDate productId quantity paymentMethod');
 
     const trendMap = new Map();
-    const trendDays = Math.max(
-      1,
-      Math.ceil((trendEnd - trendStart) / (24 * 60 * 60 * 1000)) + 1
-    );
-    for (let i = 0; i < trendDays; i++) {
-      const day = new Date(trendStart);
-      day.setDate(day.getDate() + i);
-      const key = day.toISOString().slice(0, 10);
+    const monthlyTrend = trendEnd - trendStart > 365 * 24 * 60 * 60 * 1000;
+    const trendPeriodCount = monthlyTrend
+      ? (trendEnd.getFullYear() - trendStart.getFullYear()) * 12 +
+        trendEnd.getMonth() - trendStart.getMonth() + 1
+      : Math.max(
+          1,
+          Math.ceil((trendEnd - trendStart) / (24 * 60 * 60 * 1000)) + 1
+        );
+    for (let i = 0; i < trendPeriodCount; i++) {
+      const period = new Date(trendStart);
+      if (monthlyTrend) {
+        period.setDate(1);
+        period.setMonth(period.getMonth() + i);
+      } else {
+        period.setDate(period.getDate() + i);
+      }
+      const key = monthlyTrend
+        ? `${period.getFullYear()}-${String(period.getMonth() + 1).padStart(2, '0')}-01`
+        : period.toISOString().slice(0, 10);
       trendMap.set(key, { date: key, revenue: 0, profit: 0, salesCount: 0 });
     }
     const productAgg = new Map();
     const paymentAgg = { cash: 0, card: 0, transfer: 0, credit: 0 };
     for (const s of trendSales) {
-      const key = new Date(s.saleDate).toISOString().slice(0, 10);
+      const saleDate = new Date(s.saleDate);
+      const key = monthlyTrend
+        ? `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}-01`
+        : saleDate.toISOString().slice(0, 10);
       const bucket = trendMap.get(key);
       if (bucket) {
         bucket.revenue += s.totalAmount;

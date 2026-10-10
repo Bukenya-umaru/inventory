@@ -4,8 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeProvider extends ChangeNotifier {
   static const _keyDark = 'dark_mode';
   static const _keyAccent = 'accent_color';
-  bool _isDark = false;
-  int _accentColorValue = 0xFFE53935; 
+  // Dark Inventar look is the default design.
+  bool _isDark = true;
+  int _accentColorValue = 0xFF30D878;
   SharedPreferences? _prefs;
 
   bool get isDark => _isDark;
@@ -26,8 +27,8 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     _prefs = await SharedPreferences.getInstance();
-    _isDark = _prefs!.getBool(_keyDark) ?? false;
-    _accentColorValue = _prefs!.getInt(_keyAccent) ?? 0xFFE53935;
+    _isDark = _prefs!.getBool(_keyDark) ?? true;
+    _accentColorValue = _prefs!.getInt(_keyAccent) ?? 0xFF30D878;
     notifyListeners();
   }
 

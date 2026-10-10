@@ -50,7 +50,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   static const List<List<Color>> _gradients = [
-    [Color(0xFFE53935), Color(0xFFC62828)],
+    [Color(0xFF30D878), Color(0xFF189048)],
     [Color(0xFF1E88E5), Color(0xFF1565C0)],
     [Color(0xFF43A047), Color(0xFF2E7D32)],
     [Color(0xFFFB8C00), Color(0xFFF57C00)],
