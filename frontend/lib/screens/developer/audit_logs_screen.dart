@@ -216,14 +216,6 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             ],
           ),
         ),
-        SectionSearchBar(
-          hintText: 'Search activity...',
-          onSearch: (query) {
-            setState(() => _searchQuery = query);
-            _load();
-          },
-        ),
-        const SizedBox(height: 8),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

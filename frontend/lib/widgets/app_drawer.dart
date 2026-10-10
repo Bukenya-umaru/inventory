@@ -598,7 +598,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
       appBar:
           appBar ??
           AppBar(
-            title: _HeaderSearchField(width: _searchWidth(context)),
+            title: const SizedBox.shrink(),
             actions: [
               _NotificationBell(
                 onActivitySelected: (log) =>
@@ -607,6 +607,16 @@ class ResponsiveNavWrapper extends StatelessWidget {
               _SettingsMenu(),
               const SizedBox(width: 8),
             ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(46),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _HeaderSearchField(width: _searchWidth(context)),
+                ),
+              ),
+            ),
           ),
       drawer: AppDrawer(
         selectedIndex: selectedIndex,
@@ -621,7 +631,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
   double _searchWidth(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     if (screenWidth >= 900) return 300;
-    return (screenWidth - 180).clamp(100.0, 300.0).toDouble();
+    return (screenWidth - 32).clamp(120.0, 600.0).toDouble();
   }
 
   void _openActivityLocation(BuildContext context, AuditLog log) {

@@ -156,11 +156,6 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          SectionSearchBar(
-            hintText: 'Search employees...',
-            onSearch: (query) => setState(() => _searchQuery = query),
-          ),
-          const SizedBox(height: 8),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())

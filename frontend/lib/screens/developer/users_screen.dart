@@ -4,7 +4,6 @@ import '../../services/app_events.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
-import '../../widgets/section_search_bar.dart';
 import '../../widgets/compact_data_table.dart';
 
 class UsersScreen extends StatefulWidget {
@@ -111,14 +110,6 @@ class _UsersScreenState extends State<UsersScreen> {
             ],
           ),
         ),
-        SectionSearchBar(
-          hintText: 'Search users...',
-          onSearch: (query) {
-            _search = query;
-            _load();
-          },
-        ),
-        const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: AppTheme.pad(context, 16)),
           child: Row(

@@ -215,11 +215,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ],
           ),
-          SectionSearchBar(
-            hintText: 'Search report activity...',
-            onSearch: (query) => setState(() => _searchQuery = query),
-          ),
-          SizedBox(height: AppTheme.pad(context, 8)),
           SizedBox(height: AppTheme.pad(context, 12)),
 
           SingleChildScrollView(

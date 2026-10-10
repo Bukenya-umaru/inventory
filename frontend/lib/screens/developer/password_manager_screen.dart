@@ -5,7 +5,6 @@ import '../../services/app_events.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
-import '../../widgets/section_search_bar.dart';
 
 class PasswordManagerScreen extends StatefulWidget {
   const PasswordManagerScreen({super.key});
@@ -116,14 +115,6 @@ class _PasswordManagerScreenState extends State<PasswordManagerScreen> {
             ],
           ),
         ),
-        SectionSearchBar(
-          hintText: 'Search users by name or email...',
-          onSearch: (value) {
-            _search = value;
-            _load();
-          },
-        ),
-        const SizedBox(height: 8),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

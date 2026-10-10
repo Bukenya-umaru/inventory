@@ -214,12 +214,6 @@ class _SalesScreenState extends State<SalesScreen> {
           ),
         ),
 
-        SectionSearchBar(
-          hintText: 'Search sales by product, customer, employee...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
-
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),

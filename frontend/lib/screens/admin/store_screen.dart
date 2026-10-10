@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
@@ -22,7 +21,6 @@ class _StoreScreenState extends State<StoreScreen> {
   String _search = '';
   String? _selectedCategoryId;
   DateTime? _selectedPurchaseDate;
-  Timer? _searchTimer;
 
   @override
   void initState() {
@@ -38,7 +36,6 @@ class _StoreScreenState extends State<StoreScreen> {
     final globalQuery = AppEvents.globalSearchQuery(event);
     if (globalQuery != null) {
       _search = globalQuery;
-      _searchTimer?.cancel();
       _load(silent: true);
     } else if (event == 'products') {
       _load(silent: true);
@@ -48,7 +45,6 @@ class _StoreScreenState extends State<StoreScreen> {
   @override
   void dispose() {
     AppEvents.instance.unsubscribe(_onEvent);
-    _searchTimer?.cancel();
     super.dispose();
   }
 
@@ -157,57 +153,6 @@ class _StoreScreenState extends State<StoreScreen> {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            isSmall ? 10 : AppTheme.pad(context, 16),
-            isSmall ? 6 : AppTheme.pad(context, 8),
-            isSmall ? 10 : AppTheme.pad(context, 16),
-            0,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search store...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: isSmall ? 10 : 14,
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).cardColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-                  ),
-                  onChanged: (v) {
-                    _search = v;
-                    _searchTimer?.cancel();
-                    _searchTimer = Timer(
-                      const Duration(milliseconds: 350),
-                      () => _load(),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  _searchTimer?.cancel();
-                  _load();
-                },
-                icon: const Icon(Icons.search),
-                label: const Text('Search'),
               ),
             ],
           ),

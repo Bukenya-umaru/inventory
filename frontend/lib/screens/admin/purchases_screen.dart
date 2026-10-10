@@ -194,12 +194,6 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
           ),
         ),
 
-        SectionSearchBar(
-          hintText: 'Search stock history...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
-
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),

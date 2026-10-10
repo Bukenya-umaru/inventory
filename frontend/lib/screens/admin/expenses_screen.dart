@@ -207,11 +207,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ],
           ),
         ),
-        SectionSearchBar(
-          hintText: 'Search expenses...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),

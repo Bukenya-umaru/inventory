@@ -216,11 +216,6 @@ class _CreditsScreenState extends State<CreditsScreen> {
             ],
           ),
         ),
-        SectionSearchBar(
-          hintText: 'Search credits...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),

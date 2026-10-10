@@ -7,7 +7,6 @@ import '../../models/tenant.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/compact_data_table.dart';
-import '../../widgets/section_search_bar.dart';
 
 class BusinessesScreen extends StatefulWidget {
   const BusinessesScreen({super.key});
@@ -87,15 +86,6 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
             ],
           ),
         ),
-
-        SectionSearchBar(
-          hintText: 'Search businesses...',
-          onSearch: (query) {
-            _searchQuery = query;
-            _load();
-          },
-        ),
-        const SizedBox(height: 8),
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

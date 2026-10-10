@@ -76,6 +76,12 @@ class _ActivityNotificationsScreenState
 
   void _onEvent(String event) {
     if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+      _load(silent: true);
+      return;
+    }
     if ([
       'sales',
       'purchases',
@@ -217,14 +223,6 @@ class _ActivityNotificationsScreenState
                   ],
                 ),
               ),
-              SectionSearchBar(
-                hintText: 'Search activity...',
-                onSearch: (query) {
-                  setState(() => _searchQuery = query);
-                  _load(silent: true);
-                },
-              ),
-              const SizedBox(height: 8),
               Expanded(
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())

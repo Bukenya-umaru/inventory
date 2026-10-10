@@ -112,51 +112,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
             ],
           ),
         ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            isSmall ? 12 : AppTheme.pad(context, 16),
-            0,
-            isSmall ? 12 : AppTheme.pad(context, 16),
-            8,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        onChanged: (v) {
-                          _search = v;
-                          _load();
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search suppliers...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          filled: true,
-                          fillColor: Theme.of(context).scaffoldBackgroundColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: _load,
-                      icon: const Icon(Icons.search),
-                      label: const Text('Search'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.search),
-                label: const Text('Search'),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

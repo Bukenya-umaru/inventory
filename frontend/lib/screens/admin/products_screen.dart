@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
@@ -25,7 +24,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   bool _loading = true;
   String _search = '';
   bool _lowStockOnly = false;
-  Timer? _searchTimer;
 
   @override
   void initState() {
@@ -40,7 +38,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final globalQuery = AppEvents.globalSearchQuery(event);
     if (globalQuery != null) {
       _search = globalQuery;
-      _searchTimer?.cancel();
       _load(silent: true);
     } else if (event == 'products') {
       _load(silent: true);
@@ -50,7 +47,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void dispose() {
     AppEvents.instance.unsubscribe(_onEvent);
-    _searchTimer?.cancel();
     super.dispose();
   }
 
@@ -183,45 +179,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ),
           child: Row(
             children: [
-              Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search products...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: isSmall ? 10 : 14,
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).cardColor,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  style: TextStyle(
-                    fontSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
-                  ),
-                  onChanged: (v) {
-                    _search = v;
-                    _searchTimer?.cancel();
-                    _searchTimer = Timer(
-                      const Duration(milliseconds: 350),
-                      () => _load(),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () {
-                  _searchTimer?.cancel();
-                  _load();
-                },
-                icon: const Icon(Icons.search),
-                tooltip: 'Search products',
-              ),
-              const SizedBox(width: 4),
               Container(
                 decoration: BoxDecoration(
                   color: _lowStockOnly

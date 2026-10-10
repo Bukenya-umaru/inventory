@@ -161,12 +161,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
         ),
 
-        SectionSearchBar(
-          hintText: 'Search categories...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
-
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())

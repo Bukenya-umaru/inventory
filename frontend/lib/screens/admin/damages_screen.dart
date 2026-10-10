@@ -210,12 +210,6 @@ class _DamagesScreenState extends State<DamagesScreen> {
           ),
         ),
 
-        SectionSearchBar(
-          hintText: 'Search damage reports...',
-          onSearch: (query) => setState(() => _searchQuery = query),
-        ),
-        const SizedBox(height: 8),
-
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppTheme.pad(context, 16),
