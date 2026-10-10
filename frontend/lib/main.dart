@@ -108,6 +108,9 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         if (auth.loading) {
+          if (AppTheme.isPhoneScreen(context)) {
+            return const Scaffold(body: StoreHouseSplash());
+          }
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );

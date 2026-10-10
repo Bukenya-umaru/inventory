@@ -88,14 +88,28 @@ class _LoginFormView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Text(
-              'Login',
-              style: TextStyle(
-                fontSize: AppTheme.fontSize(context, isSmall ? 26 : 32),
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1.1,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  'Store House',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, isSmall ? 24 : 28),
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.1,
+                  ),
+                ),
+                SizedBox(height: isSmall ? 8 : 12),
+                Text(
+                  'Welcome back',
+                  style: TextStyle(
+                    fontSize: AppTheme.fontSize(context, isSmall ? 19 : 22),
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
           SizedBox(height: isSmall ? 22 : 32),
@@ -434,6 +448,80 @@ class _WarehouseBackgroundPainter extends CustomPainter {
       false;
 }
 
+class StoreHouseSplash extends StatefulWidget {
+  const StoreHouseSplash({super.key});
+
+  @override
+  State<StoreHouseSplash> createState() => _StoreHouseSplashState();
+}
+
+class _StoreHouseSplashState extends State<StoreHouseSplash>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _pulse;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _scale = Tween<double>(begin: 0.94, end: 1).animate(_pulse);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(painter: _WarehouseBackgroundPainter()),
+        SafeArea(
+          child: Column(
+            children: [
+              const Spacer(),
+              FadeTransition(
+                opacity: Tween<double>(begin: 0.6, end: 1).animate(_pulse),
+                child: ScaleTransition(
+                  scale: _scale,
+                  child: const _BrandHeader(iconSize: 76, nameSize: 32),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  color: _kStoreGreen,
+                  strokeWidth: 2.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Loading your workspace...',
+                style: TextStyle(
+                  color: _kStoreGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppTheme.fontSize(context, 14),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -486,60 +574,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Full-screen brand splash with the mark and a loading spinner,
-  /// shown while the login form "loads".
-  Widget _buildSplash(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        CustomPaint(painter: _WarehouseBackgroundPainter()),
-        SafeArea(
-          child: Column(
-            children: [
-              const Expanded(
-                child: Center(child: _BrandHeader(iconSize: 76, nameSize: 32)),
-              ),
-              const SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  color: _kStoreGreen,
-                  strokeWidth: 2.5,
-                ),
-              ),
-              const SizedBox(height: 48),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isPhone = AppTheme.isPhoneScreen(context);
     return Scaffold(
-      floatingActionButton: const ThemeToggleFab(),
+      floatingActionButton: isPhone && _showSplash
+          ? null
+          : const ThemeToggleFab(),
       backgroundColor: _kPageCream,
       body: Stack(
         fit: StackFit.expand,
         children: [
           if (isPhone && _showSplash)
-            _buildSplash(context)
-          else
-            ...[
-              CustomPaint(painter: _WarehouseBackgroundPainter()),
-              _LoginFormView(
-                formKey: _formKey,
-                emailCtrl: _emailCtrl,
-                passCtrl: _passCtrl,
-                loading: _loading,
-                obscure: _obscure,
-                error: _error,
-                onToggleObscure: () => setState(() => _obscure = !_obscure),
-                onSubmit: _login,
-              ),
-            ],
+            const StoreHouseSplash()
+          else ...[
+            CustomPaint(painter: _WarehouseBackgroundPainter()),
+            _LoginFormView(
+              formKey: _formKey,
+              emailCtrl: _emailCtrl,
+              passCtrl: _passCtrl,
+              loading: _loading,
+              obscure: _obscure,
+              error: _error,
+              onToggleObscure: () => setState(() => _obscure = !_obscure),
+              onSubmit: _login,
+            ),
+          ],
         ],
       ),
     );
