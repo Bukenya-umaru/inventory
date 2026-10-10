@@ -430,9 +430,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _range == label || (label == 'Custom' && _range.startsWith('Custom:'));
     return Material(
       color: selected ? const Color(0xFF087F5B) : AppTheme.cardColor(context),
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           if (label == 'Custom') {
             _pickOverviewRange();
@@ -448,22 +448,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
             _selectRange(label);
           }
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? const Color(0xFF087F5B)
-                  : AppTheme.borderColor(context),
+        child: SizedBox(
+          height: 30,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: selected
+                    ? const Color(0xFF087F5B)
+                    : AppTheme.borderColor(context),
+              ),
             ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppTheme.textColor(context),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppTheme.textColor(context),
+              ),
             ),
           ),
         ),

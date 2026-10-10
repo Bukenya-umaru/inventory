@@ -47,7 +47,10 @@ class _SalesScreenState extends State<SalesScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'products') {
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    } else if (event == 'products') {
       _load(silent: true);
     } else if (event == 'sales') {
       _load(silent: true);

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab;
-import '../../widgets/download_app_fab.dart';
 import '../../utils/theme.dart';
 
 /// Duration the blue splash is shown before revealing the login page.
@@ -109,19 +108,19 @@ class _LoginFormView extends StatelessWidget {
   });
 
   OutlineInputBorder _border(Color c, {double width = 1}) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: c, width: width),
-      );
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: c, width: width),
+  );
 
   Widget _fieldLabel(BuildContext context, String text, bool isSmall) => Text(
-        text,
-        style: TextStyle(
-          fontSize: AppTheme.fontSize(context, isSmall ? 11.5 : 13),
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.1,
-          color: AppTheme.secondaryText(context),
-        ),
-      );
+    text,
+    style: TextStyle(
+      fontSize: AppTheme.fontSize(context, isSmall ? 11.5 : 13),
+      fontWeight: FontWeight.w600,
+      letterSpacing: 1.1,
+      color: AppTheme.secondaryText(context),
+    ),
+  );
 
   Widget _buildForm(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.height < 600;
@@ -152,15 +151,26 @@ class _LoginFormView extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.danger.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.danger.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppTheme.danger.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: AppTheme.danger, size: 18),
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppTheme.danger,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(error!,
-                      style: TextStyle(color: AppTheme.danger, fontSize: AppTheme.fontSize(context, 13))),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: AppTheme.danger,
+                        fontSize: AppTheme.fontSize(context, 13),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -187,7 +197,8 @@ class _LoginFormView extends StatelessWidget {
               fillColor: AppTheme.cardColor(context),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: isSmall ? 14 : 16),
+                vertical: isSmall ? 14 : 16,
+              ),
               prefixIcon: Icon(
                 Icons.mail_outline,
                 color: AppTheme.secondaryText(context),
@@ -227,7 +238,8 @@ class _LoginFormView extends StatelessWidget {
               fillColor: AppTheme.cardColor(context),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: isSmall ? 14 : 16),
+                vertical: isSmall ? 14 : 16,
+              ),
               prefixIcon: Icon(
                 Icons.lock_outline,
                 color: AppTheme.secondaryText(context),
@@ -239,7 +251,9 @@ class _LoginFormView extends StatelessWidget {
               focusedErrorBorder: _border(AppTheme.danger, width: 1.5),
               suffixIcon: IconButton(
                 icon: Icon(
-                  obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppTheme.secondaryText(context),
                   size: 20,
                 ),
@@ -272,20 +286,34 @@ class _LoginFormView extends StatelessWidget {
                   shadowColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 child: loading
-                    ? const SizedBox(width: 22, height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.login, size: 22),
                           const SizedBox(width: 10),
-                          Text('Sign In',
-                              style: TextStyle(
-                                fontSize: AppTheme.fontSize(context, isSmall ? 15 : 17),
-                                fontWeight: FontWeight.w700)),
+                          Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: AppTheme.fontSize(
+                                context,
+                                isSmall ? 15 : 17,
+                              ),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
               ),
@@ -301,7 +329,8 @@ class _LoginFormView extends StatelessWidget {
               'Contact your administrator for access',
               style: TextStyle(
                 fontSize: AppTheme.fontSize(context, 13),
-                color: AppTheme.secondaryText(context)),
+                color: AppTheme.secondaryText(context),
+              ),
             ),
           ),
         ],
@@ -338,7 +367,9 @@ class _LoginFormView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.3),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.45 : 0.3,
+                      ),
                       blurRadius: 30,
                       offset: const Offset(0, 12),
                     ),
@@ -354,18 +385,31 @@ class _LoginFormView extends StatelessWidget {
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(
                           horizontal: 24,
-                          vertical: isSmall ? 24 : 34),
-                        decoration: const BoxDecoration(gradient: _kBlueGradient),
+                          vertical: isSmall ? 24 : 34,
+                        ),
+                        decoration: const BoxDecoration(
+                          gradient: _kBlueGradient,
+                        ),
                         child: _BrandHeader(
                           iconSize: isSmall ? 64 : 78,
-                          nameSize: AppTheme.fontSize(context, isSmall ? 26 : 30),
-                          taglineSize: AppTheme.fontSize(context, isSmall ? 13 : 15),
+                          nameSize: AppTheme.fontSize(
+                            context,
+                            isSmall ? 26 : 30,
+                          ),
+                          taglineSize: AppTheme.fontSize(
+                            context,
+                            isSmall ? 13 : 15,
+                          ),
                         ),
                       ),
                       // White form body
                       Padding(
                         padding: EdgeInsets.fromLTRB(
-                          24, isSmall ? 20 : 28, 24, isSmall ? 20 : 24),
+                          24,
+                          isSmall ? 20 : 28,
+                          24,
+                          isSmall ? 20 : 24,
+                        ),
                         child: _buildForm(context),
                       ),
                     ],
@@ -415,14 +459,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     final auth = context.read<AuthProvider>();
     final error = await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
 
     if (!mounted) return;
     if (error != null) {
-      setState(() { _loading = false; _error = error; });
+      setState(() {
+        _loading = false;
+        _error = error;
+      });
     }
   }
 
@@ -436,9 +486,10 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
-          end: Alignment.bottomRight,              colors: isDark
-                  ? const [_kPageTopDark, _kGreenTop]
-                  : const [_kPageTop, _kGreenBottom],
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [_kPageTopDark, _kGreenTop]
+              : const [_kPageTop, _kGreenBottom],
         ),
       ),
       child: SafeArea(
@@ -471,24 +522,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Phones only: the blue flash screen and the download-app button.
-    // Tablets, laptops and desktops go straight to the login form and only
-    // keep the theme toggle.
+    // Phones only show the blue splash before the login form.
     final isPhone = AppTheme.isPhoneScreen(context);
     return Scaffold(
-      // Floating dark/light mode toggle — bottom right corner (unchanged,
-      // on both splash and login, phone and desktop). The download app button
-      // next to it is mobile-only.
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const ThemeToggleFab(),
-          if (isPhone) ...[
-            const SizedBox(height: 12),
-            const DownloadAppFab(),
-          ],
-        ],
-      ),
+      floatingActionButton: const ThemeToggleFab(),
       body: (isPhone && _showSplash)
           ? _buildSplash(context)
           : _LoginFormView(

@@ -1,6 +1,12 @@
 class AppEvents {
   AppEvents._();
   static final AppEvents instance = AppEvents._();
+  static const globalSearchPrefix = 'global_search:';
+
+  static String? globalSearchQuery(String event) {
+    if (!event.startsWith(globalSearchPrefix)) return null;
+    return event.substring(globalSearchPrefix.length);
+  }
 
   final List<void Function(String event)> _listeners = [];
 
@@ -16,9 +22,7 @@ class AppEvents {
     for (final l in List.of(_listeners)) {
       try {
         l(event);
-      } catch (_) {
-
-      }
+      } catch (_) {}
     }
   }
 }

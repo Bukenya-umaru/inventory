@@ -18,21 +18,199 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Inventory management for your business.">
+  <meta name="theme-color" content="#1DBF73">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="inventory_app">
+  <meta name="apple-mobile-web-app-title" content="Inventory">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>inventory_app</title>
+  <title>Inventory</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="pwa-install-prompt" class="pwa-prompt-backdrop" hidden>
+    <section
+      class="pwa-prompt"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pwa-prompt-title"
+      aria-describedby="pwa-prompt-message"
+    >
+      <button class="pwa-prompt-close" type="button" aria-label="Not now">&times;</button>
+      <img class="pwa-prompt-icon" src="icons/Icon-192.png" alt="">
+      <h1 id="pwa-prompt-title">Install Inventory</h1>
+      <p id="pwa-prompt-message">Install the app for quick access to your inventory.</p>
+      <p id="pwa-prompt-help" class="pwa-prompt-help" hidden></p>
+      <button id="pwa-install-button" class="pwa-install-button" type="button">
+        Install app
+      </button>
+      <button class="pwa-prompt-later" type="button">Not now</button>
+    </section>
+  </div>
+  <style>
+    .pwa-prompt-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.48);
+      font-family: Arial, sans-serif;
+    }
+    .pwa-prompt-backdrop[hidden],
+    .pwa-prompt-help[hidden] {
+      display: none;
+    }
+    .pwa-prompt {
+      position: relative;
+      box-sizing: border-box;
+      width: min(100%, 380px);
+      padding: 30px 26px 22px;
+      border: 1px solid #e4e7eb;
+      border-radius: 18px;
+      background: #fff;
+      color: #232a2f;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+    .pwa-prompt-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      border: 0;
+      background: transparent;
+      color: #6b7a83;
+      font-size: 26px;
+      cursor: pointer;
+    }
+    .pwa-prompt-icon {
+      display: block;
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 16px;
+      border-radius: 15px;
+      object-fit: cover;
+    }
+    .pwa-prompt h1 {
+      margin: 0 0 8px;
+      font-size: 21px;
+    }
+    .pwa-prompt p {
+      margin: 0;
+      color: #6b7a83;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .pwa-prompt .pwa-prompt-help {
+      margin-top: 12px;
+      color: #46545c;
+    }
+    .pwa-install-button {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 22px;
+      border: 0;
+      border-radius: 10px;
+      background: #087f5b;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .pwa-prompt-later {
+      margin-top: 12px;
+      padding: 8px 14px;
+      border: 0;
+      background: transparent;
+      color: #6b7a83;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+  <script>
+    (() => {
+      const prompt = document.getElementById('pwa-install-prompt');
+      const installButton = document.getElementById('pwa-install-button');
+      const message = document.getElementById('pwa-prompt-message');
+      const help = document.getElementById('pwa-prompt-help');
+      const deferredPromptKey = 'inventoryPwaInstallPrompt';
+      const closePrompt = () => {
+        prompt.hidden = true;
+      };
+      const isInstalled = () =>
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+      const isIos = () =>
+        /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+        (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+      document.querySelectorAll('.pwa-prompt-close, .pwa-prompt-later').forEach((button) => {
+        button.addEventListener('click', closePrompt);
+      });
+      prompt.addEventListener('click', (event) => {
+        if (event.target === prompt) closePrompt();
+      });
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        window[deferredPromptKey] = event;
+        if (!isInstalled()) prompt.hidden = false;
+      });
+
+      window.addEventListener('appinstalled', () => {
+        window[deferredPromptKey] = null;
+        closePrompt();
+      });
+
+      installButton.addEventListener('click', async () => {
+        if (!help.hidden) {
+          closePrompt();
+          return;
+        }
+
+        const deferredPrompt = window[deferredPromptKey];
+        if (deferredPrompt) {
+          try {
+            await deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            window[deferredPromptKey] = null;
+            closePrompt();
+          } catch (error) {
+            console.error('Unable to open the app install prompt.', error);
+            message.textContent = 'You can install Inventory from your browser menu.';
+            help.textContent = 'Open the browser menu and choose “Install app” or “Add to Home screen”.';
+            help.hidden = false;
+            installButton.textContent = 'Got it';
+          }
+          return;
+        }
+
+        if (isIos()) {
+          message.textContent = 'Add Inventory to your Home Screen for app-like access.';
+          help.textContent = 'Tap Share in your browser, then choose “Add to Home Screen”.';
+        } else {
+          message.textContent = 'You can install Inventory from your browser menu.';
+          help.textContent = 'Open the browser menu and choose “Install app” or “Add to Home screen”.';
+        }
+        help.hidden = false;
+        installButton.textContent = 'Got it';
+      });
+
+      if (!isInstalled()) {
+        window.setTimeout(() => {
+          if (isInstalled() || !prompt.hidden) return;
+          prompt.hidden = false;
+        }, 900);
+      }
+    })();
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

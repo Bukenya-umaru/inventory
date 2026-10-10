@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
 import '../../widgets/loading_button.dart';
 import '../../widgets/app_drawer.dart' show ThemeToggleFab;
-import '../../widgets/download_app_fab.dart' show DownloadAppFab;
 import '../../widgets/section_search_bar.dart';
 
 const _allPermissions = [
@@ -61,23 +61,35 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   String _searchQuery = '';
 
   List<User> get _visibleEmployees => _employees
-      .where((employee) => matchesSectionSearch(_searchQuery, [
-            employee.name,
-            employee.email,
-            employee.employeeId,
-            employee.department,
-            employee.position,
-          ]))
+      .where(
+        (employee) => matchesSectionSearch(_searchQuery, [
+          employee.name,
+          employee.email,
+          employee.employeeId,
+          employee.department,
+          employee.position,
+        ]),
+      )
       .toList();
 
   @override
   void initState() {
     super.initState();
     _load();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    }
   }
 
   @override
   void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
     _timer?.cancel();
     super.dispose();
   }
@@ -127,17 +139,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Compose the shared dark-mode toggle with this tab's own action so
-      // both float in the bottom-right corner without overlapping. The
-      // download app button is phone-only.
+      // Compose the shared dark-mode toggle with this tab's own action.
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const ThemeToggleFab(mini: true),
-          if (AppTheme.isPhoneScreen(context)) ...[
-            const SizedBox(height: 12),
-            const DownloadAppFab(mini: true),
-          ],
           const SizedBox(height: 12),
           FloatingActionButton(
             // No hero: the nav wrapper's toggle FAB lives on the same route.

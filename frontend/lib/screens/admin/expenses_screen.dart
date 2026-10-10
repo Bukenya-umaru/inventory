@@ -45,7 +45,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'expenses') {
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    } else if (event == 'expenses') {
       _load();
     } else if (event == 'categories') {
       _loadCategories();

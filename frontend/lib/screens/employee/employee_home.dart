@@ -223,7 +223,6 @@ class _EmployeeHomeState extends State<EmployeeHome> {
         });
       },
       items: _items,
-      title: 'Employee Dashboard',
       body: IndexedStack(index: _stackIndex, children: _pages),
     );
   }

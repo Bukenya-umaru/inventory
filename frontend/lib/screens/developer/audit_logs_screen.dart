@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/audit_log.dart';
 import '../../utils/theme.dart';
 import '../../widgets/compact_data_table.dart';
@@ -27,11 +28,11 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
 
   List<AuditLog> get _visibleLogs => _logs
       .where((log) => matchesSectionSearch(_searchQuery, [
-            log.eventType,
-            log.userName,
-            log.userRole,
-            log.action,
-            log.businessName,
+          log.eventType,
+          log.userName,
+          log.userRole,
+          log.action,
+          log.businessName,
           ]))
       .toList();
 
@@ -39,6 +40,22 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   void initState() {
     super.initState();
     _load();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
   }
 
   Future<void> _load({int page = 1}) async {

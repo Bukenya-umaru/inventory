@@ -1,11 +1,11 @@
 {
-    "name": "inventory_app",
-    "short_name": "inventory_app",
+    "name": "Inventory",
+    "short_name": "Inventory",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F3F5F7",
+    "theme_color": "#1DBF73",
+    "description": "Inventory management for your business.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

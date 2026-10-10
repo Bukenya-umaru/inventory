@@ -44,7 +44,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'purchases' || event == 'sales' || event == 'expenses' || event == 'damages') {
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    } else if (event == 'purchases' || event == 'sales' || event == 'expenses' || event == 'damages') {
       _load(silent: true); 
     }
   }

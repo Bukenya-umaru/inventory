@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/user.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
@@ -22,6 +23,22 @@ class _UsersScreenState extends State<UsersScreen> {
   void initState() {
     super.initState();
     _load();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      _search = globalQuery;
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
   }
 
   Future<void> _load() async {

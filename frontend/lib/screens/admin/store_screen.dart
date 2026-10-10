@@ -35,7 +35,12 @@ class _StoreScreenState extends State<StoreScreen> {
   void _onEvent(String event) {
     if (!mounted) return;
 
-    if (event == 'products') {
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      _search = globalQuery;
+      _searchTimer?.cancel();
+      _load(silent: true);
+    } else if (event == 'products') {
       _load(silent: true);
     }
   }

@@ -47,7 +47,10 @@ class _PurchasesScreenState extends State<PurchasesScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'purchases') {
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    } else if (event == 'purchases') {
       _load();
     }
   }

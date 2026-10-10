@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_service.dart';
+import '../../services/app_events.dart';
 import '../../models/tenant.dart';
 import '../../utils/theme.dart';
 import '../../widgets/loading_button.dart';
@@ -24,6 +25,22 @@ class _BusinessesScreenState extends State<BusinessesScreen> {
   void initState() {
     super.initState();
     _load();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      _searchQuery = globalQuery;
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
   }
 
   Future<void> _load() async {

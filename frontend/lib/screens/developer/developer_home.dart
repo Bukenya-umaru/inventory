@@ -39,7 +39,6 @@ class _DeveloperHomeState extends State<DeveloperHome> {
       selectedIndex: _currentIndex,
       onItemTap: (i, {int? childIndex}) => setState(() => _currentIndex = i),
       items: _items,
-      title: 'Developer Dashboard',
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,

@@ -250,7 +250,6 @@ class _AdminHomeState extends State<AdminHome> {
       selectedIndex: _currentIndex,
       onItemTap: onItemTapLocal,
       items: _items,
-      title: 'Business Dashboard',
       showThemeFab: !isEmployeesTab,
       darkSidebar: true,
       body: IndexedStack(index: _stackIndex, children: _pages),

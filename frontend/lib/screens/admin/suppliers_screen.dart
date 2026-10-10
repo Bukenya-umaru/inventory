@@ -35,7 +35,13 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   void _onEvent(String event) {
     if (!mounted) return;
-    if (event == 'purchases' || event == 'suppliers') _load();
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      _search = globalQuery;
+      _load();
+    } else if (event == 'purchases' || event == 'suppliers') {
+      _load();
+    }
   }
 
   bool _canManage() {

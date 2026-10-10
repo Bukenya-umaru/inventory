@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
@@ -10,7 +12,6 @@ import '../services/theme_provider.dart';
 import '../utils/theme.dart';
 import '../screens/shared/activity_notifications_screen.dart';
 import '../screens/shared/profile_screen.dart';
-import 'download_app_fab.dart' show DownloadAppFab;
 
 const double kWideScreenBreakpoint = 900;
 
@@ -527,7 +528,6 @@ class ResponsiveNavWrapper extends StatelessWidget {
   final List<DrawerItem> items;
   final Widget body;
   final PreferredSizeWidget? appBar;
-  final String? title;
 
   /// Set false when a tab hosts its own Scaffold with a FAB that already
   /// composes a [ThemeToggleFab] (e.g. the Employees tab), to avoid two
@@ -542,7 +542,6 @@ class ResponsiveNavWrapper extends StatelessWidget {
     required this.items,
     required this.body,
     this.appBar,
-    this.title,
     this.showThemeFab = true,
     this.darkSidebar = false,
   });
@@ -551,22 +550,9 @@ class ResponsiveNavWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth >= kWideScreenBreakpoint;
-    // Theme toggle bottom-right on every screen; the download app button is
-    // shown only on phone-sized screens. Tabs with showThemeFab=false manage
-    // their own corner (e.g. the Employees tab).
-    final isPhone = AppTheme.isPhoneScreen(context);
-    final fab = showThemeFab
-        ? Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const ThemeToggleFab(),
-              if (isPhone) ...[
-                const SizedBox(height: 12),
-                const DownloadAppFab(),
-              ],
-            ],
-          )
-        : null;
+    // Theme toggle bottom-right on every screen. Tabs with showThemeFab=false
+    // manage their own corner (e.g. the Employees tab).
+    final fab = showThemeFab ? const ThemeToggleFab() : null;
 
     if (isWide) {
       return Scaffold(
@@ -589,18 +575,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
                       backgroundColor: AppTheme.appBarColor(context),
                       elevation: 0,
                       surfaceTintColor: Colors.transparent,
-                      title: Row(
-                        children: [
-                          Text(
-                            title ?? '',
-                            style: TextStyle(
-                              fontSize: AppTheme.fontSize(context, 18),
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textColor(context),
-                            ),
-                          ),
-                        ],
-                      ),
+                      title: _HeaderSearchField(width: _searchWidth(context)),
                       actions: [
                         _NotificationBell(
                           onActivitySelected: (log) =>
@@ -623,7 +598,7 @@ class ResponsiveNavWrapper extends StatelessWidget {
       appBar:
           appBar ??
           AppBar(
-            title: Text(title ?? ''),
+            title: _HeaderSearchField(width: _searchWidth(context)),
             actions: [
               _NotificationBell(
                 onActivitySelected: (log) =>
@@ -641,6 +616,12 @@ class ResponsiveNavWrapper extends StatelessWidget {
       ),
       body: body,
     );
+  }
+
+  double _searchWidth(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth >= 900) return 300;
+    return (screenWidth - 180).clamp(100.0, 300.0).toDouble();
   }
 
   void _openActivityLocation(BuildContext context, AuditLog log) {
@@ -690,6 +671,104 @@ class ResponsiveNavWrapper extends StatelessWidget {
         if (role == 'admin') onItemTap(1, childIndex: 1);
         break;
     }
+  }
+}
+
+class _HeaderSearchField extends StatefulWidget {
+  final double width;
+
+  const _HeaderSearchField({required this.width});
+
+  @override
+  State<_HeaderSearchField> createState() => _HeaderSearchFieldState();
+}
+
+class _HeaderSearchFieldState extends State<_HeaderSearchField> {
+  final TextEditingController _controller = TextEditingController();
+  Timer? _searchTimer;
+
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _emitSearch() {
+    AppEvents.instance.emit(
+      '${AppEvents.globalSearchPrefix}${_controller.text.trim()}',
+    );
+  }
+
+  void _submit() {
+    _searchTimer?.cancel();
+    _emitSearch();
+    setState(() {});
+  }
+
+  void _clear() {
+    _searchTimer?.cancel();
+    _controller.clear();
+    _emitSearch();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.width,
+      height: 38,
+      child: TextField(
+        controller: _controller,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => _submit(),
+        onChanged: (_) {
+          setState(() {});
+          _searchTimer?.cancel();
+          _searchTimer = Timer(const Duration(milliseconds: 300), _emitSearch);
+        },
+        style: TextStyle(fontSize: 12, color: AppTheme.textColor(context)),
+        decoration: InputDecoration(
+          hintText: 'Search stock, sales, suppliers...',
+          hintStyle: TextStyle(
+            fontSize: 12,
+            color: AppTheme.secondaryText(context),
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            size: 18,
+            color: AppTheme.secondaryText(context),
+          ),
+          suffixIcon: IconButton(
+            onPressed: _controller.text.isEmpty ? _submit : _clear,
+            tooltip: _controller.text.isEmpty ? 'Search' : 'Clear search',
+            icon: Icon(
+              _controller.text.isEmpty ? Icons.search : Icons.close,
+              size: 17,
+              color: AppTheme.secondaryText(context),
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+          ),
+          isDense: true,
+          filled: true,
+          fillColor: AppTheme.panelColor(context),
+          contentPadding: const EdgeInsets.symmetric(vertical: 9),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppTheme.borderColor(context)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppTheme.borderColor(context)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+          ),
+        ),
+      ),
+    );
   }
 }
 

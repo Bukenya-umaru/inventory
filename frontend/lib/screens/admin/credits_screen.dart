@@ -43,7 +43,13 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   void _onEvent(String event) {
-    if (mounted && (event == 'purchases' || event == 'credits')) _load();
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    } else if (event == 'purchases' || event == 'credits') {
+      _load();
+    }
   }
 
   @override

@@ -30,6 +30,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   void initState() {
     super.initState();
     _load();
+    AppEvents.instance.subscribe(_onEvent);
+  }
+
+  void _onEvent(String event) {
+    if (!mounted) return;
+    final globalQuery = AppEvents.globalSearchQuery(event);
+    if (globalQuery != null) {
+      setState(() => _searchQuery = globalQuery);
+    }
+  }
+
+  @override
+  void dispose() {
+    AppEvents.instance.unsubscribe(_onEvent);
+    super.dispose();
   }
 
   Future<void> _load() async {
