@@ -9,6 +9,7 @@ import '../../utils/currency.dart';
 import '../../utils/download_helper.dart';
 import '../../utils/pdf_report_builder.dart';
 import '../../widgets/section_search_bar.dart';
+import '../../widgets/period_filter_chip.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -359,39 +360,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final isActive = _period == value;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: ChoiceChip(
-        label: Text(label, style: TextStyle(fontSize: AppTheme.fontSize(context, 12))),
+      child: PeriodFilterChip(
+        label: label,
         selected: isActive,
-        onSelected: (_) => _setPeriod(value),
-        selectedColor: AppTheme.primary,
-        labelStyle: TextStyle(color: isActive ? Colors.white : AppTheme.textColor(context)),
+        onTap: () => _setPeriod(value),
       ),
     );
   }
 
   Widget _datePickerChip(String label, DateTime? date, VoidCallback onTap) {
-    return InkWell(
+    return PeriodFilterChip(
+      label: date != null ? DateFormat('MMM d, yyyy').format(date) : label,
+      selected: false,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_today, size: 14, color: AppTheme.secondaryText(context)),
-            const SizedBox(width: 4),
-            Text(
-              date != null ? DateFormat('MMM d, yyyy').format(date) : label,
-              style: TextStyle(fontSize: 12, color: AppTheme.secondaryText(context)),
-            ),
-          ],
-        ),
-      ),
+      icon: Icons.calendar_today,
     );
   }
 

@@ -191,36 +191,52 @@ class _ActivityNotificationsScreenState
                   horizontal: 12,
                   vertical: 8,
                 ),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: _selectedFilters.isEmpty,
-                      onSelected: (_) {
-                        setState(() => _selectedFilters.clear());
-                        _load(silent: true);
-                      },
-                    ),
-                    ..._filterGroups.keys.map((key) {
-                      final selected = _selectedFilters.contains(key);
-                      return ChoiceChip(
-                        label: Text(key),
-                        selected: selected,
-                        onSelected: (on) {
-                          setState(() {
-                            if (on) {
-                              _selectedFilters.add(key);
-                            } else {
-                              _selectedFilters.remove(key);
-                            }
-                          });
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final chips = [
+                      ChoiceChip(
+                        label: const Text('All'),
+                        selected: _selectedFilters.isEmpty,
+                        onSelected: (_) {
+                          setState(() => _selectedFilters.clear());
                           _load(silent: true);
                         },
+                      ),
+                      ..._filterGroups.keys.map((key) {
+                        final selected = _selectedFilters.contains(key);
+                        return ChoiceChip(
+                          label: Text(key),
+                          selected: selected,
+                          onSelected: (on) {
+                            setState(() {
+                              if (on) {
+                                _selectedFilters.add(key);
+                              } else {
+                                _selectedFilters.remove(key);
+                              }
+                            });
+                            _load(silent: true);
+                          },
+                        );
+                      }),
+                    ];
+
+                    if (constraints.maxWidth < 600) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final chip in chips) ...[
+                              chip,
+                              const SizedBox(width: 6),
+                            ],
+                          ],
+                        ),
                       );
-                    }),
-                  ],
+                    }
+
+                    return Wrap(spacing: 6, runSpacing: 4, children: chips);
+                  },
                 ),
               ),
               Expanded(

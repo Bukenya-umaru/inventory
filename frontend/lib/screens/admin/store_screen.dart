@@ -7,6 +7,7 @@ import '../../models/category.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
 import '../../widgets/compact_data_table.dart';
+import '../../widgets/period_filter_chip.dart';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -206,18 +207,14 @@ class _StoreScreenState extends State<StoreScreen> {
     final selected = _selectedPurchaseDate;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
-      child: InputChip(
-        avatar: const Icon(Icons.calendar_today, size: 16),
-        label: Text(
-          selected == null
-              ? 'Bought date'
-              : DateFormat('MMM d, yyyy').format(selected),
-          style: const TextStyle(fontSize: 12),
-        ),
+      child: PeriodFilterChip(
+        label: selected == null
+            ? 'Bought date'
+            : DateFormat('MMM d, yyyy').format(selected),
         selected: selected != null,
-        selectedColor: AppTheme.primary.withValues(alpha: 0.12),
-        onPressed: _pickAddedDate,
-        onDeleted: selected == null
+        onTap: _pickAddedDate,
+        icon: Icons.calendar_today,
+        onClear: selected == null
             ? null
             : () {
                 setState(() => _selectedPurchaseDate = null);

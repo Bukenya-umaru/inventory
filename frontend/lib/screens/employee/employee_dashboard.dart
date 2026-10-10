@@ -5,6 +5,7 @@ import '../../services/api_service.dart';
 import '../../services/app_events.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
+import '../../widgets/period_filter_chip.dart';
 
 class EmployeeDashboard extends StatefulWidget {
   const EmployeeDashboard({super.key});
@@ -186,17 +187,10 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                   spacing: 8,
                   children: [
                     for (final r in const ['Today', 'Weekly', 'Monthly'])
-                      ChoiceChip(
-                        label: Text(r),
+                      PeriodFilterChip(
+                        label: r,
                         selected: range == r,
-                        selectedColor:
-                            AppTheme.dashNavyColor(sheetContext).withValues(alpha: 0.15),
-                        labelStyle: TextStyle(
-                          color: range == r
-                              ? AppTheme.dashNavyColor(sheetContext)
-                              : AppTheme.secondaryText(sheetContext),
-                          fontWeight: range == r ? FontWeight.bold : FontWeight.w500),
-                        onSelected: (_) => setSheetState(() => range = r),
+                        onTap: () => setSheetState(() => range = r),
                       ),
                   ],
                 ),

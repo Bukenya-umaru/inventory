@@ -9,6 +9,7 @@ import '../../services/app_events.dart';
 import '../../services/auth_provider.dart';
 import '../../utils/theme.dart';
 import '../../utils/currency.dart';
+import '../../widgets/period_filter_chip.dart';
 
 /// Accent palette matching the Inventar design.
 const Color _kChartBlue = Color(0xFF48A8D8);
@@ -428,50 +429,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _periodButton(String label) {
     final selected =
         _range == label || (label == 'Custom' && _range.startsWith('Custom:'));
-    return Material(
-      color: selected ? const Color(0xFF087F5B) : AppTheme.cardColor(context),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          if (label == 'Custom') {
-            _pickOverviewRange();
-          } else if (label == 'All Time') {
-            setState(() {
-              _range = label;
-              _allTime = true;
-              _overviewStart = null;
-              _overviewEnd = null;
-            });
-            _load();
-          } else {
-            _selectRange(label);
-          }
-        },
-        child: SizedBox(
-          height: 30,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected
-                    ? const Color(0xFF087F5B)
-                    : AppTheme.borderColor(context),
-              ),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppTheme.textColor(context),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return PeriodFilterChip(
+      label: label,
+      selected: selected,
+      onTap: () {
+        if (label == 'Custom') {
+          _pickOverviewRange();
+        } else if (label == 'All Time') {
+          setState(() {
+            _range = label;
+            _allTime = true;
+            _overviewStart = null;
+            _overviewEnd = null;
+          });
+          _load();
+        } else {
+          _selectRange(label);
+        }
+      },
     );
   }
 
