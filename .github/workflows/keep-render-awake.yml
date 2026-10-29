@@ -1,0 +1,40 @@
+name: Keep Render backend awake
+
+# Render's free web services spin down after ~15 minutes without traffic.
+# GitHub's scheduler is UTC-only and can fire a few minutes late, so every
+# 10 minutes keeps the instance comfortably inside that idle window.
+# Note: scheduled workflows are disabled after 60 days of repo inactivity.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # lets you trigger a ping by hand from the Actions tab
+
+concurrency:
+  group: keep-render-awake
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping health endpoint
+        env:
+          HEALTH_URL: https://inventory-hqlv.onrender.com/api/health
+        run: |
+          # A cold start on the free plan can take 60s+, so retry instead of
+          # failing on the first slow response.
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /tmp/health.json -w '%{http_code}' \
+              --max-time 90 "$HEALTH_URL" || echo 000)
+            echo "attempt $attempt -> HTTP $code"
+            if [ "$code" = "200" ]; then
+              cat /tmp/health.json
+              echo
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::error::Keep-alive ping failed 3 times against $HEALTH_URL"
+          exit 1
