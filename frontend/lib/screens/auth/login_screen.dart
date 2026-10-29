@@ -298,38 +298,56 @@ class _LoginFormView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSmall = MediaQuery.of(context).size.height < 600;
 
+    final verticalPadding = isSmall ? 20.0 : 24.0;
+
     return SafeArea(
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isSmall ? 18 : 24,
-                vertical: 20,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 470),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _kStoreGreen,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF102716).withValues(alpha: 0.4),
-                          blurRadius: 25,
-                          offset: const Offset(0, 14),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSmall ? 24 : 46,
-                      vertical: isSmall ? 28 : 40,
-                    ),
-                    child: _buildForm(context),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Stretch the scrollable area to at least the viewport height so
+                // the card sits in the middle of the screen instead of at the
+                // top, while still scrolling if it does not fit.
+                final minHeight = constraints.maxHeight - verticalPadding * 2;
+
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmall ? 18 : 24,
+                    vertical: verticalPadding,
                   ),
-                ),
-              ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: minHeight > 0 ? minHeight : 0,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 470),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _kStoreGreen,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF102716,
+                                ).withValues(alpha: 0.4),
+                                blurRadius: 25,
+                                offset: const Offset(0, 14),
+                              ),
+                            ],
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isSmall ? 24 : 46,
+                            vertical: isSmall ? 28 : 40,
+                          ),
+                          child: _buildForm(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           Padding(
